@@ -9,7 +9,15 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 bin_PROGRAMS = fred-akm
 
 fred_akm_SOURCES = \
-  src/main.cc
+	src/type_instance_map.hh \
+	src/args.hh \
+	src/args.cc \
+	src/conf.hh \
+	src/conf.cc \
+	src/main.cc
+
+fred_akm_LDADD = \
+	$(BOOST_PROGRAM_OPTIONS_LIB)
 
 # To specify extra flags for each target you can do this.
 # But it is better to pass them on the command line (using a custom script to

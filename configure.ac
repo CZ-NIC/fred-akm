@@ -29,6 +29,11 @@ AC_CONFIG_HEADERS([config.h])
 # Check for a C++ compiler.
 AC_PROG_CXX
 
+AX_CXX_COMPILE_STDCXX_11
+
+AX_BOOST_BASE
+AX_BOOST_PROGRAM_OPTIONS
+
 # Check for libraries, headers, data etc here.
 
 # Last line: actually generate all required output files.
