@@ -14,10 +14,15 @@ fred_akm_SOURCES = \
 	src/args.cc \
 	src/conf.hh \
 	src/conf.cc \
+	src/corba/corba_context.hh \
+	src/corba/corba_context.cc \
+	src/corba/nameservice.hh \
+	src/corba/nameservice.cc \
 	src/main.cc
 
 fred_akm_LDADD = \
-	$(BOOST_PROGRAM_OPTIONS_LIB)
+	$(BOOST_PROGRAM_OPTIONS_LIB) \
+	$(OMNIORB4_LIBS)
 
 # To specify extra flags for each target you can do this.
 # But it is better to pass them on the command line (using a custom script to

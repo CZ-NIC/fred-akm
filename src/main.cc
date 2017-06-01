@@ -4,6 +4,8 @@
 #include "src/args.hh"
 #include "src/conf.hh"
 
+#include "src/corba/nameservice.hh"
+
 
 void command_dispatcher(const Fred::Akm::Args& _args, const Fred::Akm::Conf& _conf)
 {

@@ -25,7 +25,7 @@ class Conf : public TypeInstanceMap<ConfSection, ConfSectionNotFound> { };
 struct NameserviceConf : public ConfSection
 {
     std::string host;
-    std::string port;
+    unsigned int port;
     std::string object_path;
 };
 

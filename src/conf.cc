@@ -27,7 +27,7 @@ Conf parse_conf(std::ifstream& _file)
     config_file_opts.add_options()
         ("nameservice.host", po::value<std::string>(&nameservice_conf->host)->default_value("localhost"),
          "CORBA nameservice hostname")
-        ("nameservice.port", po::value<std::string>(&nameservice_conf->port)->default_value("2809"),
+        ("nameservice.port", po::value<unsigned int>(&nameservice_conf->port)->default_value(2809),
          "CORBA nameservice port")
         ("nameservice.object_path", po::value<std::string>(&nameservice_conf->object_path)->default_value("fred.AutomaticKeysetManagement"),
          "CORBA object location path in nameservice <context>.<object>");

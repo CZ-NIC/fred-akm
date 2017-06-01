@@ -31,10 +31,11 @@ AC_PROG_CXX
 
 AX_CXX_COMPILE_STDCXX_11
 
+# Check for libraries, headers, data etc here.
 AX_BOOST_BASE
 AX_BOOST_PROGRAM_OPTIONS
 
-# Check for libraries, headers, data etc here.
+PKG_CHECK_MODULES(OMNIORB4, [omniORB4 > 4.1.1, omniDynamic4, omnithread3])
 
 # Last line: actually generate all required output files.
 AC_OUTPUT
