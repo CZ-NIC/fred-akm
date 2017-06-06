@@ -3,15 +3,20 @@
 
 #include "src/args.hh"
 #include "src/conf.hh"
+#include "src/corba/corba_context.hh"
 
 #include "src/corba/nameservice.hh"
 
 
-void command_dispatcher(const Fred::Akm::Args& _args, const Fred::Akm::Conf& _conf)
+void command_dispatcher(
+    const Fred::Akm::Corba::CorbaContext& _cctx,
+    const Fred::Akm::Args& _args,
+    const Fred::Akm::Conf& _conf)
 {
     const auto& command = _args.get<Fred::Akm::GeneralArgs>()->command;
     if (command == "load")
     {
+        _cctx.get_nameservice().resolve(_conf.get<Fred::Akm::NameserviceConf>()->object_path);
     }
     else if (command == "scan")
     {
@@ -48,7 +53,8 @@ int main(int argc, char* argv[])
         std::cout << "nameservice.port = " << nameservice_conf->port << std::endl;
         std::cout << "nameservice.object_path = " << nameservice_conf->object_path << std::endl;
 
-        command_dispatcher(args, conf);
+        const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
+        command_dispatcher(cctx, args, conf);
         return 0;
     }
     catch (const Fred::Akm::HelpExitHelper&)
