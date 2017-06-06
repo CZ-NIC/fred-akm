@@ -9,6 +9,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 bin_PROGRAMS = fred-akm
 
 fred_akm_SOURCES = \
+	src/i_mailer.hh \
 	src/type_instance_map.hh \
 	src/args.hh \
 	src/args.cc \
@@ -58,7 +59,10 @@ noinst_LIBRARIES = \
 	src/corba/generated/libmailer.a \
 	src/corba/generated/libakm.a
 
-nodist_src_corba_generated_libmailer_a_SOURCES = $(CORBA_GENERATED_MAILER)
+nodist_src_corba_generated_libmailer_a_SOURCES = \
+	$(CORBA_GENERATED_MAILER) \
+	src/corba/mailer.cc \
+	src/corba/mailer.hh
 
 nodist_src_corba_generated_libakm_a_SOURCES = $(CORBA_GENERATED_AKM)
 
