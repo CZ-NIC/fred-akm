@@ -1,6 +1,6 @@
 # Always set this so that we can just '#include "foo.hpp"' from anywhere,
 # including our tests directory.
-AM_CPPFLAGS = -I$(top_srcdir)/src
+AM_CPPFLAGS = -I$(top_srcdir)
 
 # This is the top-level Makefile.am for a non-recursive Autotools setup. In
 # fact, in non-recursive structures, this is the only Makefile.am that is
@@ -10,6 +10,7 @@ bin_PROGRAMS = fred-akm
 
 fred_akm_SOURCES = \
 	src/i_mailer.hh \
+	src/i_storage.hh \
 	src/type_instance_map.hh \
 	src/args.hh \
 	src/args.cc \
@@ -19,12 +20,15 @@ fred_akm_SOURCES = \
 	src/corba/corba_context.cc \
 	src/corba/nameservice.hh \
 	src/corba/nameservice.cc \
+	src/sqlite/storage.hh \
+	src/sqlite/storage.cc \
 	src/main.cc
 
 fred_akm_LDADD = \
 	src/corba/generated/libakm.a \
 	$(BOOST_PROGRAM_OPTIONS_LIB) \
-	$(OMNIORB4_LIBS)
+	$(OMNIORB4_LIBS) \
+	$(SQLITE3_LDFLAGS)
 
 
 CORBA_GENERATED_MAILER_SK = \
