@@ -29,6 +29,10 @@ struct NameserviceConf : public ConfSection
     std::string object_path;
 };
 
+struct DatabaseConf : public ConfSection
+{
+    std::string filename;
+};
 
 Conf parse_conf(const std::string &_filename);
 Conf parse_conf(std::ifstream &_file);

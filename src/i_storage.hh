@@ -21,6 +21,11 @@ struct Domain
 
 struct NameserverDomains
 {
+    NameserverDomains()
+        : nameserver(std::string()), nameserver_domains()
+    {
+    }
+
     NameserverDomains(const std::string& _nameserver, const std::vector<Domain>& _nameserver_domains)
         : nameserver(_nameserver), nameserver_domains(_nameserver_domains)
     {

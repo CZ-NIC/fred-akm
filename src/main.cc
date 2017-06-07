@@ -4,29 +4,46 @@
 #include "src/args.hh"
 #include "src/conf.hh"
 #include "src/corba/corba_context.hh"
-
 #include "src/corba/nameservice.hh"
+#include "src/sqlite/storage.hh"
 
+#include "src/command_load.hh"
 
-void command_dispatcher(
+void dispatch_command_load(
     const Fred::Akm::Corba::CorbaContext& _cctx,
     const Fred::Akm::Args& _args,
     const Fred::Akm::Conf& _conf)
 {
-    const auto& command = _args.get<Fred::Akm::GeneralArgs>()->command;
-    if (command == "load")
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    const auto& input_file = _args.get<Fred::Akm::LoadCommandArgs>()->input_file;
+    if (input_file.length())
     {
-        _cctx.get_nameservice().resolve(_conf.get<Fred::Akm::NameserviceConf>()->object_path);
+        command_load(db, input_file);
     }
-    else if (command == "scan")
-    {
-    }
-    else if (command == "notify")
-    {
-    }
-    else if (command == "update")
-    {
-    }
+}
+
+
+void dispatch_command_scan(
+    const Fred::Akm::Corba::CorbaContext& _cctx,
+    const Fred::Akm::Args& _args,
+    const Fred::Akm::Conf& _conf)
+{
+}
+
+
+void dispatch_command_notify(
+    const Fred::Akm::Corba::CorbaContext& _cctx,
+    const Fred::Akm::Args& _args,
+    const Fred::Akm::Conf& _conf)
+{
+}
+
+
+void dispatch_command_update(
+    const Fred::Akm::Corba::CorbaContext& _cctx,
+    const Fred::Akm::Args& _args,
+    const Fred::Akm::Conf& _conf)
+{
 }
 
 
@@ -54,7 +71,16 @@ int main(int argc, char* argv[])
         std::cout << "nameservice.object_path = " << nameservice_conf->object_path << std::endl;
 
         const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
-        command_dispatcher(cctx, args, conf);
+
+        typedef std::function<void(Fred::Akm::Corba::CorbaContext, Fred::Akm::Args, Fred::Akm::Conf)> CommandDispatchFunc;
+        const std::map<std::string, CommandDispatchFunc> command_dispatch = {
+            {"load", &dispatch_command_load},
+            {"scan", &dispatch_command_scan},
+            {"notify", &dispatch_command_notify},
+            {"update", &dispatch_command_update},
+        };
+
+        command_dispatch.at(general_args->command)(cctx, args, conf);
         return 0;
     }
     catch (const Fred::Akm::HelpExitHelper&)

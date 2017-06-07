@@ -12,6 +12,8 @@ fred_akm_SOURCES = \
 	src/i_mailer.hh \
 	src/i_storage.hh \
 	src/type_instance_map.hh \
+	src/utils.hh \
+	src/utils.cc \
 	src/args.hh \
 	src/args.cc \
 	src/conf.hh \
@@ -22,6 +24,8 @@ fred_akm_SOURCES = \
 	src/corba/nameservice.cc \
 	src/sqlite/storage.hh \
 	src/sqlite/storage.cc \
+	src/command_load.hh \
+	src/command_load.cc \
 	src/main.cc
 
 fred_akm_LDADD = \
