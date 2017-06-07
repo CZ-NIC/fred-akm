@@ -20,17 +20,7 @@ void command_load(const IStorage& _storage, const std::string& _filename)
     file.clear();
     file.seekg(0, std::ios::beg);
 
-    file.unsetf(std::ios_base::skipws);
-    unsigned long long line_count = std::count(
-        std::istream_iterator<char>(file),
-        std::istream_iterator<char>(),
-        '\n'
-    );
-    file.setf(std::ios_base::skipws);
-    file.clear();
-    file.seekg(0, std::ios::beg);
-
-    std::cout << output_prefix << "input file size: " << size << "[b] (" << line_count << ")" << std::endl;
+    std::cout << output_prefix << "input file size: " << size << " [b]" << std::endl;
 
     std::vector<NameserverDomains> data;
     // data.reserve(?);
