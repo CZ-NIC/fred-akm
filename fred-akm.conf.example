@@ -1,0 +1,7 @@
+[nameservice]
+host = localhost
+port = 2809
+object_path = fred.AKM
+
+[database]
+filename = fred-akm.db
