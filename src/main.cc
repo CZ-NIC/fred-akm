@@ -5,6 +5,7 @@
 #include "src/conf.hh"
 #include "src/corba/corba_context.hh"
 #include "src/corba/nameservice.hh"
+#include "src/corba/akm.hh"
 #include "src/sqlite/storage.hh"
 
 #include "src/command_load.hh"
@@ -19,6 +20,11 @@ void dispatch_command_load(
     if (input_file.length())
     {
         command_load(db, input_file);
+    }
+    else
+    {
+        auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path);
+        command_load(db, akm_backend);
     }
 }
 

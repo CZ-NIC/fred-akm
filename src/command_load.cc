@@ -77,5 +77,15 @@ void command_load(const IStorage& _storage, const std::string& _filename)
 }
 
 
+void command_load(const IStorage& _storage, const IAkm& _backend)
+{
+    const auto output_prefix = "[command::load] ";
+    auto data = _backend.get_nameservers_with_automatically_managed_domain_candidates();
+    std::cout << output_prefix << "loaded data from backend (" << data.size() << " nameserver(s))" << std::endl;
+    _storage.new_scan_tasks(data);
+    std::cout << output_prefix << "imported to database" << std::endl;
+}
+
+
 } //namespace Akm
 } //namespace Fred

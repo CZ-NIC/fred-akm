@@ -4,12 +4,16 @@
 #include <string>
 
 #include "src/i_storage.hh"
+#include "src/i_akm.hh"
 
 namespace Fred {
 namespace Akm {
 
 
 void command_load(const IStorage& _storage, const std::string& _filename);
+
+
+void command_load(const IStorage& _storage, const IAkm& _backend);
 
 
 } //namespace Akm

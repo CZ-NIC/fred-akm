@@ -72,7 +72,11 @@ nodist_src_corba_generated_libmailer_a_SOURCES = \
 	src/corba/mailer.cc \
 	src/corba/mailer.hh
 
-nodist_src_corba_generated_libakm_a_SOURCES = $(CORBA_GENERATED_AKM)
+nodist_src_corba_generated_libakm_a_SOURCES = \
+	$(CORBA_GENERATED_AKM) \
+	src/corba/akm.cc \
+	src/corba/akm.hh
+
 
 
 src/corba/generated/_dataTypesSK.cc: $(IDLDIR)/_dataTypes.idl
