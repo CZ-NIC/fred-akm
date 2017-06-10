@@ -14,15 +14,11 @@ class SqliteStorage : public IStorage
 public:
     SqliteStorage(const std::string& _filename);
 
-    void new_scan_tasks(const std::vector<NameserverDomains>& _data) const;
+    void append_to_scan_queue(const std::vector<NameserverDomains>& _data) const;
 
-    void append_scan_tasks(const std::vector<NameserverDomains>& _data) const;
+    void append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const;
 
 private:
-    void create_schema(sqlite3pp::database& _db) const;
-
-    void drop_schema(sqlite3pp::database& _db) const;
-
     std::string filename_;
 };
 

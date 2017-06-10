@@ -35,6 +35,7 @@ void command_load(const IStorage& _storage, const std::string& _filename)
     const char DELIMITER = ',';
     while (std::getline(file, line))
     {
+        std::cout << line << std::endl;
         std::vector<std::string> parsed;
         auto b = line.begin();
         auto e = line.end();
@@ -72,7 +73,7 @@ void command_load(const IStorage& _storage, const std::string& _filename)
         }
     }
     std::cout << output_prefix << "parsed input file (" << data.size() << " nameserver(s))" << std::endl;
-    _storage.new_scan_tasks(data);
+    _storage.append_to_scan_queue_if_not_exists(data);
     std::cout << output_prefix << "imported to database" << std::endl;
 }
 
@@ -82,7 +83,7 @@ void command_load(const IStorage& _storage, const IAkm& _backend)
     const auto output_prefix = "[command::load] ";
     auto data = _backend.get_nameservers_with_automatically_managed_domain_candidates();
     std::cout << output_prefix << "loaded data from backend (" << data.size() << " nameserver(s))" << std::endl;
-    _storage.new_scan_tasks(data);
+    _storage.append_to_scan_queue_if_not_exists(data);
     std::cout << output_prefix << "imported to database" << std::endl;
 }
 
