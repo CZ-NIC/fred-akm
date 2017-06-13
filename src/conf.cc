@@ -12,7 +12,7 @@ namespace Akm {
 
 Conf parse_conf(const std::string &_filename)
 {
-    auto file = std::ifstream(_filename);
+    std::ifstream file(_filename);
     return parse_conf(file);
 }
 
