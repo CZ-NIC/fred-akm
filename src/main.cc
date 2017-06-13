@@ -7,8 +7,10 @@
 #include "src/corba/nameservice.hh"
 #include "src/corba/akm.hh"
 #include "src/sqlite/storage.hh"
+#include "src/external_scanner.hh"
 
 #include "src/command_load.hh"
+#include "src/command_scan.hh"
 
 void dispatch_command_load(
     const Fred::Akm::Corba::CorbaContext& _cctx,
@@ -48,6 +50,10 @@ void dispatch_command_scan(
     const Fred::Akm::Args& _args,
     const Fred::Akm::Conf& _conf)
 {
+    const auto& scanner_tool_path = _conf.get<Fred::Akm::ScannerConf>()->tool_path;
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    Fred::Akm::ExternalScannerTool scanner(scanner_tool_path);
+    command_scan(db, scanner);
 }
 
 

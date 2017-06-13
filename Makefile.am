@@ -11,6 +11,7 @@ bin_PROGRAMS = fred-akm
 fred_akm_SOURCES = \
 	src/i_mailer.hh \
 	src/i_storage.hh \
+	src/i_scanner.hh \
 	src/type_instance_map.hh \
 	src/utils.hh \
 	src/utils.cc \
@@ -26,6 +27,10 @@ fred_akm_SOURCES = \
 	src/sqlite/storage.cc \
 	src/command_load.hh \
 	src/command_load.cc \
+	src/command_scan.hh \
+	src/command_scan.cc \
+	src/external_scanner.hh \
+	src/external_scanner.cc \
 	src/main.cc
 
 fred_akm_LDADD = \

@@ -22,8 +22,10 @@ Conf parse_conf(std::ifstream& _file)
     auto conf = Conf();
     auto nameservice_conf = std::make_shared<NameserviceConf>();
     auto database_conf = std::make_shared<DatabaseConf>();
+    auto scanner_conf = std::make_shared<ScannerConf>();
     conf.set(nameservice_conf);
     conf.set(database_conf);
+    conf.set(scanner_conf);
 
     po::options_description config_file_opts("Configuration");
     config_file_opts.add_options()
@@ -34,7 +36,9 @@ Conf parse_conf(std::ifstream& _file)
         ("nameservice.object_path", po::value<std::string>(&nameservice_conf->object_path)->default_value("fred.AutomaticKeysetManagement"),
          "CORBA object location path in nameservice <context>.<object>")
         ("database.filename", po::value<std::string>(&database_conf->filename)->default_value("fred-akm.db"),
-         "Sqlite database file name");
+         "Sqlite database file name")
+        ("scanner.tool_path", po::value<std::string>(&scanner_conf->tool_path)->default_value("/usr/bin/cdnskey-scanner"),
+         "External CDNSKEY scanner tool");
 
     po::variables_map vm;
 

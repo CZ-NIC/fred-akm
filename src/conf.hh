@@ -34,6 +34,11 @@ struct DatabaseConf : public ConfSection
     std::string filename;
 };
 
+struct ScannerConf : public ConfSection
+{
+    std::string tool_path;
+};
+
 Conf parse_conf(const std::string &_filename);
 Conf parse_conf(std::ifstream &_file);
 
