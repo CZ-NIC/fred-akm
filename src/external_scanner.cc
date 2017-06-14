@@ -1,6 +1,7 @@
 #include <array>
 #include <iostream>
 #include <unistd.h>
+#include <boost/lexical_cast.hpp>
 
 #include "src/utils.hh"
 #include "src/external_scanner.hh"
@@ -8,6 +9,67 @@
 namespace Fred {
 namespace Akm {
 
+namespace {
+
+    ScanResult scan_result_from_string(const std::string& value)
+    {
+        std::vector<std::string> parsed;
+        parsed.reserve(8);
+
+        auto beg_ptr = value.begin();
+        auto end_ptr = value.end();
+        auto nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
+        while (nxt_ptr != end_ptr)
+        {
+            parsed.emplace_back(std::string(beg_ptr, nxt_ptr));
+            beg_ptr = nxt_ptr + 1;
+            nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
+        }
+        parsed.emplace_back(beg_ptr, nxt_ptr);
+
+        if (parsed[0] == "insecure")
+        {
+            ScanResult result;
+            result.cdnskey_status = parsed[0];
+
+            if (parsed.size() == 8)
+            {
+                result.nameserver = parsed[1];
+                result.nameserver_ip = parsed[2];
+                result.domain_name = parsed[3];
+                result.cdnskey_flags = boost::lexical_cast<int>(parsed[4]);
+                result.cdnskey_proto = boost::lexical_cast<int>(parsed[5]);
+                result.cdnskey_alg = boost::lexical_cast<int>(parsed[6]);
+                result.cdnskey_public_key = parsed[7];
+
+                return result;
+            }
+            else
+            {
+                throw std::runtime_error("malformed scan result (" + value + ")");
+            }
+        }
+        if (parsed[0] == "unresolved")
+        {
+            ScanResult result;
+            result.cdnskey_status = parsed[0];
+
+            if (parsed.size() == 4)
+            {
+                result.nameserver = parsed[1];
+                result.nameserver_ip = parsed[2];
+                result.domain_name = parsed[3];
+
+                return result;
+            }
+            else
+            {
+                throw std::runtime_error("malformed scan result (" + value + ")");
+            }
+        }
+        throw std::runtime_error("unimplemented scan result type (" + parsed[0] + ")");
+    }
+}
 
 ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
     : external_tool_path_(split_on(_external_tool_path, ' '))
@@ -96,15 +158,23 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
         std::cout << "total tasks sent: " << total_tasks << std::endl;
 
         long total_results = 0;
-        auto process_result = [&total_results](std::string& buffer)
+        auto process_buffer = [_callback, &total_results](std::string& buffer)
         {
             const auto& newline_ptr = std::find(buffer.begin(), buffer.end(), '\n');
             if (newline_ptr != buffer.end())
             {
                 const auto result_line = std::string(buffer.begin(), newline_ptr);
                 buffer.erase(buffer.begin(), newline_ptr + 1);
-                //std::cout << "line: " << result_line << std::endl;
                 total_results += 1;
+                try
+                {
+                    std::cout << "processing: " << result_line << std::endl;
+                    _callback(scan_result_from_string(result_line));
+                }
+                catch (const std::exception& ex)
+                {
+                    std::cerr << ex.what() << std::endl;
+                }
                 return true;
             }
             return false;
@@ -122,7 +192,7 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
                 //std::cout << read_count << ": " << chunk.data() << std::endl;
                 buffer += std::string(chunk.data());
                 chunk = {{}};
-                while (process_result(buffer)) { }
+                while (process_buffer(buffer)) { }
             }
             else
             {

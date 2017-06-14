@@ -16,36 +16,32 @@ void create_schema_scan_queue(sqlite3pp::database& _db)
             " import_at TEXT NOT NULL DEFAULT (datetime('now')),"
             " nameserver TEXT NOT NULL,"
             " domain_id INTEGER NOT NULL,"
-            " domain_name TEXT NOT NULL)"
+            " domain_name TEXT NOT NULL,"
+            " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)))"
     );
 
     _db.execute("CREATE INDEX scan_queue_ns_domain_idx ON scan_queue(nameserver, domain_id, domain_name)");
+    _db.execute("CREATE INDEX scan_queue_domain_name_idx ON scan_queue(domain_name)");
 }
 
 
 void create_schema_scan_result(sqlite3pp::database& _db)
 {
     _db.execute(
-        "CREATE TABLE IF NOT EXISTS scan_task ("
+        "CREATE TABLE IF NOT EXISTS scan_result ("
             " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
             " scan_at TEXT NOT NULL DEFAULT (datetime('now')),"
-            " nameserver TEXT NOT NULL,"
             " domain_id INTEGER NOT NULL,"
-            " domain_name TEXT NOT NULL)"
-    );
-
-    _db.execute("CREATE INDEX scan_task_scan_at_idx ON scan_task(scan_at)");
-    _db.execute("CREATE INDEX scan_task_ns_domain_idx ON scan_task(nameserver, domain_id, domain_name)");
-
-    _db.execute(
-        "CREATE TABLE IF NOT EXISTS scan_result ("
-            " scan_task_id INTEGER NOT NULL,"
-            " nameserver_ip TEXT NOT NULL,"
+            " domain_name TEXT NOT NULL,"
+            " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)),"
             " cdnskey_status TEXT NOT NULL,"
+            " nameserver TEXT,"
+            " nameserver_ip TEXT,"
+            " cdnskey_flags INTEGER,"
+            " cdnskey_proto INTEGER,"
             " cdnskey_alg INTEGER,"
             " cdnskey_public_key TEXT,"
-            " FOREIGN KEY (scan_task_id) REFERENCES scan_task(id),"
-            " UNIQUE (scan_task_id, nameserver_ip, cdnskey_status, cdnskey_alg, cdnskey_public_key))"
+            " UNIQUE (nameserver, domain_name, nameserver_ip, cdnskey_status, cdnskey_alg, cdnskey_public_key))"
     );
 }
 
@@ -88,14 +84,14 @@ void append_to_scan_queue(sqlite3pp::database& _db, const std::vector<Nameserver
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
-        "INSERT INTO scan_queue (nameserver, domain_id, domain_name)"
-        " VALUES (?, ?, ?)"
+        "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
+        " VALUES (?, ?, ?, ?)"
     );
     for (const auto& ns_domains : _data)
     {
         for (const auto& domain : ns_domains.nameserver_domains)
         {
-            insert.binder() << ns_domains.nameserver << static_cast<long long>(domain.id) << domain.fqdn;
+            insert.binder() << ns_domains.nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
             insert.step();
             insert.reset();
         }
@@ -107,8 +103,8 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const std::vec
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
-        "INSERT INTO scan_queue (nameserver, domain_id, domain_name)"
-        " VALUES (?, ?, ?)"
+        "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
+        " VALUES (?, ?, ?, ?)"
     );
     sqlite3pp::query check(_db);
     check.prepare(
@@ -124,7 +120,7 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const std::vec
             auto count = (*check.begin()).get<long long>(0);
             if (count == 0)
             {
-                insert.binder() << ns_domains.nameserver << static_cast<long long>(domain.id) << domain.fqdn;
+                insert.binder() << ns_domains.nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
                 insert.step();
                 insert.reset();
             }
@@ -163,6 +159,7 @@ void SqliteStorage::append_to_scan_queue(const std::vector<NameserverDomains>& _
 void SqliteStorage::append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const
 {
     sqlite3pp::database db(filename_.c_str());
+    db.set_rollback_handler([]{ throw std::runtime_error("sqlite storage error"); });
     sqlite3pp::transaction xct(db);
     create_schema(db);
     Impl::append_to_scan_queue_if_not_exists(db, _data);
@@ -201,7 +198,7 @@ std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
     sqlite3pp::transaction xct(db);
     sqlite3pp::query tasks_query(
         db,
-        "SELECT nameserver, domain_id, domain_name"
+        "SELECT nameserver, domain_id, domain_name, has_keyset"
         " FROM scan_queue ORDER BY nameserver, domain_name ASC"
     );
 
@@ -212,7 +209,8 @@ std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
         std::string nameserver;
         long long domain_id;
         std::string domain_name;
-        row.getter() >> nameserver >> domain_id >> domain_name;
+        bool has_keyset;
+        row.getter() >> nameserver >> domain_id >> domain_name >> has_keyset;
 
         if (ns_domains.nameserver != nameserver)
         {
@@ -223,10 +221,120 @@ std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
             }
             ns_domains.nameserver = nameserver;
         }
-        ns_domains.nameserver_domains.emplace_back(Domain(domain_id, domain_name));
+        ns_domains.nameserver_domains.emplace_back(Domain(domain_id, domain_name, has_keyset));
     }
 
     return tasks;
+}
+
+
+void SqliteStorage::save_scan_result(const ScanResult& _result) const
+{
+    sqlite3pp::database db(filename_.c_str());
+    //db.set_rollback_handler([]{ throw std::runtime_error("sqlite storage error"); });
+    sqlite3pp::transaction xct(db);
+
+    long long task_domain_id = 0;
+    bool task_has_keyset = false;
+    /* find scan queue to get domain_id and record(s) to delete */
+    sqlite3pp::query s_queue(db,
+        "SELECT id, domain_id, has_keyset FROM scan_queue WHERE domain_name = :domain_name"
+        " AND nameserver = coalesce(:nameserver, nameserver) ORDER BY domain_id DESC"
+    );
+    s_queue.bind(":domain_name", _result.domain_name, sqlite3pp::nocopy);
+    if (_result.nameserver)
+    {
+        s_queue.bind(":nameserver", *_result.nameserver, sqlite3pp::nocopy);
+    }
+    else
+    {
+        s_queue.bind(":nameserver", sqlite3pp::null_type());
+    }
+
+    sqlite3pp::command d_queue(db);
+    d_queue.prepare("DELETE FROM scan_queue WHERE id = :id");
+    for (auto row : s_queue)
+    {
+        long long scan_queue_id = 0;
+        long long domain_id = 0;
+        row.getter() >> scan_queue_id >> domain_id >> task_has_keyset;
+        if (task_domain_id == 0)
+        {
+            task_domain_id = domain_id;
+        }
+        /* extra check if there are different domain_id in queue (need to handle?) */
+        else if (task_domain_id != domain_id)
+        {
+            std::cerr << "different domain id found for same domain name in scan queue"
+                      << " (" << task_domain_id << " != " << domain_id << std::endl;
+            return;
+        }
+        // d_queue.bind(":id", scan_queue_id);
+        // d_queue.execute();
+    }
+
+    sqlite3pp::command i_result(
+        db,
+        "INSERT INTO scan_result"
+        " (domain_id, domain_name, has_keyset, cdnskey_status,"
+        " nameserver, nameserver_ip, cdnskey_flags, cdnskey_proto, cdnskey_alg, cdnskey_public_key)"
+        " VALUES (:domain_id, :domain_name, :has_keyset, :cdnskey_status, :nameserver, :nameserver_ip,"
+        " :cdnskey_flags, :cdnskey_proto, :cdnskey_alg, :cdnskey_public_key)"
+    );
+    i_result.bind(":domain_id", task_domain_id);
+    i_result.bind(":domain_name", _result.domain_name, sqlite3pp::nocopy);
+    i_result.bind(":has_keyset", task_has_keyset);
+    i_result.bind(":cdnskey_status", _result.cdnskey_status, sqlite3pp::nocopy);
+    if (_result.nameserver)
+    {
+        i_result.bind(":nameserver", *(_result.nameserver), sqlite3pp::nocopy);
+    }
+    else
+    {
+        i_result.bind(":nameserver", sqlite3pp::null_type());
+    }
+    if (_result.nameserver_ip)
+    {
+        i_result.bind(":nameserver_ip", *_result.nameserver_ip, sqlite3pp::nocopy);
+    }
+    else
+    {
+        i_result.bind(":nameserver_ip", sqlite3pp::nocopy);
+    }
+    if (_result.cdnskey_flags)
+    {
+        i_result.bind(":cdnskey_flags", *_result.cdnskey_flags);
+    }
+    else
+    {
+        i_result.bind(":cdnskey_flags", sqlite3pp::null_type());
+    }
+    if (_result.cdnskey_proto)
+    {
+        i_result.bind(":cdnskey_proto", *_result.cdnskey_proto);
+    }
+    else
+    {
+        i_result.bind(":cdnskey_proto", sqlite3pp::null_type());
+    }
+    if (_result.cdnskey_alg)
+    {
+        i_result.bind(":cdnskey_alg", *_result.cdnskey_alg);
+    }
+    else
+    {
+        i_result.bind(":cdnskey_alg", sqlite3pp::null_type());
+    }
+    if (_result.cdnskey_public_key)
+    {
+        i_result.bind(":cdnskey_public_key", *_result.cdnskey_public_key, sqlite3pp::nocopy);
+    }
+    else
+    {
+        i_result.bind(":cdnskey_public_key", sqlite3pp::null_type());
+    }
+    i_result.execute();
+    xct.commit();
 }
 
 

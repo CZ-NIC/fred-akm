@@ -24,6 +24,8 @@ public:
 
     std::vector<NameserverDomains> get_scan_queue_tasks() const;
 
+    void save_scan_result(const ScanResult& _result) const;
+
 private:
     std::string filename_;
 };

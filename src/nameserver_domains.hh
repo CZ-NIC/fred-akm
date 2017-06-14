@@ -10,13 +10,14 @@ namespace Akm {
 
 struct Domain
 {
-    Domain(unsigned long long _id, const std::string& _fqdn)
-        : id(_id), fqdn(_fqdn)
+    Domain(unsigned long long _id, const std::string& _fqdn, bool _has_keyset)
+        : id(_id), fqdn(_fqdn), has_keyset(_has_keyset)
     {
     }
 
     unsigned long long id;
     std::string fqdn;
+    bool has_keyset;
 };
 
 struct NameserverDomains

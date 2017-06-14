@@ -13,20 +13,23 @@ namespace Akm {
 
 enum class CdnskeyStatus
 {
-    ABSENT,
+    UNKNOWN,
     INSECURE,
     SECURE,
-    BOGUS,
-    UNKNOWN
+    UNTRUSTWORTHY,
+    UNRESOLVED
 };
 
 struct ScanResult
 {
-    std::string nameserver;
-    std::string nameserver_ip;
+    //CdnskeyStatus cdnskey_status;
+    std::string cdnskey_status;
     std::string domain_name;
-    CdnskeyStatus cdnskey_status;
-    boost::optional<unsigned int> cdnskey_alg;
+    boost::optional<std::string> nameserver;
+    boost::optional<std::string> nameserver_ip;
+    boost::optional<int> cdnskey_flags;
+    boost::optional<int> cdnskey_proto;
+    boost::optional<int> cdnskey_alg;
     boost::optional<std::string> cdnskey_public_key;
 };
 

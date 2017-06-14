@@ -31,7 +31,7 @@ std::vector<NameserverDomains> Akm::get_nameservers_with_automatically_managed_d
             for (unsigned long long j = 0; j < c_nameserver_domains[i].nameserver_domains.length(); ++j)
             {
                 const auto& c_domain = c_nameserver_domains[i].nameserver_domains[j];
-                ns_domains.nameserver_domains.emplace_back(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn)));
+                ns_domains.nameserver_domains.emplace_back(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), false));
             }
             nameserver_domains.emplace_back(ns_domains);
         }

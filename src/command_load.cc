@@ -80,7 +80,7 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
         }
         parsed.emplace_back(std::string(b, n));
 
-        if (parsed.size() == 3)
+        if (parsed.size() == 4)
         {
             const auto& current_ns = parsed[0];
 
@@ -97,7 +97,9 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
                 }
                 ns_domains.nameserver = current_ns;
             }
-            ns_domains.nameserver_domains.emplace_back(Domain(boost::lexical_cast<unsigned long long>(parsed[1]), parsed[2]));
+            ns_domains.nameserver_domains.emplace_back(
+                Domain(boost::lexical_cast<unsigned long long>(parsed[1]), parsed[2], boost::lexical_cast<bool>(parsed[3]))
+            );
         }
         else
         {
