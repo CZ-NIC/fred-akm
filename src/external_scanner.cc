@@ -80,27 +80,31 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
         close(child_rd_fd);
         close(child_wr_fd);
 
+        long total_tasks = 0;
         for (const auto& nameserver_task : tasks_)
         {
             auto line = nameserver_task.nameserver;
             for (const auto& domain : nameserver_task.nameserver_domains)
             {
                 line += " " + domain.fqdn;
+                total_tasks += 1;
             }
             line += "\n";
             write(parent_wr_fd, line.c_str(), line.size());
         }
         close(parent_wr_fd);
+        std::cout << "total tasks sent: " << total_tasks << std::endl;
 
-
-        auto process_result = [](std::string& buffer)
+        long total_results = 0;
+        auto process_result = [&total_results](std::string& buffer)
         {
             const auto& newline_ptr = std::find(buffer.begin(), buffer.end(), '\n');
             if (newline_ptr != buffer.end())
             {
                 const auto result_line = std::string(buffer.begin(), newline_ptr);
                 buffer.erase(buffer.begin(), newline_ptr + 1);
-                std::cout << "line: " << result_line << std::endl;
+                //std::cout << "line: " << result_line << std::endl;
+                total_results += 1;
                 return true;
             }
             return false;
@@ -115,7 +119,7 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
             if (read_count >= 0)
             {
                 chunk[read_count] = 0;
-                std::cout << read_count << ": " << chunk.data() << std::endl;
+                //std::cout << read_count << ": " << chunk.data() << std::endl;
                 buffer += std::string(chunk.data());
                 chunk = {{}};
                 while (process_result(buffer)) { }
@@ -126,6 +130,7 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
             }
         }
         std::cout << "rest of buffer: " << buffer << std::endl;
+        std::cout << "total processed results: " << total_results << std::endl;
     }
 }
 
