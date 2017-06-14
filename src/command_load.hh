@@ -10,10 +10,21 @@ namespace Fred {
 namespace Akm {
 
 
-void command_load(const IStorage& _storage, const std::string& _filename);
+struct LoadFlags
+{
+    enum Enum
+    {
+        WIPE_QUEUE = (1 << 0),
+        ALLOW_DUPS = (1 << 1),
+        PRUNE      = (1 << 2)
+    };
+};
 
 
-void command_load(const IStorage& _storage, const IAkm& _backend);
+void command_load(const IStorage& _storage, const std::string& _filename, int _flags);
+
+
+void command_load(const IStorage& _storage, const IAkm& _backend, int _flags);
 
 
 } //namespace Akm

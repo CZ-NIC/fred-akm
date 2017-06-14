@@ -16,6 +16,10 @@ public:
     virtual void append_to_scan_queue(const std::vector<NameserverDomains>& _data) const = 0;
 
     virtual void append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const = 0;
+
+    virtual void wipe_scan_queue() const = 0;
+
+    virtual void prune_scan_queue() const = 0;
 };
 
 

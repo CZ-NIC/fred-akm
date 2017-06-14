@@ -38,7 +38,13 @@ Args parse_args(int argc, char* argv[])
         po::options_description command_load("Load options");
         command_load.add_options()
             ("input-file", po::value<std::string>(&command_load_args->input_file)->default_value(""),
-             "input file which will be processed instead of data load from backend");
+             "input file which will be processed instead of data load from backend")
+            ("wipe-queue", po::bool_switch(&command_load_args->wipe_queue)->default_value(false),
+             "clear queue of undone tasks before load new ones")
+            ("allow-dups", po::bool_switch(&command_load_args->allow_dups)->default_value(false),
+             "allow duplicates tasks in scan queue")
+            ("prune", po::bool_switch(&command_load_args->prune)->default_value(false),
+             "prune domain with older id when importing same domain name");
         po::options_description command_update("Update options");
         po::options_description command_notify("Notify options");
 

@@ -16,15 +16,29 @@ void dispatch_command_load(
     const Fred::Akm::Conf& _conf)
 {
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
-    const auto& input_file = _args.get<Fred::Akm::LoadCommandArgs>()->input_file;
+    const auto load_args = _args.get<Fred::Akm::LoadCommandArgs>();
+    const auto& input_file = load_args->input_file;
+    int load_flags = 0;
+    if (load_args->wipe_queue)
+    {
+        load_flags |= Fred::Akm::LoadFlags::WIPE_QUEUE;
+    }
+    if (load_args->allow_dups)
+    {
+        load_flags |= Fred::Akm::LoadFlags::ALLOW_DUPS;
+    }
+    if (load_args->prune)
+    {
+        load_flags |= Fred::Akm::LoadFlags::PRUNE;
+    }
     if (input_file.length())
     {
-        command_load(db, input_file);
+        command_load(db, input_file, load_flags);
     }
     else
     {
         auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path);
-        command_load(db, akm_backend);
+        command_load(db, akm_backend, load_flags);
     }
 }
 

@@ -18,6 +18,10 @@ public:
 
     void append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const;
 
+    void wipe_scan_queue() const;
+
+    void prune_scan_queue() const;
+
 private:
     std::string filename_;
 };

@@ -155,7 +155,7 @@ void SqliteStorage::append_to_scan_queue(const std::vector<NameserverDomains>& _
     sqlite3pp::database db(filename_.c_str());
     sqlite3pp::transaction xct(db);
     create_schema(db);
-    Impl::append_to_scan_queue_if_not_exists(db, _data);
+    Impl::append_to_scan_queue(db, _data);
     xct.commit();
 }
 
@@ -166,6 +166,31 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const std::vector<Nameser
     sqlite3pp::transaction xct(db);
     create_schema(db);
     Impl::append_to_scan_queue_if_not_exists(db, _data);
+    xct.commit();
+}
+
+
+void SqliteStorage::wipe_scan_queue() const
+{
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+    db.execute("DROP TABLE IF EXISTS scan_queue");
+    create_schema_scan_queue(db);
+    xct.commit();
+}
+
+
+void SqliteStorage::prune_scan_queue() const
+{
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+    db.execute(
+        "DELETE FROM scan_queue WHERE"
+        " id IN"
+        " (SELECT DISTINCT older.id FROM scan_queue older"
+        " JOIN scan_queue newer ON newer.domain_name = older.domain_name"
+        " AND newer.import_at > older.import_at AND newer.domain_id != older.domain_id)"
+    );
     xct.commit();
 }
 

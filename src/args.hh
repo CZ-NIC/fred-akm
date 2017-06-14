@@ -35,6 +35,9 @@ struct GeneralArgs : public ArgsGroup
 struct LoadCommandArgs : public ArgsGroup
 {
     std::string input_file;
+    bool wipe_queue;
+    bool allow_dups;
+    bool prune;
 };
 
 

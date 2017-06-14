@@ -11,7 +11,39 @@ namespace Fred {
 namespace Akm {
 
 
-void command_load(const IStorage& _storage, const std::string& _filename)
+namespace Impl {
+
+    /* TODO: better change interface of command_load to accept interface of
+     * "data loader" and encapsulate load from file to separate impl. to be
+     * more testable.
+     */
+    void command_load(
+        const IStorage& _storage,
+        const std::vector<NameserverDomains>& _tasks,
+        int _flags)
+    {
+        if (_flags & LoadFlags::WIPE_QUEUE)
+        {
+            _storage.wipe_scan_queue();
+        }
+        if (_flags & LoadFlags::ALLOW_DUPS)
+        {
+            _storage.append_to_scan_queue(_tasks);
+        }
+        else
+        {
+            _storage.append_to_scan_queue_if_not_exists(_tasks);
+        }
+        if (_flags & LoadFlags::PRUNE)
+        {
+            _storage.prune_scan_queue();
+        }
+    }
+
+}
+
+
+void command_load(const IStorage& _storage, const std::string& _filename, int _flags)
 {
     const auto output_prefix = "[command::load] ";
 
@@ -73,17 +105,18 @@ void command_load(const IStorage& _storage, const std::string& _filename)
         }
     }
     std::cout << output_prefix << "parsed input file (" << data.size() << " nameserver(s))" << std::endl;
-    _storage.append_to_scan_queue_if_not_exists(data);
+
+    Impl::command_load(_storage, data, _flags);
     std::cout << output_prefix << "imported to database" << std::endl;
 }
 
 
-void command_load(const IStorage& _storage, const IAkm& _backend)
+void command_load(const IStorage& _storage, const IAkm& _backend, int _flags)
 {
     const auto output_prefix = "[command::load] ";
     auto data = _backend.get_nameservers_with_automatically_managed_domain_candidates();
     std::cout << output_prefix << "loaded data from backend (" << data.size() << " nameserver(s))" << std::endl;
-    _storage.append_to_scan_queue_if_not_exists(data);
+    Impl::command_load(_storage, data, _flags);
     std::cout << output_prefix << "imported to database" << std::endl;
 }
 
