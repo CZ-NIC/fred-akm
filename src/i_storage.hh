@@ -25,6 +25,8 @@ public:
     virtual std::vector<NameserverDomains> get_scan_queue_tasks() const = 0;
 
     virtual void save_scan_result(const ScanResult& _result) const = 0;
+
+    virtual void save_scan_results(const std::vector<ScanResult>& _results) const = 0;
 };
 
 

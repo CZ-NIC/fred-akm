@@ -26,6 +26,8 @@ public:
 
     void save_scan_result(const ScanResult& _result) const;
 
+    void save_scan_results(const std::vector<ScanResult>& _results) const;
+
 private:
     std::string filename_;
 };

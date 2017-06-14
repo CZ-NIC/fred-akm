@@ -14,7 +14,7 @@ public:
 
     void add_tasks(std::vector<NameserverDomains>& _tasks);
 
-    void scan(OnResultCallback _callback) const;
+    void scan(OnResultsCallback _callback) const;
 
 private:
     std::vector<std::string> external_tool_path_;

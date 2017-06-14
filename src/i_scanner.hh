@@ -40,13 +40,13 @@ typedef std::vector<ScanResult> ScanResults;
 class IScanner
 {
 public:
-    typedef std::function<void(const ScanResult& _result)> OnResultCallback;
+    typedef std::function<void(const std::vector<ScanResult>& _results)> OnResultsCallback;
 
     //virtual ~IScanner() = 0;
 
     virtual void add_tasks(std::vector<NameserverDomains>& _tasks) = 0;
 
-    virtual void scan(OnResultCallback _callback) const = 0;
+    virtual void scan(OnResultsCallback _callback) const = 0;
 };
 
 

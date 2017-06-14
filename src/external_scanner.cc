@@ -69,6 +69,7 @@ namespace {
         }
         throw std::runtime_error("unimplemented scan result type (" + parsed[0] + ")");
     }
+
 }
 
 ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
@@ -95,7 +96,7 @@ void ExternalScannerTool::add_tasks(std::vector<NameserverDomains>& _tasks)
 }
 
 
-void ExternalScannerTool::scan(OnResultCallback _callback) const
+void ExternalScannerTool::scan(OnResultsCallback _callback) const
 {
     struct ParentPipe
     {
@@ -157,19 +158,17 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
         close(parent_wr_fd);
         std::cout << "total tasks sent: " << total_tasks << std::endl;
 
-        long total_results = 0;
-        auto process_buffer = [_callback, &total_results](std::string& buffer)
+        /* TODO: to normal function? */
+        auto buffer_results = [](std::string& _raw_buffer, std::vector<ScanResult>& _result_buffer)
         {
-            const auto& newline_ptr = std::find(buffer.begin(), buffer.end(), '\n');
-            if (newline_ptr != buffer.end())
+            const auto newline_ptr = std::find(_raw_buffer.begin(), _raw_buffer.end(), '\n');
+            if (newline_ptr != _raw_buffer.end())
             {
-                const auto result_line = std::string(buffer.begin(), newline_ptr);
-                buffer.erase(buffer.begin(), newline_ptr + 1);
-                total_results += 1;
+                const auto result_line = std::string(_raw_buffer.begin(), newline_ptr);
+                _raw_buffer.erase(_raw_buffer.begin(), newline_ptr + 1);
                 try
                 {
-                    std::cout << "processing: " << result_line << std::endl;
-                    _callback(scan_result_from_string(result_line));
+                    _result_buffer.emplace_back(scan_result_from_string(result_line));
                 }
                 catch (const std::exception& ex)
                 {
@@ -180,8 +179,13 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
             return false;
         };
 
-        std::array<char, 256> chunk;
-        std::string buffer;
+        long total_results = 0;
+        std::vector<ScanResult> result_buffer;
+        result_buffer.reserve(1024);
+
+        std::array<char, 512> chunk;
+        //std::vector<char> raw_buffer(1024);
+        std::string raw_buffer;
         int read_count = 0;
 
         while ((read_count = read(parent_rd_fd, chunk.data(), chunk.size() - 1)) > 0)
@@ -189,17 +193,28 @@ void ExternalScannerTool::scan(OnResultCallback _callback) const
             if (read_count >= 0)
             {
                 chunk[read_count] = 0;
-                //std::cout << read_count << ": " << chunk.data() << std::endl;
-                buffer += std::string(chunk.data());
+                raw_buffer += std::string(chunk.data());
                 chunk = {{}};
-                while (process_buffer(buffer)) { }
+                while (buffer_results(raw_buffer, result_buffer))
+                {
+                    if (result_buffer.size() == result_buffer.capacity())
+                    {
+                        _callback(result_buffer);
+                        total_results += result_buffer.size();
+                        result_buffer.clear();
+                    }
+                }
             }
             else
             {
                 throw std::runtime_error("IOError");
             }
         }
-        std::cout << "rest of buffer: " << buffer << std::endl;
+        if (result_buffer.size())
+        {
+            _callback(result_buffer);
+        }
+        std::cout << "rest of buffer: " << raw_buffer.data() << std::endl;
         std::cout << "total processed results: " << total_results << std::endl;
     }
 }
