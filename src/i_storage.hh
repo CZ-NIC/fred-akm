@@ -20,6 +20,8 @@ public:
     virtual void wipe_scan_queue() const = 0;
 
     virtual void prune_scan_queue() const = 0;
+
+    virtual std::vector<NameserverDomains> get_scan_queue_tasks() const = 0;
 };
 
 

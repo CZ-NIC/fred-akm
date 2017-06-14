@@ -195,6 +195,41 @@ void SqliteStorage::prune_scan_queue() const
 }
 
 
+std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
+{
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+    sqlite3pp::query tasks_query(
+        db,
+        "SELECT nameserver, domain_id, domain_name"
+        " FROM scan_queue ORDER BY nameserver, domain_name ASC"
+    );
+
+    std::vector<NameserverDomains> tasks;
+    NameserverDomains ns_domains;
+    for (auto row : tasks_query)
+    {
+        std::string nameserver;
+        long long domain_id;
+        std::string domain_name;
+        row.getter() >> nameserver >> domain_id >> domain_name;
+
+        if (ns_domains.nameserver != nameserver)
+        {
+            if (!ns_domains.nameserver.empty())
+            {
+                tasks.push_back(ns_domains);
+                ns_domains.nameserver_domains.clear();
+            }
+            ns_domains.nameserver = nameserver;
+        }
+        ns_domains.nameserver_domains.emplace_back(Domain(domain_id, domain_name));
+    }
+
+    return tasks;
+}
+
+
 } // namespace Sqlite
 } // namespace Akm
 } // namespace Fred

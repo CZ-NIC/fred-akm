@@ -22,6 +22,8 @@ public:
 
     void prune_scan_queue() const;
 
+    std::vector<NameserverDomains> get_scan_queue_tasks() const;
+
 private:
     std::string filename_;
 };
