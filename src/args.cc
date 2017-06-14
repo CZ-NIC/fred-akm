@@ -88,6 +88,7 @@ Args parse_args(int argc, char* argv[])
             if (vm.count("help"))
             {
                 std::cout << command_desc << std::endl;
+                throw HelpExitHelper();
             }
 
             // parse so far unrecognized args with specific command parser
