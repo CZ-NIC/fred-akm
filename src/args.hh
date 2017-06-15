@@ -31,6 +31,7 @@ struct GeneralArgs : public ArgsGroup
 {
     std::string config_file;
     std::string command;
+    bool dry_run;
 };
 
 struct LoadCommandArgs : public ArgsGroup

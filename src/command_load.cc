@@ -91,7 +91,7 @@ namespace Impl {
 
 void command_load(const IStorage& _storage, const std::string& _filename, const std::string& _whitelist_filename, int _flags)
 {
-    auto file = std::ifstream(_filename, std::ifstream::ate | std::ifstream::binary);
+    std::ifstream file(_filename, std::ifstream::ate | std::ifstream::binary);
     const auto size = file.tellg();
     file.clear();
     file.seekg(0, std::ios::beg);

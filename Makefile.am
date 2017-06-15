@@ -33,10 +33,23 @@ fred_akm_SOURCES = \
 	src/command_scan.cc \
 	src/external_scanner.hh \
 	src/external_scanner.cc \
+	src/command_notify.hh \
+	src/command_notify.cc \
+	src/notified_domain_state.hh \
+	src/notified_domain_state.cc \
+	src/cdnskey.hh \
+	src/cdnskey.cc \
+	src/domain_state.hh \
+	src/domain_state.cc \
+	src/scan_result_row.hh \
+	src/scan_result_row.cc \
+	src/domain_state_stack.hh \
+	src/domain_state_stack.cc \
 	src/main.cc
 
 fred_akm_LDADD = \
 	src/corba/generated/libakm.a \
+	src/corba/generated/libmailer.a \
 	$(BOOST_PROGRAM_OPTIONS_LIB) \
 	$(OMNIORB4_LIBS) \
 	$(SQLITE3_LDFLAGS)

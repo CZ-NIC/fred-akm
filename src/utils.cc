@@ -60,6 +60,18 @@ std::unordered_map<std::string, std::string> variable_map_to_string_map(
         catch (const boost::bad_any_cast &) { }
         try
         {
+            value = boost::lexical_cast<std::string>(boost::any_cast<long>(kv.second.value()));
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            value = boost::lexical_cast<std::string>(boost::any_cast<unsigned long>(kv.second.value()));
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
             bool aux = boost::any_cast<bool>(kv.second.value());
             if (aux)
             {

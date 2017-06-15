@@ -28,7 +28,8 @@ struct NameserviceConf : public ConfSection
 {
     std::string host;
     unsigned int port;
-    std::string object_path;
+    std::string object_path_akm;
+    std::string object_path_mailer;
 };
 
 struct DatabaseConf : public ConfSection
@@ -53,6 +54,15 @@ struct DebugMapConf : public ConfSection
         : debug_map(_map) { }
 
     std::unordered_map<std::string, std::string> debug_map;
+};
+
+
+struct ScanResultsConf : public ConfSection
+{
+    unsigned long maximal_time_between_scan_results;
+    unsigned long minimal_scan_result_sequence_length_to_notify;
+    unsigned long minimal_scan_result_sequence_length_to_update;
+    bool notify_from_last_iteration_only;
 };
 
 

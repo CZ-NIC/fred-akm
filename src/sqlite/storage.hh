@@ -2,6 +2,7 @@
 #define STORAGE_HH_F547FDFC7F6B4D918928C606B9E4A87E
 
 #include "src/i_storage.hh"
+
 #include "3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h"
 
 namespace Fred {
@@ -33,6 +34,12 @@ public:
     void wipe_unfinished_scan_iterations() const;
 
     long long prune_finished_scan_queue() const;
+
+    ScanResultRows get_insecure_scan_result_rows(int _seconds_back, bool _notify_from_last_iteration_only) const;
+
+    void set_notified_domain_state(const NotifiedDomainState& _notified_domain_state) const;
+
+    boost::optional<NotifiedDomainState> get_last_notified_domain_state(unsigned long long _domain_id) const;
 
 private:
     sqlite3pp::database get_db() const;

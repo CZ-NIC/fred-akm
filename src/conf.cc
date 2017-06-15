@@ -25,11 +25,18 @@ Conf parse_conf(std::ifstream& _file)
     auto nameservice_conf = std::make_shared<NameserviceConf>();
     auto database_conf = std::make_shared<DatabaseConf>();
     auto scanner_conf = std::make_shared<ScannerConf>();
+
     auto logging_conf = std::make_shared<LoggingConf>();
     conf.set(nameservice_conf);
     conf.set(database_conf);
     conf.set(scanner_conf);
     conf.set(logging_conf);
+
+    auto scan_results_conf = std::make_shared<ScanResultsConf>();
+    conf.set(nameservice_conf);
+    conf.set(database_conf);
+    conf.set(scanner_conf);
+    conf.set(scan_results_conf);
 
     po::options_description config_file_opts("Configuration");
     config_file_opts.add_options()
@@ -37,12 +44,22 @@ Conf parse_conf(std::ifstream& _file)
          "CORBA nameservice hostname")
         ("nameservice.port", po::value<unsigned int>(&nameservice_conf->port)->default_value(2809),
          "CORBA nameservice port")
-        ("nameservice.object_path", po::value<std::string>(&nameservice_conf->object_path)->default_value("fred.AutomaticKeysetManagement"),
+        ("nameservice.object_path_akm", po::value<std::string>(&nameservice_conf->object_path_akm)->default_value("fred.AutomaticKeysetManagement"),
+         "CORBA object location path in nameservice <context>.<object>")
+        ("nameservice.object_path_mailer", po::value<std::string>(&nameservice_conf->object_path_mailer)->default_value("fred.Mailer"),
          "CORBA object location path in nameservice <context>.<object>")
         ("database.filename", po::value<std::string>(&database_conf->filename)->default_value("fred-akm.db"),
          "Sqlite database file name")
         ("scanner.tool_path", po::value<std::string>(&scanner_conf->tool_path)->default_value("/usr/bin/cdnskey-scanner"),
          "External CDNSKEY scanner tool")
+        ("scan_results.maximal_time_between_scan_results", po::value<unsigned long>(&scan_results_conf->maximal_time_between_scan_results)->default_value(172800),
+         "Maximal time between scan results [seconds]") // 2 * 24 * 60 * 60 = 172800
+        ("scan_results.minimal_scan_result_sequence_length_to_notify", po::value<unsigned long>(&scan_results_conf->minimal_scan_result_sequence_length_to_notify)->default_value(172800), // 2 * 24 * 60 * 60 = 172800
+         "Minimal scan result sequence length to notify [seconds]")
+        ("scan_results.minimal_scan_result_sequence_length_to_update", po::value<unsigned long>(&scan_results_conf->minimal_scan_result_sequence_length_to_update)->default_value(604800), // 7 * 24 * 60 * 60 = 604800
+         "Minimal scan result sequence length to update [seconds]")
+        ("scan_results.notify_from_last_iteration_only", po::value<bool>(&scan_results_conf->notify_from_last_iteration_only)->default_value(false),
+         "Ignore scan_result.iteration_id")
         ("logging.sink", po::value<std::vector<std::string>>(&logging_conf->sinks)->composing(),
          "Logging sink definition, one record per sink (available value is 'console' and 'file <file_path>'")
         ("logging.level", po::value<std::string>(&logging_conf->level)->default_value("info"),

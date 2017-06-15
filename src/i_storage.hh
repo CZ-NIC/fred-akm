@@ -1,11 +1,15 @@
 #ifndef I_STORAGE_HH_1B55415E3EB327260D5DA07399BAA5FB//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
 #define I_STORAGE_HH_1B55415E3EB327260D5DA07399BAA5FB
 
+#include "src/i_scanner.hh"
+#include "src/nameserver_domains.hh"
+#include "src/scan_result_row.hh"
+#include "src/notified_domain_state.hh"
+
+#include <boost/optional.hpp>
+
 #include <string>
 #include <vector>
-
-#include "src/nameserver_domains.hh"
-#include "src/i_scanner.hh"
 
 namespace Fred {
 namespace Akm {
@@ -33,10 +37,16 @@ public:
     virtual void wipe_unfinished_scan_iterations() const = 0;
 
     virtual long long prune_finished_scan_queue() const = 0;
+
+    virtual ScanResultRows get_insecure_scan_result_rows(int _seconds_back, bool _notify_from_last_iteration_only) const = 0;
+
+    virtual void set_notified_domain_state(const NotifiedDomainState& _notified_domain_state) const = 0;
+
+    virtual boost::optional<NotifiedDomainState> get_last_notified_domain_state(unsigned long long _domain_id) const = 0;
 };
 
 
+} // namespace Fred::Akm
 } // namespace Fred
-} // namespace Akm
 
 #endif//I_STORAGE_HH_1B55415E3EB327260D5DA07399BAA5FB
