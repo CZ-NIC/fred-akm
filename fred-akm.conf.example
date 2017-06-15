@@ -5,3 +5,6 @@ object_path = fred.AKM
 
 [database]
 filename = fred-akm.db
+
+[scanner]
+tool_path = /usr/bin/python tools/test-cdnskeyscanner.py
