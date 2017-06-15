@@ -15,8 +15,8 @@ void create_schema_scan_queue(sqlite3pp::database& _db)
             " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
             " import_at TEXT NOT NULL DEFAULT (datetime('now')),"
             " nameserver TEXT NOT NULL,"
-            " domain_id INTEGER NOT NULL,"
-            " domain_name TEXT NOT NULL,"
+            " domain_id INTEGER NOT NULL CHECK(domain_id > 0),"
+            " domain_name TEXT NOT NULL CHECK(COALESCE(domain_name, '') != ''),"
             " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)))"
     );
 
@@ -31,8 +31,8 @@ void create_schema_scan_result(sqlite3pp::database& _db)
         "CREATE TABLE IF NOT EXISTS scan_result ("
             " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
             " scan_at TEXT NOT NULL DEFAULT (datetime('now')),"
-            " domain_id INTEGER NOT NULL,"
-            " domain_name TEXT NOT NULL,"
+            " domain_id INTEGER NOT NULL CHECK(domain_id > 0),"
+            " domain_name TEXT NOT NULL CHECK(COALESCE(domain_name, '') != ''),"
             " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)),"
             " cdnskey_status TEXT NOT NULL CHECK(cdnskey_status IN ('insecure','unresolved','secure','untrustworthy','unknown')),"
             " nameserver TEXT,"
