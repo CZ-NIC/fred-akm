@@ -15,7 +15,8 @@ AC_PREREQ([2.68])
 # Because this is a non-recursive automake, we use subdir-objects to tell
 # automake to create objects such as .o in sub-directories rather than placing
 # all artifacts in the top level directory.
-AM_INIT_AUTOMAKE([subdir-objects foreign -Wall -Werror])
+AM_INIT_AUTOMAKE([subdir-objects foreign -Wall])
+AM_PROG_AR
 
 # These are the files to be generated.
 AC_CONFIG_FILES([Makefile])
@@ -28,8 +29,45 @@ AC_CONFIG_HEADERS([config.h])
 
 # Check for a C++ compiler.
 AC_PROG_CXX
+AC_PROG_RANLIB
+
+AX_CXX_COMPILE_STDCXX_11
 
 # Check for libraries, headers, data etc here.
+AX_BOOST_BASE
+AX_BOOST_PROGRAM_OPTIONS
+AX_LIB_SQLITE3
+
+PKG_CHECK_MODULES(OMNIORB4, [omniORB4 > 4.1.1, omniDynamic4, omnithread3])
+
+AC_ARG_WITH(
+	[idldir],
+	[AS_HELP_STRING(
+		[--with-idldir],
+		[location of idl directory containing IDL interfaces [DATAROOTDIR/idl/fred/]]
+	)],
+	[AC_SUBST([IDLDIR], [$withval])],
+	[AC_SUBST([IDLDIR], [$DATAROOTDIR/idl/fred/])]
+)
+
+AC_CHECK_FILE(
+	[$IDLDIR/Mailer.idl],
+	[],
+	[AC_MSG_ERROR(
+		[directory "$IDLDIR" does not contain Mailer.idl
+		(use --with-idldir)]
+	)]
+)
+
+AC_CHECK_FILE(
+	[$IDLDIR/AutomaticKeysetManagement.idl],
+	[],
+	[AC_MSG_ERROR(
+		[directory "$IDLDIR" does not contain AutomaticKeysetManagement.idl
+		(use --with-idldir)]
+	)]
+)
+
 
 # Last line: actually generate all required output files.
 AC_OUTPUT

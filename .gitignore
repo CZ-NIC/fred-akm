@@ -1,3 +1,6 @@
+## Project specific - generated files
+src/corba/generated
+
 ## C++
 # Prerequisites
 *.d
