@@ -1,3 +1,4 @@
+#include <map>
 #include <array>
 #include <iostream>
 #include <unistd.h>
@@ -11,64 +12,135 @@ namespace Akm {
 
 namespace {
 
-    ScanResult scan_result_from_string(const std::string& value)
+    class ScanResultParser
     {
-        std::vector<std::string> parsed;
-        parsed.reserve(8);
+    private:
+        typedef std::vector<std::string> Tokens;
 
-        auto beg_ptr = value.begin();
-        auto end_ptr = value.end();
-        auto nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
-        while (nxt_ptr != end_ptr)
-        {
-            parsed.emplace_back(std::string(beg_ptr, nxt_ptr));
-            beg_ptr = nxt_ptr + 1;
-            nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
-        }
-        parsed.emplace_back(beg_ptr, nxt_ptr);
-
-        if (parsed[0] == "insecure")
+        ScanResult parse_type_insecure(const Tokens& _tokens) const
         {
             ScanResult result;
-            result.cdnskey_status = parsed[0];
+            result.cdnskey_status = RESULT_TYPE_INSECURE;
 
-            if (parsed.size() == 8)
-            {
-                result.nameserver = parsed[1];
-                result.nameserver_ip = parsed[2];
-                result.domain_name = parsed[3];
-                result.cdnskey_flags = boost::lexical_cast<int>(parsed[4]);
-                result.cdnskey_proto = boost::lexical_cast<int>(parsed[5]);
-                result.cdnskey_alg = boost::lexical_cast<int>(parsed[6]);
-                result.cdnskey_public_key = parsed[7];
+            result.nameserver = _tokens.at(1);
+            result.nameserver_ip = _tokens.at(2);
+            result.domain_name = _tokens.at(3);
+            result.cdnskey_flags = boost::lexical_cast<int>(_tokens.at(4));
+            result.cdnskey_proto = boost::lexical_cast<int>(_tokens.at(5));
+            result.cdnskey_alg = boost::lexical_cast<int>(_tokens.at(6));
+            result.cdnskey_public_key = _tokens.at(7);
 
-                return result;
-            }
-            else
-            {
-                throw std::runtime_error("malformed scan result (" + value + ")");
-            }
+            return result;
         }
-        if (parsed[0] == "unresolved")
+
+        ScanResult parse_type_unresolved(const Tokens& _tokens) const
         {
             ScanResult result;
-            result.cdnskey_status = parsed[0];
+            result.cdnskey_status = RESULT_TYPE_UNRESOLVED;
 
-            if (parsed.size() == 4)
+            result.nameserver = _tokens.at(1);
+            result.nameserver_ip = _tokens.at(2);
+            result.domain_name = _tokens.at(3);
+
+            return result;
+        }
+
+        ScanResult parse_type_secure(const Tokens& _tokens) const
+        {
+            ScanResult result;
+            result.cdnskey_status = RESULT_TYPE_SECURE;
+
+            result.domain_name = _tokens.at(1);
+            result.cdnskey_flags = boost::lexical_cast<int>(_tokens.at(2));
+            result.cdnskey_proto = boost::lexical_cast<int>(_tokens.at(3));
+            result.cdnskey_alg = boost::lexical_cast<int>(_tokens.at(4));
+            result.cdnskey_public_key = _tokens.at(5);
+
+            return result;
+        }
+
+        ScanResult parse_type_untrustworthy(const Tokens& _tokens) const
+        {
+            ScanResult result;
+            result.cdnskey_status = RESULT_TYPE_UNTRUSTWORTHY;
+
+            result.domain_name = _tokens.at(1);
+
+            return result;
+        }
+
+        ScanResult parse_type_unknown(const Tokens& _tokens) const
+        {
+            ScanResult result;
+            result.cdnskey_status = RESULT_TYPE_UNKNOWN;
+
+            result.domain_name = _tokens.at(1);
+
+            return result;
+        }
+
+
+    public:
+        static constexpr const char* RESULT_TYPE_INSECURE = "insecure";
+        static constexpr const char* RESULT_TYPE_UNRESOLVED = "unresolved";
+        static constexpr const char* RESULT_TYPE_SECURE = "secure";
+        static constexpr const char* RESULT_TYPE_UNTRUSTWORTHY = "untrustworthy";
+        static constexpr const char* RESULT_TYPE_UNKNOWN = "unknown";
+
+
+        ScanResult parse(const std::string& _line) const
+        {
+            std::vector<std::string> tokens;
+            tokens.reserve(8);
+
+            auto beg_ptr = _line.begin();
+            auto end_ptr = _line.end();
+            auto nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
+            while (nxt_ptr != end_ptr)
             {
-                result.nameserver = parsed[1];
-                result.nameserver_ip = parsed[2];
-                result.domain_name = parsed[3];
-
-                return result;
+                tokens.emplace_back(std::string(beg_ptr, nxt_ptr));
+                beg_ptr = nxt_ptr + 1;
+                nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
             }
-            else
+            tokens.emplace_back(beg_ptr, nxt_ptr);
+
+            typedef std::function<ScanResult(const ScanResultParser&, const Tokens&)> SubParser;
+            const std::map<std::string, SubParser> subparsers_mapping = {
+                {RESULT_TYPE_INSECURE, &ScanResultParser::parse_type_insecure},
+                {RESULT_TYPE_UNRESOLVED, &ScanResultParser::parse_type_unresolved},
+                {RESULT_TYPE_SECURE, &ScanResultParser::parse_type_secure},
+                {RESULT_TYPE_UNTRUSTWORTHY, &ScanResultParser::parse_type_untrustworthy},
+                {RESULT_TYPE_UNKNOWN, &ScanResultParser::parse_type_unknown},
+            };
+
+            if (tokens.size() == 0)
             {
-                throw std::runtime_error("malformed scan result (" + value + ")");
+                throw std::runtime_error("zero tokens parsed from scan result");
+            }
+            try
+            {
+                auto &subparser = subparsers_mapping.at(tokens.at(0));
+                try
+                {
+                    return subparser(*this, tokens);
+                }
+                catch (const std::exception& e)
+                {
+                    throw std::runtime_error("scan result type " + tokens.at(0) + " parser error");
+                }
+            }
+            catch (const std::out_of_range&)
+            {
+                throw std::runtime_error("unrecognized/unimplemented scan result type");
             }
         }
-        throw std::runtime_error("unimplemented scan result type (" + parsed[0] + ")");
-    }
+    };
+
+    constexpr const char* ScanResultParser::RESULT_TYPE_INSECURE;
+    constexpr const char* ScanResultParser::RESULT_TYPE_UNRESOLVED;
+    constexpr const char* ScanResultParser::RESULT_TYPE_SECURE;
+    constexpr const char* ScanResultParser::RESULT_TYPE_UNTRUSTWORTHY;
+    constexpr const char* ScanResultParser::RESULT_TYPE_UNKNOWN;
 
 }
 
@@ -143,23 +215,48 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
         close(child_rd_fd);
         close(child_wr_fd);
 
+        /* TODO: separate to task serializer */
         long total_tasks = 0;
+        const std::string SCAN_MARKER_SECURE = "[secure]\n";
+        const std::string SCAN_MARKER_INSECURE = "[insecure]\n";
         for (const auto& nameserver_task : tasks_)
         {
-            auto line = nameserver_task.nameserver;
+            std::string line_task_secure = "";
+            std::string line_task_insecure = nameserver_task.nameserver;
             for (const auto& domain : nameserver_task.nameserver_domains)
             {
-                line += " " + domain.fqdn;
+                if (domain.has_keyset)
+                {
+                    if (line_task_secure.size() > 0)
+                    {
+                        line_task_secure += " ";
+                    }
+                    line_task_secure += domain.fqdn;
+                }
+                else
+                {
+                    line_task_insecure += " " + domain.fqdn;
+                }
                 total_tasks += 1;
             }
-            line += "\n";
-            write(parent_wr_fd, line.c_str(), line.size());
+            auto send_line = [&parent_wr_fd](const std::string& _marker, std::string& _line)
+            {
+                if (_line.size())
+                {
+                    _line += "\n";
+                    write(parent_wr_fd, _marker.c_str(), _marker.size());
+                    write(parent_wr_fd, _line.c_str(), _line.size());
+                }
+            };
+            send_line(SCAN_MARKER_SECURE, line_task_secure);
+            send_line(SCAN_MARKER_INSECURE, line_task_insecure);
         }
         close(parent_wr_fd);
         std::cout << "total tasks sent: " << total_tasks << std::endl;
 
-        /* TODO: to normal function? */
-        auto buffer_results = [](std::string& _raw_buffer, std::vector<ScanResult>& _result_buffer)
+        /* TODO: to normal function */
+        ScanResultParser scan_result_parser;
+        auto buffer_results = [&scan_result_parser](std::string& _raw_buffer, std::vector<ScanResult>& _result_buffer)
         {
             const auto newline_ptr = std::find(_raw_buffer.begin(), _raw_buffer.end(), '\n');
             if (newline_ptr != _raw_buffer.end())
@@ -168,7 +265,7 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
                 _raw_buffer.erase(_raw_buffer.begin(), newline_ptr + 1);
                 try
                 {
-                    _result_buffer.emplace_back(scan_result_from_string(result_line));
+                    _result_buffer.emplace_back(scan_result_parser.parse(result_line));
                 }
                 catch (const std::exception& ex)
                 {
