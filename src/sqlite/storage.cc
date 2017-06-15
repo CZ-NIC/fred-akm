@@ -34,7 +34,7 @@ void create_schema_scan_result(sqlite3pp::database& _db)
             " domain_id INTEGER NOT NULL,"
             " domain_name TEXT NOT NULL,"
             " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)),"
-            " cdnskey_status TEXT NOT NULL,"
+            " cdnskey_status TEXT NOT NULL CHECK(cdnskey_status IN ('insecure','unresolved','secure','untrustworthy','unknown')),"
             " nameserver TEXT,"
             " nameserver_ip TEXT,"
             " cdnskey_flags INTEGER,"
