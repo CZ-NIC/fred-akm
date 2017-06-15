@@ -265,7 +265,15 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
                 _raw_buffer.erase(_raw_buffer.begin(), newline_ptr + 1);
                 try
                 {
-                    _result_buffer.emplace_back(scan_result_parser.parse(result_line));
+                    const auto result = scan_result_parser.parse(result_line);
+                    const auto filter_out = {
+                        ScanResultParser::RESULT_TYPE_UNRESOLVED,
+                        ScanResultParser::RESULT_TYPE_UNKNOWN
+                    };
+                    if (std::find(filter_out.begin(), filter_out.end(), result.cdnskey_status) == filter_out.end())
+                    {
+                        _result_buffer.emplace_back(result);
+                    }
                 }
                 catch (const std::exception& ex)
                 {
