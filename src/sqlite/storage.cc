@@ -52,7 +52,7 @@ void create_schema_scan_notification(sqlite3pp::database& _db)
         "CREATE TABLE IF NOT EXISTS scan_notification ("
             " domain_id INTEGER PRIMARY KEY NOT NULL,"
             " last_at TEXT,"
-            " FOREIGN KEY (domain_id) REFERENCES scan_task(domain_id))"
+            " FOREIGN KEY (domain_id) REFERENCES scan_result(domain_id))"
     );
 }
 
