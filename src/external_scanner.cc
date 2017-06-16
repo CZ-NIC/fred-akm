@@ -179,8 +179,14 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
     };
 
     int pipes[2][2];
-    pipe(pipes[ParentPipe::READ]);
-    pipe(pipes[ParentPipe::WRITE]);
+    if (const int ret = pipe(pipes[ParentPipe::READ]) != 0)
+    {
+        throw std::runtime_error("unable to spawn subprocess (pipe construct failed)");
+    }
+    if (const int ret = pipe(pipes[ParentPipe::WRITE]) != 0)
+    {
+        throw std::runtime_error("unable to spawn subprocess (pipe construct failed)");
+    }
 
     int& parent_rd_fd = pipes[ParentPipe::READ][Descriptor::READ];
     int& parent_wr_fd = pipes[ParentPipe::WRITE][Descriptor::WRITE];
@@ -235,8 +241,28 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
                 if (_line.size())
                 {
                     _line += "\n";
-                    write(parent_wr_fd, _marker.c_str(), _marker.size());
-                    write(parent_wr_fd, _line.c_str(), _line.size());
+                    {
+                        const ssize_t ret = write(parent_wr_fd, _marker.c_str(), _marker.size());
+                        if (ret == -1)
+                        {
+                            throw std::runtime_error("write to pipe failed");
+                        }
+                        else if (ret != _marker.size())
+                        {
+                            throw std::runtime_error("write to pipe incomplete?");
+                        }
+                    }
+                    {
+                        const ssize_t ret = write(parent_wr_fd, _line.c_str(), _line.size());
+                        if (ret == -1)
+                        {
+                            throw std::runtime_error("write to pipe failed");
+                        }
+                        else if (ret != _line.size())
+                        {
+                            throw std::runtime_error("write to pipe incomplete?");
+                        }
+                    }
                 }
             };
             send_line(SCAN_MARKER_SECURE, line_task_secure);
