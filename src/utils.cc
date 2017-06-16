@@ -6,12 +6,18 @@ namespace Fred {
 namespace Akm {
 
 
-std::vector<std::string> split_on(const std::string& _string, const char delimiter)
+void split_on(const std::string& _in_string, const char _delimiter, std::vector<std::string>& _out_tokens)
 {
-    std::regex split_on("[" + std::string(1, delimiter) + "]");
-    std::sregex_token_iterator beg(_string.begin(), _string.end(), split_on, -1);
-    std::sregex_token_iterator end;
-    return {beg, end};
+    auto beg_ptr = _in_string.begin();
+    auto end_ptr = _in_string.end();
+    auto nxt_ptr = std::find(beg_ptr, end_ptr, _delimiter);
+    while (nxt_ptr != end_ptr)
+    {
+        _out_tokens.emplace_back(std::string(beg_ptr, nxt_ptr));
+        beg_ptr = nxt_ptr + 1;
+        nxt_ptr = std::find(beg_ptr, end_ptr, _delimiter);
+    }
+    _out_tokens.emplace_back(beg_ptr, nxt_ptr);
 }
 
 

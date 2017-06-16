@@ -64,25 +64,17 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
     NameserverDomains ns_domains;
     // ns_domains.nameserver_domains.reserve(?);
 
-    const char DELIMITER = ',';
     while (std::getline(file, line))
     {
         std::cout << line << std::endl;
-        std::vector<std::string> parsed;
-        auto b = line.begin();
-        auto e = line.end();
-        auto n = std::find(b, e, DELIMITER);
-        while (n != e)
-        {
-            parsed.emplace_back(std::string(b, n));
-            b = n + 1;
-            n = std::find(b, e, DELIMITER);
-        }
-        parsed.emplace_back(std::string(b, n));
 
-        if (parsed.size() == 4)
+        std::vector<std::string> tokens;
+        tokens.reserve(4);
+        split_on(line, ',', tokens);
+
+        if (tokens.size() == 4)
         {
-            const auto& current_ns = parsed[0];
+            const auto& current_ns = tokens[0];
 
             if (ns_domains.nameserver != current_ns)
             {
@@ -98,7 +90,7 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
                 ns_domains.nameserver = current_ns;
             }
             ns_domains.nameserver_domains.emplace_back(
-                Domain(boost::lexical_cast<unsigned long long>(parsed[1]), parsed[2], boost::lexical_cast<bool>(parsed[3]))
+                Domain(boost::lexical_cast<unsigned long long>(tokens[1]), tokens[2], boost::lexical_cast<bool>(tokens[3]))
             );
         }
         else

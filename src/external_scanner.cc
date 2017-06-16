@@ -92,17 +92,7 @@ namespace {
         {
             std::vector<std::string> tokens;
             tokens.reserve(8);
-
-            auto beg_ptr = _line.begin();
-            auto end_ptr = _line.end();
-            auto nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
-            while (nxt_ptr != end_ptr)
-            {
-                tokens.emplace_back(std::string(beg_ptr, nxt_ptr));
-                beg_ptr = nxt_ptr + 1;
-                nxt_ptr = std::find(beg_ptr, end_ptr, ' ');
-            }
-            tokens.emplace_back(beg_ptr, nxt_ptr);
+            split_on(_line, ' ', tokens);
 
             typedef std::function<ScanResult(const ScanResultParser&, const Tokens&)> SubParser;
             const std::map<std::string, SubParser> subparsers_mapping = {
@@ -145,8 +135,9 @@ namespace {
 }
 
 ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
-    : external_tool_path_(split_on(_external_tool_path, ' '))
+    : external_tool_path_()
 {
+    split_on(_external_tool_path, ' ', external_tool_path_);
     for (const auto& path_part : external_tool_path_)
     {
         /* path_part.c_str() is owned by external_tool_path_ vector */

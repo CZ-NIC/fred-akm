@@ -8,7 +8,7 @@ namespace Fred {
 namespace Akm {
 
 
-std::vector<std::string> split_on(const std::string& _string, const char delimiter);
+void split_on(const std::string& _in_string, const char delimiter, std::vector<std::string>& _out_tokens);
 
 
 } // namespace Akm
