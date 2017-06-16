@@ -310,6 +310,7 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
         std::string raw_buffer;
         int read_count = 0;
 
+        std::cout << "waiting for results..." << std::endl;
         while ((read_count = read(parent_rd_fd, chunk.data(), chunk.size() - 1)) > 0)
         {
             if (read_count >= 0)
@@ -324,6 +325,7 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
                         _callback(result_buffer);
                         total_results += result_buffer.size();
                         result_buffer.clear();
+                        std::cout << "checkpoint: saving buffered results (total=" << total_results << ")" << std::endl;
                     }
                 }
             }
