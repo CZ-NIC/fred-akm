@@ -40,8 +40,7 @@ void create_schema_scan_result(sqlite3pp::database& _db)
             " cdnskey_flags INTEGER,"
             " cdnskey_proto INTEGER,"
             " cdnskey_alg INTEGER,"
-            " cdnskey_public_key TEXT,"
-            " UNIQUE (nameserver, domain_name, nameserver_ip, cdnskey_status, cdnskey_alg, cdnskey_public_key))"
+            " cdnskey_public_key TEXT)"
     );
 }
 
@@ -80,18 +79,19 @@ void drop_schema(sqlite3pp::database& _db)
 namespace Impl {
 
 
-void append_to_scan_queue(sqlite3pp::database& _db, const std::vector<NameserverDomains>& _data)
+void append_to_scan_queue(sqlite3pp::database& _db, const NameserverDomainsCollection& _data)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
         "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
         " VALUES (?, ?, ?, ?)"
     );
-    for (const auto& ns_domains : _data)
+    for (const auto& kv : _data)
     {
-        for (const auto& domain : ns_domains.nameserver_domains)
+        const auto& nameserver = kv.second.nameserver;
+        for (const auto& domain : kv.second.nameserver_domains)
         {
-            insert.binder() << ns_domains.nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
+            insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
             insert.step();
             insert.reset();
         }
@@ -99,7 +99,7 @@ void append_to_scan_queue(sqlite3pp::database& _db, const std::vector<Nameserver
 }
 
 
-void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const std::vector<NameserverDomains>& _data)
+void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const NameserverDomainsCollection& _data)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
@@ -108,19 +108,20 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const std::vec
     );
     sqlite3pp::query check(_db);
     check.prepare(
-        "SELECT count(*) FROM scan_queue WHERE nameserver = ? AND domain_id = ? AND domain_name = ?"
+        "SELECT 1 FROM scan_queue WHERE"
+        " nameserver = :nameserver AND domain_id = :domain_id AND domain_name = :domain_name"
     );
-    for (const auto& ns_domains : _data)
+    for (const auto& kv : _data)
     {
-        for (const auto& domain : ns_domains.nameserver_domains)
+        const auto& nameserver = kv.second.nameserver;
+        for (const auto& domain : kv.second.nameserver_domains)
         {
-            check.bind(1, ns_domains.nameserver, sqlite3pp::nocopy);
-            check.bind(2, static_cast<long long>(domain.id));
-            check.bind(3, domain.fqdn, sqlite3pp::nocopy);
-            auto count = (*check.begin()).get<long long>(0);
-            if (count == 0)
+            check.bind(":nameserver", nameserver, sqlite3pp::nocopy);
+            check.bind(":domain_id", static_cast<long long>(domain.id));
+            check.bind(":domain_name", domain.fqdn, sqlite3pp::nocopy);
+            if (check.begin() == check.end())
             {
-                insert.binder() << ns_domains.nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
+                insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
                 insert.step();
                 insert.reset();
             }
@@ -146,7 +147,7 @@ SqliteStorage::SqliteStorage(const std::string& _filename)
 
 
 
-void SqliteStorage::append_to_scan_queue(const std::vector<NameserverDomains>& _data) const
+void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _data) const
 {
     sqlite3pp::database db(filename_.c_str());
     sqlite3pp::transaction xct(db);
@@ -156,7 +157,7 @@ void SqliteStorage::append_to_scan_queue(const std::vector<NameserverDomains>& _
 }
 
 
-void SqliteStorage::append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const
+void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const
 {
     sqlite3pp::database db(filename_.c_str());
     db.set_rollback_handler([]{ throw std::runtime_error("sqlite storage error"); });

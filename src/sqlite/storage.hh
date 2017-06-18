@@ -14,9 +14,9 @@ class SqliteStorage : public IStorage
 public:
     SqliteStorage(const std::string& _filename);
 
-    void append_to_scan_queue(const std::vector<NameserverDomains>& _data) const;
+    void append_to_scan_queue(const NameserverDomainsCollection& _data) const;
 
-    void append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const;
+    void append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const;
 
     void wipe_scan_queue() const;
 

@@ -12,31 +12,30 @@ Akm::Akm(const Nameservice& _ns, const std::string& _ns_path_akm)
 }
 
 
-std::vector<NameserverDomains> Akm::get_nameservers_with_automatically_managed_domain_candidates() const
+NameserverDomainsCollection Akm::get_nameservers_with_automatically_managed_domain_candidates() const
 {
     try
     {
         namespace AkmModule = Registry::AutomaticKeysetManagement;
         AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
-        AkmModule::NameserverDomainsSeq_var c_nameserver_domains = akm->get_nameservers_with_automatically_managed_domain_candidates();
+        AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_automatically_managed_domain_candidates();
 
-        std::vector<NameserverDomains> nameserver_domains;
-        nameserver_domains.reserve(c_nameserver_domains->length());
+        NameserverDomainsCollection all_nameserver_domains;
 
-        for (unsigned long long i = 0; i < c_nameserver_domains->length(); ++i)
+        for (unsigned long long i = 0; i < c_all_nameserver_domains->length(); ++i)
         {
-            NameserverDomains ns_domains;
-            ns_domains.nameserver = c_nameserver_domains[i].nameserver;
-            ns_domains.nameserver_domains.reserve(c_nameserver_domains[i].nameserver_domains.length());
-            for (unsigned long long j = 0; j < c_nameserver_domains[i].nameserver_domains.length(); ++j)
+            NameserverDomains one_ns;
+            one_ns.nameserver = c_all_nameserver_domains[i].nameserver;
+            one_ns.nameserver_domains.reserve(c_all_nameserver_domains[i].nameserver_domains.length());
+            for (unsigned long long j = 0; j < c_all_nameserver_domains[i].nameserver_domains.length(); ++j)
             {
-                const auto& c_domain = c_nameserver_domains[i].nameserver_domains[j];
-                ns_domains.nameserver_domains.emplace_back(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), false));
+                const auto& c_domain = c_all_nameserver_domains[i].nameserver_domains[j];
+                one_ns.nameserver_domains.emplace_back(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), false));
             }
-            nameserver_domains.emplace_back(ns_domains);
+            all_nameserver_domains[one_ns.nameserver] = one_ns;
         }
 
-        return nameserver_domains;
+        return all_nameserver_domains;
     }
     catch (const CORBA::SystemException &e)
     {
