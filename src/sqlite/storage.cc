@@ -1,5 +1,6 @@
 #include <iostream>
 #include "src/sqlite/storage.hh"
+#include "src/log.hh"
 
 namespace Fred {
 namespace Akm {
@@ -274,9 +275,11 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results) c
             /* extra check if there are different domain_id in queue (need to handle?) */
             else if (task_domain_id != domain_id)
             {
-                std::cerr << "different domain id found for same domain name in scan queue"
-                          << " (" << task_domain_id << " != " << domain_id << std::endl;
-                return;
+                log()->error(
+                    "different domain id found for same domain name in scan queue ({} != {}",
+                    task_domain_id, domain_id
+                );
+                break;
             }
         }
 

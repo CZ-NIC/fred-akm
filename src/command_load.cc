@@ -5,6 +5,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "src/utils.hh"
+#include "src/log.hh"
 #include "src/command_load.hh"
 
 namespace Fred {
@@ -45,14 +46,12 @@ namespace Impl {
 
 void command_load(const IStorage& _storage, const std::string& _filename, int _flags)
 {
-    const auto output_prefix = "[command::load] ";
-
     auto file = std::ifstream(_filename, std::ifstream::ate | std::ifstream::binary);
     const auto size = file.tellg();
     file.clear();
     file.seekg(0, std::ios::beg);
 
-    std::cout << output_prefix << "input file size: " << size << " [b]" << std::endl;
+    log()->info("input file size: {} [b]", size);
 
     NameserverDomainsCollection data;
 
@@ -82,22 +81,21 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
         }
         else
         {
-            std::cout << output_prefix << "skipping.." << std::endl;
+            log()->error("not enough tokens skipping (line={})", line);
         }
     }
-    std::cout << output_prefix << "parsed input file (" << data.size() << " nameserver(s))" << std::endl;
+    log()->info("loaded tasks from input file ({} nameserver(s))", data.size());
     Impl::command_load(_storage, data, _flags);
-    std::cout << output_prefix << "imported to database" << std::endl;
+    log()->info("imported to database");
 }
 
 
 void command_load(const IStorage& _storage, const IAkm& _backend, int _flags)
 {
-    const auto output_prefix = "[command::load] ";
     auto data = _backend.get_nameservers_with_automatically_managed_domain_candidates();
-    std::cout << output_prefix << "loaded data from backend (" << data.size() << " nameserver(s))" << std::endl;
+    log()->info("loaded tasks from backend ({} nameserver(s))", data.size());
     Impl::command_load(_storage, data, _flags);
-    std::cout << output_prefix << "imported to database" << std::endl;
+    log()->info("imported to database");
 }
 
 

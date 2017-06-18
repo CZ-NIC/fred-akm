@@ -2,6 +2,7 @@
 #define CONF_HH_97B80A5E961D13153BCB013A588CA5CF
 
 #include <string>
+#include <unordered_map>
 
 #include "type_instance_map.hh"
 
@@ -38,6 +39,15 @@ struct ScannerConf : public ConfSection
 {
     std::string tool_path;
 };
+
+struct DebugMapConf : public ConfSection
+{
+    DebugMapConf(const std::unordered_map<std::string, std::string>& _map)
+        : debug_map(_map) { }
+
+    std::unordered_map<std::string, std::string> debug_map;
+};
+
 
 Conf parse_conf(const std::string &_filename);
 Conf parse_conf(std::ifstream &_file);

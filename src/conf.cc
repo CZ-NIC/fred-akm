@@ -4,6 +4,7 @@
 
 #include "src/conf.hh"
 #include "src/utils.hh"
+#include "src/log.hh"
 
 namespace Fred {
 namespace Akm {
@@ -45,7 +46,7 @@ Conf parse_conf(std::ifstream& _file)
 
     po::store(po::parse_config_file(_file, config_file_opts), vm);
     po::notify(vm);
-    dump_variable_map(vm, std::cerr);
+    conf.set(std::make_shared<DebugMapConf>(variable_map_to_string_map(vm)));
 
     return conf;
 }

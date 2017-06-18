@@ -5,6 +5,7 @@
 
 #include "src/args.hh"
 #include "src/utils.hh"
+#include "src/log.hh"
 
 namespace Fred {
 namespace Akm {
@@ -113,7 +114,7 @@ Args parse_args(int argc, char* argv[])
             }
 
             po::notify(vm);
-            dump_variable_map(vm, std::cerr);
+            args.set(std::make_shared<DebugMapArgs>(variable_map_to_string_map(vm)));
         }
         else
         {
