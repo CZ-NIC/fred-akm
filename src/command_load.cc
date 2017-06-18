@@ -65,7 +65,7 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
     {
         std::vector<std::string> tokens;
         tokens.reserve(4);
-        split_on(line, ',', tokens);
+        split_on(line, ' ', tokens);
 
         if (tokens.size() == 4)
         {
