@@ -13,7 +13,7 @@ namespace Akm {
 class IAkm
 {
 public:
-    virtual std::vector<NameserverDomains> get_nameservers_with_automatically_managed_domain_candidates() const = 0;
+    virtual NameserverDomainsCollection get_nameservers_with_automatically_managed_domain_candidates() const = 0;
 };
 
 

@@ -14,7 +14,7 @@ class Akm : public IAkm
 public:
     Akm(const Nameservice& _ns, const std::string& _ns_path_akm);
 
-    std::vector<NameserverDomains> get_nameservers_with_automatically_managed_domain_candidates() const;
+    NameserverDomainsCollection get_nameservers_with_automatically_managed_domain_candidates() const;
 
 private:
     const Nameservice& ns_;

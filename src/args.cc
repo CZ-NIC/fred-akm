@@ -3,7 +3,8 @@
 #include <vector>
 #include <iostream>
 
-#include "args.hh"
+#include "src/args.hh"
+#include "src/utils.hh"
 
 namespace Fred {
 namespace Akm {
@@ -112,6 +113,7 @@ Args parse_args(int argc, char* argv[])
             }
 
             po::notify(vm);
+            dump_variable_map(vm, std::cerr);
         }
         else
         {

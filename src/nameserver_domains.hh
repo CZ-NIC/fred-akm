@@ -1,6 +1,7 @@
 #ifndef NAMESERVER_DOMAINS_HH_BD50E84D81AF2A84043E22FA4923D539//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
 #define NAMESERVER_DOMAINS_HH_BD50E84D81AF2A84043E22FA4923D539
 
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,7 @@ struct NameserverDomains
     std::vector<Domain> nameserver_domains;
 };
 
+typedef std::unordered_map<std::string, NameserverDomains> NameserverDomainsCollection;
 
 } // namespace Fred
 } // namespace Akm

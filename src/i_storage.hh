@@ -14,15 +14,15 @@ namespace Akm {
 class IStorage
 {
 public:
-    virtual void append_to_scan_queue(const std::vector<NameserverDomains>& _data) const = 0;
+    virtual void append_to_scan_queue(const NameserverDomainsCollection& _data) const = 0;
 
-    virtual void append_to_scan_queue_if_not_exists(const std::vector<NameserverDomains>& _data) const = 0;
+    virtual void append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const = 0;
 
     virtual void wipe_scan_queue() const = 0;
 
     virtual void prune_scan_queue() const = 0;
 
-    virtual std::vector<NameserverDomains> get_scan_queue_tasks() const = 0;
+    virtual NameserverDomainsCollection get_scan_queue_tasks() const = 0;
 
     virtual void save_scan_result(const ScanResult& _result) const = 0;
 

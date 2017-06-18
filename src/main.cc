@@ -80,9 +80,6 @@ int main(int argc, char* argv[])
         const auto args = Fred::Akm::parse_args(argc, argv);
 
         const auto general_args = args.get<Fred::Akm::GeneralArgs>();
-        std::cout << "args.general.config_file = " << general_args->config_file << std::endl;
-        std::cout << "args.general.command = " << general_args->command << std::endl;
-
         auto config_file = std::ifstream(general_args->config_file);
         if (!config_file.is_open())
         {
@@ -90,11 +87,7 @@ int main(int argc, char* argv[])
         }
 
         const auto conf = Fred::Akm::parse_conf(config_file);
-
         const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
-        std::cout << "nameservice.host = " << nameservice_conf->host << std::endl;
-        std::cout << "nameservice.port = " << nameservice_conf->port << std::endl;
-        std::cout << "nameservice.object_path = " << nameservice_conf->object_path << std::endl;
 
         const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
 

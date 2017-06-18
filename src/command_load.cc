@@ -19,7 +19,7 @@ namespace Impl {
      */
     void command_load(
         const IStorage& _storage,
-        const std::vector<NameserverDomains>& _tasks,
+        const NameserverDomainsCollection& _tasks,
         int _flags)
     {
         if (_flags & LoadFlags::WIPE_QUEUE)
@@ -54,52 +54,31 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
 
     std::cout << output_prefix << "input file size: " << size << " [b]" << std::endl;
 
-    std::vector<NameserverDomains> data;
-    // data.reserve(?);
+    NameserverDomainsCollection data;
 
     std::string line;
     const auto KiB = 1024;
     line.reserve(KiB);
 
     NameserverDomains ns_domains;
-    // ns_domains.nameserver_domains.reserve(?);
-
-    const char DELIMITER = ',';
     while (std::getline(file, line))
     {
-        std::cout << line << std::endl;
-        std::vector<std::string> parsed;
-        auto b = line.begin();
-        auto e = line.end();
-        auto n = std::find(b, e, DELIMITER);
-        while (n != e)
-        {
-            parsed.emplace_back(std::string(b, n));
-            b = n + 1;
-            n = std::find(b, e, DELIMITER);
-        }
-        parsed.emplace_back(std::string(b, n));
+        std::vector<std::string> tokens;
+        tokens.reserve(4);
+        split_on(line, ' ', tokens);
 
-        if (parsed.size() == 4)
+        if (tokens.size() == 4)
         {
-            const auto& current_ns = parsed[0];
-
-            if (ns_domains.nameserver != current_ns)
-            {
-                if (!ns_domains.nameserver_domains.empty())
-                {
-                    data.push_back(ns_domains);
-                    ns_domains.nameserver_domains.clear();
-                    if (data.size() % 1000 == 0)
-                    {
-                        std::cout << output_prefix << "checkpoint: " << data.size() << std::endl;
-                    }
-                }
-                ns_domains.nameserver = current_ns;
-            }
-            ns_domains.nameserver_domains.emplace_back(
-                Domain(boost::lexical_cast<unsigned long long>(parsed[1]), parsed[2], boost::lexical_cast<bool>(parsed[3]))
+            const auto& current_ns = tokens[0];
+            const auto domain = Domain(
+                boost::lexical_cast<unsigned long long>(tokens[1]),
+                tokens[2],
+                boost::lexical_cast<bool>(tokens[3])
             );
+
+            auto& record = data[current_ns];
+            record.nameserver = current_ns;
+            record.nameserver_domains.push_back(domain);
         }
         else
         {
@@ -107,7 +86,6 @@ void command_load(const IStorage& _storage, const std::string& _filename, int _f
         }
     }
     std::cout << output_prefix << "parsed input file (" << data.size() << " nameserver(s))" << std::endl;
-
     Impl::command_load(_storage, data, _flags);
     std::cout << output_prefix << "imported to database" << std::endl;
 }
