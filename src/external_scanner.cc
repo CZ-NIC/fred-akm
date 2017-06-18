@@ -33,6 +33,18 @@ namespace {
             return result;
         }
 
+        ScanResult parse_type_insecure_empty(const Tokens& _tokens) const
+        {
+            ScanResult result;
+            result.cdnskey_status = RESULT_TYPE_INSECURE_EMPTY;
+
+            result.nameserver = _tokens.at(1);
+            result.nameserver_ip = _tokens.at(2);
+            result.domain_name = _tokens.at(3);
+
+            return result;
+        }
+
         ScanResult parse_type_unresolved(const Tokens& _tokens) const
         {
             ScanResult result;
@@ -79,11 +91,23 @@ namespace {
             return result;
         }
 
+        ScanResult parse_type_secure_empty(const Tokens& _tokens) const
+        {
+            ScanResult result;
+            result.cdnskey_status = RESULT_TYPE_SECURE_EMPTY;
+
+            result.domain_name = _tokens.at(1);
+
+            return result;
+        }
+
 
     public:
         static constexpr const char* RESULT_TYPE_INSECURE = "insecure";
+        static constexpr const char* RESULT_TYPE_INSECURE_EMPTY = "insecure-empty";
         static constexpr const char* RESULT_TYPE_UNRESOLVED = "unresolved";
         static constexpr const char* RESULT_TYPE_SECURE = "secure";
+        static constexpr const char* RESULT_TYPE_SECURE_EMPTY = "secure-empty";
         static constexpr const char* RESULT_TYPE_UNTRUSTWORTHY = "untrustworthy";
         static constexpr const char* RESULT_TYPE_UNKNOWN = "unknown";
 
@@ -97,8 +121,10 @@ namespace {
             typedef std::function<ScanResult(const ScanResultParser&, const Tokens&)> SubParser;
             const std::map<std::string, SubParser> subparsers_mapping = {
                 {RESULT_TYPE_INSECURE, &ScanResultParser::parse_type_insecure},
+                {RESULT_TYPE_INSECURE_EMPTY, &ScanResultParser::parse_type_insecure_empty},
                 {RESULT_TYPE_UNRESOLVED, &ScanResultParser::parse_type_unresolved},
                 {RESULT_TYPE_SECURE, &ScanResultParser::parse_type_secure},
+                {RESULT_TYPE_SECURE_EMPTY, &ScanResultParser::parse_type_secure_empty},
                 {RESULT_TYPE_UNTRUSTWORTHY, &ScanResultParser::parse_type_untrustworthy},
                 {RESULT_TYPE_UNKNOWN, &ScanResultParser::parse_type_unknown},
             };
@@ -127,8 +153,10 @@ namespace {
     };
 
     constexpr const char* ScanResultParser::RESULT_TYPE_INSECURE;
+    constexpr const char* ScanResultParser::RESULT_TYPE_INSECURE_EMPTY;
     constexpr const char* ScanResultParser::RESULT_TYPE_UNRESOLVED;
     constexpr const char* ScanResultParser::RESULT_TYPE_SECURE;
+    constexpr const char* ScanResultParser::RESULT_TYPE_SECURE_EMPTY;
     constexpr const char* ScanResultParser::RESULT_TYPE_UNTRUSTWORTHY;
     constexpr const char* ScanResultParser::RESULT_TYPE_UNKNOWN;
 
@@ -309,7 +337,9 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
                 {
                     const auto result = scan_result_parser.parse(result_line);
                     const auto filter_out = {
+                        ScanResultParser::RESULT_TYPE_INSECURE_EMPTY,
                         ScanResultParser::RESULT_TYPE_UNRESOLVED,
+                        ScanResultParser::RESULT_TYPE_SECURE_EMPTY,
                         ScanResultParser::RESULT_TYPE_UNKNOWN
                     };
                     if (std::find(filter_out.begin(), filter_out.end(), result.cdnskey_status) == filter_out.end())
