@@ -1,4 +1,6 @@
 #include <regex>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "src/utils.hh"
 
@@ -20,6 +22,83 @@ void split_on(const std::string& _in_string, const char _delimiter, std::vector<
     _out_tokens.emplace_back(beg_ptr, nxt_ptr);
 }
 
+
+void dump_variable_map(const boost::program_options::variables_map& _map, std::ostream& out)
+{
+    for (const auto kv : _map)
+    {
+        const std::string& name = kv.first;
+        std::string value = "";
+        std::string flags = "";
+
+        if ((kv.second.value()).empty())
+        {
+            flags.append("[empty]");
+        }
+        if (kv.second.defaulted())
+        {
+            flags.append("[default]");
+        }
+
+        bool found = false;
+        try
+        {
+            value = boost::lexical_cast<std::string>(boost::any_cast<int>(kv.second.value()));
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            value = boost::lexical_cast<std::string>(boost::any_cast<unsigned int>(kv.second.value()));
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            bool aux = boost::any_cast<bool>(kv.second.value());
+            if (aux)
+            {
+                value = "on";
+            }
+            else
+            {
+                value = "off";
+            }
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            value = boost::lexical_cast<std::string>(boost::any_cast<double>(kv.second.value()));
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            value = std::string(boost::any_cast<const char *>(kv.second.value()));
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            value = boost::any_cast<std::string>(kv.second.value());
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        try
+        {
+            auto aux = boost::any_cast<std::vector<std::string>>(kv.second.value());
+            value = "[ " + boost::algorithm::join(aux, ", ") + " ]";
+            found = true;
+        }
+        catch (const boost::bad_any_cast &) { }
+        if (!found)
+        {
+            value = "<unhandled type>";
+        }
+        out << name << ": " << value << " " << flags << std::endl;
+    }
+}
 
 } // namespace Akm
 } // namespace Fred
