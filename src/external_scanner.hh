@@ -12,14 +12,12 @@ class ExternalScannerTool : public IScanner
 public:
     ExternalScannerTool(const std::string& _external_tool_path);
 
-    void add_tasks(std::vector<NameserverDomains>& _tasks);
-
-    void scan(OnResultsCallback _callback) const;
+    void scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const;
 
 private:
     std::vector<std::string> external_tool_path_;
     std::vector<const char*> subprocess_argv_;
-    std::vector<NameserverDomains> tasks_;
+    NameserverDomainsCollection tasks_;
 };
 
 

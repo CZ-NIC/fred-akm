@@ -22,7 +22,7 @@ public:
 
     virtual void prune_scan_queue() const = 0;
 
-    virtual std::vector<NameserverDomains> get_scan_queue_tasks() const = 0;
+    virtual NameserverDomainsCollection get_scan_queue_tasks() const = 0;
 
     virtual void save_scan_result(const ScanResult& _result) const = 0;
 

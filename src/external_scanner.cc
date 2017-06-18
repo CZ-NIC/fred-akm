@@ -132,6 +132,69 @@ namespace {
     constexpr const char* ScanResultParser::RESULT_TYPE_UNTRUSTWORTHY;
     constexpr const char* ScanResultParser::RESULT_TYPE_UNKNOWN;
 
+
+    class ScanTaskSerializer
+    {
+    private:
+        unsigned long long task_count_secure;
+        unsigned long long task_count_insecure;
+
+        std::string serialize_on_keyset_value(const NameserverDomains& _task, bool _has_keyset, unsigned long long &_counter)
+        {
+            std::string output;
+
+            bool first_written = false;
+            for (const auto& domain : _task.nameserver_domains)
+            {
+                if (domain.has_keyset == _has_keyset)
+                {
+                    if (first_written)
+                    {
+                        output.append(" ");
+                    }
+                    output.append(domain.fqdn);
+                    first_written = true;
+                    _counter += 1;
+                }
+            }
+
+            return output;
+        }
+
+    public:
+        ScanTaskSerializer() : task_count_secure(0), task_count_insecure(0) { }
+
+        unsigned long long get_task_count_secure() const
+        {
+            return task_count_secure;
+        }
+
+        unsigned long long get_task_count_insecure() const
+        {
+            return task_count_insecure;
+        }
+
+        std::string serialize_insecure(const NameserverDomains& _task)
+        {
+            std::string output_scan_insecure = serialize_on_keyset_value(_task, false, task_count_insecure);
+            if (output_scan_insecure.size() > 0)
+            {
+                return "[insecure]\n" + _task.nameserver + " " + output_scan_insecure + "\n";
+            }
+            return "";
+        }
+
+        std::string serialize_secure(const NameserverDomains& _task)
+        {
+            std::string output_scan_secure = serialize_on_keyset_value(_task, true, task_count_secure);
+            if (output_scan_secure.size() > 0)
+            {
+                return "[secure]\n" + output_scan_secure + "\n";
+            }
+            return "";
+        }
+    };
+
 }
 
 ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
@@ -151,15 +214,7 @@ ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
 }
 
 
-void ExternalScannerTool::add_tasks(std::vector<NameserverDomains>& _tasks)
-{
-    tasks_.reserve(tasks_.size() + _tasks.size());
-    std::copy(_tasks.begin(), _tasks.end(), std::inserter(tasks_, tasks_.end()));
-    _tasks.clear();
-}
-
-
-void ExternalScannerTool::scan(OnResultsCallback _callback) const
+void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const
 {
     struct ParentPipe
     {
@@ -212,64 +267,34 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
         close(child_rd_fd);
         close(child_wr_fd);
 
-        /* TODO: separate to task serializer */
-        long total_tasks = 0;
-        const std::string SCAN_MARKER_SECURE = "[secure]\n";
-        const std::string SCAN_MARKER_INSECURE = "[insecure]\n";
-        for (const auto& nameserver_task : tasks_)
+        auto send_task = [&parent_wr_fd](const std::string& _line)
         {
-            std::string line_task_secure = "";
-            std::string line_task_insecure = nameserver_task.nameserver;
-            for (const auto& domain : nameserver_task.nameserver_domains)
+            if (_line.size() > 0)
             {
-                if (domain.has_keyset)
+                const ssize_t ret = write(parent_wr_fd, _line.c_str(), _line.size());
+                if (ret == -1)
                 {
-                    if (line_task_secure.size() > 0)
-                    {
-                        line_task_secure += " ";
-                    }
-                    line_task_secure += domain.fqdn;
+                    throw std::runtime_error("write to pipe failed");
                 }
-                else
+                else if (ret != _line.size())
                 {
-                    line_task_insecure += " " + domain.fqdn;
+                    throw std::runtime_error("write to pipe incomplete?");
                 }
-                total_tasks += 1;
             }
-            auto send_line = [&parent_wr_fd](const std::string& _marker, std::string& _line)
-            {
-                if (_line.size())
-                {
-                    _line += "\n";
-                    {
-                        const ssize_t ret = write(parent_wr_fd, _marker.c_str(), _marker.size());
-                        if (ret == -1)
-                        {
-                            throw std::runtime_error("write to pipe failed");
-                        }
-                        else if (ret != _marker.size())
-                        {
-                            throw std::runtime_error("write to pipe incomplete?");
-                        }
-                    }
-                    {
-                        const ssize_t ret = write(parent_wr_fd, _line.c_str(), _line.size());
-                        if (ret == -1)
-                        {
-                            throw std::runtime_error("write to pipe failed");
-                        }
-                        else if (ret != _line.size())
-                        {
-                            throw std::runtime_error("write to pipe incomplete?");
-                        }
-                    }
-                }
-            };
-            send_line(SCAN_MARKER_SECURE, line_task_secure);
-            send_line(SCAN_MARKER_INSECURE, line_task_insecure);
+        };
+
+        ScanTaskSerializer serializer;
+        for (const auto& kv : _tasks)
+        {
+            const auto& one_task = kv.second;
+            send_task(serializer.serialize_insecure(one_task));
+            send_task(serializer.serialize_secure(one_task));
         }
         close(parent_wr_fd);
-        std::cout << "total tasks sent: " << total_tasks << std::endl;
+        std::cout << "total tasks sent: " << serializer.get_task_count_insecure() + serializer.get_task_count_secure()
+                  << " (insecure=" << serializer.get_task_count_insecure()
+                  << " secure=" << serializer.get_task_count_secure()
+                  << ")" << std::endl;
 
         /* TODO: to normal function */
         ScanResultParser scan_result_parser;
@@ -325,7 +350,7 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
                         _callback(result_buffer);
                         total_results += result_buffer.size();
                         result_buffer.clear();
-                        std::cout << "checkpoint: saving buffered results (total=" << total_results << ")" << std::endl;
+                        std::cout << "checkpoint: saving buffered results (total=" << total_results << ")\n";
                     }
                 }
             }
@@ -337,8 +362,8 @@ void ExternalScannerTool::scan(OnResultsCallback _callback) const
         if (result_buffer.size())
         {
             _callback(result_buffer);
+            total_results += result_buffer.size();
         }
-        std::cout << "rest of buffer: " << raw_buffer.data() << std::endl;
         std::cout << "total processed results: " << total_results << std::endl;
     }
 }

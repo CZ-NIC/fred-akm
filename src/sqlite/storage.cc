@@ -193,7 +193,7 @@ void SqliteStorage::prune_scan_queue() const
 }
 
 
-std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
+NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
 {
     sqlite3pp::database db(filename_.c_str());
     sqlite3pp::transaction xct(db);
@@ -203,8 +203,7 @@ std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
         " FROM scan_queue ORDER BY nameserver, domain_name ASC"
     );
 
-    std::vector<NameserverDomains> tasks;
-    NameserverDomains ns_domains;
+    NameserverDomainsCollection tasks;
     for (auto row : tasks_query)
     {
         std::string nameserver;
@@ -213,16 +212,10 @@ std::vector<NameserverDomains> SqliteStorage::get_scan_queue_tasks() const
         bool has_keyset;
         row.getter() >> nameserver >> domain_id >> domain_name >> has_keyset;
 
-        if (ns_domains.nameserver != nameserver)
-        {
-            if (!ns_domains.nameserver.empty())
-            {
-                tasks.push_back(ns_domains);
-                ns_domains.nameserver_domains.clear();
-            }
-            ns_domains.nameserver = nameserver;
-        }
-        ns_domains.nameserver_domains.emplace_back(Domain(domain_id, domain_name, has_keyset));
+        Domain domain(domain_id, domain_name, has_keyset);
+        auto& record = tasks[nameserver];
+        record.nameserver = nameserver;
+        record.nameserver_domains.emplace_back(domain);
     }
 
     return tasks;
