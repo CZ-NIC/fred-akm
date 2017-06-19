@@ -7,6 +7,8 @@ namespace Fred {
 namespace Akm {
 
 
+void setup_logging(const std::vector<std::string>& _sinks, const std::string& _level);
+
 void setup_logging();
 
 std::shared_ptr<spdlog::logger> log();

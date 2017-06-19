@@ -2,6 +2,7 @@
 #define CONF_HH_97B80A5E961D13153BCB013A588CA5CF
 
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 #include "type_instance_map.hh"
@@ -38,6 +39,12 @@ struct DatabaseConf : public ConfSection
 struct ScannerConf : public ConfSection
 {
     std::string tool_path;
+};
+
+struct LoggingConf : public ConfSection
+{
+    std::vector<std::string> sinks;
+    std::string level;
 };
 
 struct DebugMapConf : public ConfSection

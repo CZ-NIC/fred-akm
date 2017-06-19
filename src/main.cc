@@ -86,11 +86,10 @@ int main(int argc, char* argv[])
         {
             throw std::runtime_error("config file not found");
         }
-
         const auto conf = Fred::Akm::parse_conf(config_file);
-        const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
 
-        Fred::Akm::setup_logging(/* TODO: args */);
+        const auto logging_conf = conf.get<Fred::Akm::LoggingConf>();
+        Fred::Akm::setup_logging(logging_conf->sinks, logging_conf->level);
 
         auto debug_input_params = [](const std::unordered_map<std::string, std::string>& _map, const std::string& _prefix = "")
         {
@@ -107,6 +106,7 @@ int main(int argc, char* argv[])
         debug_input_params(args.get<Fred::Akm::DebugMapArgs>()->debug_map, "args");
         debug_input_params(conf.get<Fred::Akm::DebugMapConf>()->debug_map, "conf");
 
+        const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
         const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
 
         typedef std::function<void(Fred::Akm::Corba::CorbaContext, Fred::Akm::Args, Fred::Akm::Conf)> CommandDispatchFunc;

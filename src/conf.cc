@@ -25,9 +25,11 @@ Conf parse_conf(std::ifstream& _file)
     auto nameservice_conf = std::make_shared<NameserviceConf>();
     auto database_conf = std::make_shared<DatabaseConf>();
     auto scanner_conf = std::make_shared<ScannerConf>();
+    auto logging_conf = std::make_shared<LoggingConf>();
     conf.set(nameservice_conf);
     conf.set(database_conf);
     conf.set(scanner_conf);
+    conf.set(logging_conf);
 
     po::options_description config_file_opts("Configuration");
     config_file_opts.add_options()
@@ -40,7 +42,11 @@ Conf parse_conf(std::ifstream& _file)
         ("database.filename", po::value<std::string>(&database_conf->filename)->default_value("fred-akm.db"),
          "Sqlite database file name")
         ("scanner.tool_path", po::value<std::string>(&scanner_conf->tool_path)->default_value("/usr/bin/cdnskey-scanner"),
-         "External CDNSKEY scanner tool");
+         "External CDNSKEY scanner tool")
+        ("logging.sink", po::value<std::vector<std::string>>(&logging_conf->sinks)->composing(),
+         "Logging sink definition, one record per sink (available value is 'console' and 'file <file_path>'")
+        ("logging.level", po::value<std::string>(&logging_conf->level)->default_value("info"),
+         "Log level available values are trace, debug, info, warn, err, critical");
 
     po::variables_map vm;
 
