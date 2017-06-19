@@ -13,6 +13,24 @@
 #include "src/command_load.hh"
 #include "src/command_scan.hh"
 
+
+void debug_input_params(
+    const std::unordered_map<std::string, std::string>& _map,
+    const std::string& _prefix = ""
+)
+{
+    for (const auto kv : _map)
+    {
+        std::string prefix;
+        if (_prefix.size())
+        {
+            prefix.append(_prefix + ".");
+        }
+        Fred::Akm::log()->debug("{}{}: {}", prefix, kv.first, kv.second);
+    }
+};
+
+
 void dispatch_command_load(
     const Fred::Akm::Corba::CorbaContext& _cctx,
     const Fred::Akm::Args& _args,
@@ -91,18 +109,6 @@ int main(int argc, char* argv[])
         const auto logging_conf = conf.get<Fred::Akm::LoggingConf>();
         Fred::Akm::setup_logging(logging_conf->sinks, logging_conf->level);
 
-        auto debug_input_params = [](const std::unordered_map<std::string, std::string>& _map, const std::string& _prefix = "")
-        {
-            for (const auto kv : _map)
-            {
-                std::string prefix;
-                if (_prefix.size())
-                {
-                    prefix.append(_prefix + ".");
-                }
-                Fred::Akm::log()->debug("{}{}: {}", prefix, kv.first, kv.second);
-            }
-        };
         debug_input_params(args.get<Fred::Akm::DebugMapArgs>()->debug_map, "args");
         debug_input_params(conf.get<Fred::Akm::DebugMapConf>()->debug_map, "conf");
 
