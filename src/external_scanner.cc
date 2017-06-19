@@ -335,17 +335,7 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
                 _raw_buffer.erase(_raw_buffer.begin(), newline_ptr + 1);
                 try
                 {
-                    const auto result = scan_result_parser.parse(result_line);
-                    const auto filter_out = {
-                        ScanResultParser::RESULT_TYPE_INSECURE_EMPTY,
-                        ScanResultParser::RESULT_TYPE_UNRESOLVED,
-                        ScanResultParser::RESULT_TYPE_SECURE_EMPTY,
-                        ScanResultParser::RESULT_TYPE_UNKNOWN
-                    };
-                    if (std::find(filter_out.begin(), filter_out.end(), result.cdnskey_status) == filter_out.end())
-                    {
-                        _result_buffer.emplace_back(result);
-                    }
+                    _result_buffer.emplace_back(scan_result_parser.parse(result_line));
                 }
                 catch (const std::exception& ex)
                 {
