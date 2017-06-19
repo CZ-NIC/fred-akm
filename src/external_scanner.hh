@@ -10,13 +10,13 @@ namespace Akm {
 class ExternalScannerTool : public IScanner
 {
 public:
-    ExternalScannerTool(const std::string& _external_tool_path);
+    ExternalScannerTool(const std::string& _external_tool_path, unsigned long long _queries_per_second);
 
     void scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const;
 
 private:
+    unsigned long long queries_per_second_;
     std::vector<std::string> external_tool_path_;
-    std::vector<const char*> subprocess_argv_;
     NameserverDomainsCollection tasks_;
 };
 

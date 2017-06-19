@@ -71,7 +71,7 @@ void dispatch_command_scan(
 {
     const auto& scanner_tool_path = _conf.get<Fred::Akm::ScannerConf>()->tool_path;
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
-    Fred::Akm::ExternalScannerTool scanner(scanner_tool_path);
+    Fred::Akm::ExternalScannerTool scanner(scanner_tool_path, 150 /* TODO: hardcoded value */);
     command_scan(db, scanner);
 }
 
