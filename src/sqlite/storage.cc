@@ -9,6 +9,17 @@ namespace Sqlite {
 namespace {
 
 
+void create_schema_scan_iteration(sqlite3pp::database& _db)
+{
+    _db.execute(
+        "CREATE TABLE IF NOT EXISTS scan_iteration ("
+            " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
+            " start_at TEXT NOT NULL DEFAULT (datetime('now')),"
+            " end_at TEXT DEFAULT NULL)"
+    );
+}
+
+
 void create_schema_scan_queue(sqlite3pp::database& _db)
 {
     _db.execute(
@@ -31,6 +42,7 @@ void create_schema_scan_result(sqlite3pp::database& _db)
     _db.execute(
         "CREATE TABLE IF NOT EXISTS scan_result ("
             " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
+            " scan_iteration_id INTEGER NOT NULL,"
             " scan_at TEXT NOT NULL DEFAULT (datetime('now')),"
             " domain_id INTEGER NOT NULL CHECK(domain_id > 0),"
             " domain_name TEXT NOT NULL CHECK(COALESCE(domain_name, '') != ''),"
@@ -41,7 +53,8 @@ void create_schema_scan_result(sqlite3pp::database& _db)
             " cdnskey_flags INTEGER,"
             " cdnskey_proto INTEGER,"
             " cdnskey_alg INTEGER,"
-            " cdnskey_public_key TEXT)"
+            " cdnskey_public_key TEXT,"
+            " FOREIGN KEY (scan_iteration_id) REFERENCES scan_iteration(id))"
     );
 }
 
@@ -59,6 +72,8 @@ void create_schema_scan_notification(sqlite3pp::database& _db)
 
 void create_schema(sqlite3pp::database& _db)
 {
+
+    create_schema_scan_iteration(_db);
     create_schema_scan_queue(_db);
     create_schema_scan_result(_db);
     create_schema_scan_notification(_db);
@@ -71,6 +86,7 @@ void drop_schema(sqlite3pp::database& _db)
     _db.execute("DROP TABLE IF EXISTS scan_result");
     _db.execute("DROP TABLE IF EXISTS scan_task");
     _db.execute("DROP TABLE IF EXISTS scan_notification");
+    _db.execute("DROP TABLE IF EXISTS scan_iteration");
 }
 
 
@@ -223,14 +239,12 @@ NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
 }
 
 
-void SqliteStorage::save_scan_result(const ScanResult& _result) const
+void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, long long _iteration_id) const
 {
-    save_scan_results({_result});
-}
-
-
-void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results) const
-{
+    if (_iteration_id <= 0)
+    {
+        throw std::runtime_error("invalid scan iteration id");
+    }
     sqlite3pp::database db(filename_.c_str());
     //db.set_rollback_handler([]{ throw std::runtime_error("sqlite storage error"); });
     sqlite3pp::transaction xct(db);
@@ -238,9 +252,9 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results) c
     sqlite3pp::command i_result(db);
     i_result.prepare(
         "INSERT INTO scan_result"
-        " (domain_id, domain_name, has_keyset, cdnskey_status,"
+        " (scan_iteration_id, domain_id, domain_name, has_keyset, cdnskey_status,"
         " nameserver, nameserver_ip, cdnskey_flags, cdnskey_proto, cdnskey_alg, cdnskey_public_key)"
-        " VALUES (:domain_id, :domain_name, :has_keyset, :cdnskey_status, :nameserver, :nameserver_ip,"
+        " VALUES (:scan_iteration_id, :domain_id, :domain_name, :has_keyset, :cdnskey_status, :nameserver, :nameserver_ip,"
         " :cdnskey_flags, :cdnskey_proto, :cdnskey_alg, :cdnskey_public_key)"
     );
 
@@ -283,6 +297,7 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results) c
             }
         }
 
+        i_result.bind(":scan_iteration_id", _iteration_id);
         i_result.bind(":domain_id", task_domain_id);
         i_result.bind(":domain_name", result.domain_name, sqlite3pp::nocopy);
         i_result.bind(":has_keyset", task_has_keyset);
@@ -338,6 +353,64 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results) c
         i_result.step();
         i_result.reset();
     }
+    xct.commit();
+}
+
+
+long long SqliteStorage::start_new_scan_iteration() const
+{
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+
+    sqlite3pp::command i_result(db, "INSERT INTO scan_iteration (end_at) VALUES (NULL)");
+    i_result.execute();
+    long long iteration_id = db.last_insert_rowid();
+    if (iteration_id <= 0)
+    {
+        throw std::runtime_error("unable to start new iteration");
+    }
+    xct.commit();
+    return iteration_id;
+}
+
+
+void SqliteStorage::end_scan_iteration(const long long _iteration_id) const
+{
+    if (_iteration_id <= 0)
+    {
+        throw std::runtime_error("invalid scan iteration id");
+    }
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+
+    sqlite3pp::command u_result(db, "UPDATE scan_iteration SET end_at = datetime('now')"
+        " WHERE end_at IS NULL AND id = :id"
+    );
+    u_result.bind(":id", _iteration_id);
+    u_result.execute();
+    if (db.changes() != 1)
+    {
+            throw std::runtime_error("unable to mark iteration as finished");
+    }
+    xct.commit();
+}
+
+
+void SqliteStorage::wipe_unfinished_scan_iterations() const
+{
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+
+    sqlite3pp::command d_result(db,
+        "DELETE FROM scan_result WHERE scan_iteration_id IN"
+        " (SELECT id FROM scan_iteration WHERE end_at IS NULL)"
+    );
+    d_result.execute();
+    sqlite3pp::command d2_result(db,
+        "DELETE FROM scan_iteration WHERE end_at IS NULL"
+    );
+    d2_result.execute();
+
     xct.commit();
 }
 

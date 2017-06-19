@@ -24,9 +24,13 @@ public:
 
     virtual NameserverDomainsCollection get_scan_queue_tasks() const = 0;
 
-    virtual void save_scan_result(const ScanResult& _result) const = 0;
+    virtual void save_scan_results(const std::vector<ScanResult>& _results, long long _iteration_id) const = 0;
 
-    virtual void save_scan_results(const std::vector<ScanResult>& _results) const = 0;
+    virtual long long start_new_scan_iteration() const = 0;
+
+    virtual void end_scan_iteration(const long long _iteration_id) const = 0;
+
+    virtual void wipe_unfinished_scan_iterations() const = 0;
 };
 
 
