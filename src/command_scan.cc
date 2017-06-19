@@ -7,13 +7,18 @@ namespace Akm {
 
 void command_scan(const IStorage& _storage, IScanner& _scanner)
 {
-    auto tasks = _storage.get_scan_queue_tasks();
+    _storage.wipe_unfinished_scan_iterations();
 
+    auto tasks = _storage.get_scan_queue_tasks();
     log()->info("loaded scan queue ({} namserver(s))", tasks.size());
-    _scanner.scan(tasks, [&_storage](const std::vector<ScanResult>& _results)
-        { _storage.save_scan_results(_results); }
+
+    long iteration_id = _storage.start_new_scan_iteration();
+    log()->info("started new scan iteration (id={})", iteration_id);
+    _scanner.scan(tasks, [&_storage, &iteration_id](const std::vector<ScanResult>& _results)
+        { _storage.save_scan_results(_results, iteration_id); }
     );
-    log()->info("scan finished");
+    _storage.end_scan_iteration(iteration_id);
+    log()->info("scan iteration finished (id={})", iteration_id);
 }
 
 

@@ -24,9 +24,13 @@ public:
 
     NameserverDomainsCollection get_scan_queue_tasks() const;
 
-    void save_scan_result(const ScanResult& _result) const;
+    void save_scan_results(const std::vector<ScanResult>& _results, long long _iteration_id) const;
 
-    void save_scan_results(const std::vector<ScanResult>& _results) const;
+    long long start_new_scan_iteration() const;
+
+    void end_scan_iteration(const long long _iteration_id) const;
+
+    void wipe_unfinished_scan_iterations() const;
 
 private:
     std::string filename_;
