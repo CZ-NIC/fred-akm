@@ -2,6 +2,7 @@
 #include <array>
 #include <iostream>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <boost/lexical_cast.hpp>
 
 #include "src/utils.hh"
@@ -277,7 +278,13 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
     int& child_rd_fd = pipes[ParentPipe::WRITE][Descriptor::READ];
     int& child_wr_fd = pipes[ParentPipe::READ][Descriptor::WRITE];
 
-    if (!fork())
+    const pid_t parent_pid = getpid();
+    const pid_t child_pid = fork();
+    if (child_pid == -1)
+    {
+        throw std::runtime_error("running subprocess failed (fork() failed)");
+    }
+    else if (child_pid == 0)
     {
         /* child */
         dup2(child_rd_fd, STDIN_FILENO);
@@ -293,6 +300,8 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
     }
     else
     {
+        log()->debug("parent_pid={} child_pid={}", parent_pid, child_pid);
+
         close(child_rd_fd);
         close(child_wr_fd);
 
@@ -362,6 +371,7 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
         log()->debug("read chunk buffer size: {} [b]", READ_CHUNK_SIZE);
         log()->info("waiting for results...");
         int read_count = 0;
+        int child_status;
         while ((read_count = read(parent_rd_fd, chunk.data(), chunk.size() - 1)) > 0)
         {
             if (read_count >= 0)
@@ -392,6 +402,20 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
             _callback(result_buffer);
             total_results += result_buffer.size();
         }
+        const pid_t exited_child = waitpid(child_pid, &child_status, 0);
+        if (exited_child == child_pid)
+        {
+            const bool child_exited_successfully = WIFEXITED(child_status) && (WEXITSTATUS(child_status) == EXIT_SUCCESS);
+            if (!child_exited_successfully)
+            {
+                throw std::runtime_error("child terminated unsuccesfully :(");
+            }
+        }
+        else
+        {
+            throw std::runtime_error("waitpid failure (" + std::string(std::strerror(errno)) + ")");
+        }
+
         log()->info("total proccessed results: {}", total_results);
     }
 }
