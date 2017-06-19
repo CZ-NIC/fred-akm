@@ -8,9 +8,28 @@
 #include "src/corba/akm.hh"
 #include "src/sqlite/storage.hh"
 #include "src/external_scanner.hh"
+#include "src/log.hh"
 
 #include "src/command_load.hh"
 #include "src/command_scan.hh"
+
+
+void debug_input_params(
+    const std::unordered_map<std::string, std::string>& _map,
+    const std::string& _prefix = ""
+)
+{
+    for (const auto kv : _map)
+    {
+        std::string prefix;
+        if (_prefix.size())
+        {
+            prefix.append(_prefix + ".");
+        }
+        Fred::Akm::log()->debug("{}{}: {}", prefix, kv.first, kv.second);
+    }
+};
+
 
 void dispatch_command_load(
     const Fred::Akm::Corba::CorbaContext& _cctx,
@@ -85,10 +104,15 @@ int main(int argc, char* argv[])
         {
             throw std::runtime_error("config file not found");
         }
-
         const auto conf = Fred::Akm::parse_conf(config_file);
-        const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
 
+        const auto logging_conf = conf.get<Fred::Akm::LoggingConf>();
+        Fred::Akm::setup_logging(logging_conf->sinks, logging_conf->level);
+
+        debug_input_params(args.get<Fred::Akm::DebugMapArgs>()->debug_map, "args");
+        debug_input_params(conf.get<Fred::Akm::DebugMapConf>()->debug_map, "conf");
+
+        const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
         const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
 
         typedef std::function<void(Fred::Akm::Corba::CorbaContext, Fred::Akm::Args, Fred::Akm::Conf)> CommandDispatchFunc;
@@ -109,11 +133,13 @@ int main(int argc, char* argv[])
     catch (const std::exception& e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
+        Fred::Akm::log()->error(e.what());
         return -1;
     }
     catch (...)
     {
         std::cerr << "Unknown error occured" << std::endl;
+        Fred::Akm::log()->error("unknown error occured");
         return -2;
     }
 }

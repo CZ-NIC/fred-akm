@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <boost/program_options.hpp>
 
 namespace Fred {
@@ -11,7 +12,9 @@ namespace Akm {
 
 void split_on(const std::string& _in_string, const char delimiter, std::vector<std::string>& _out_tokens);
 
-void dump_variable_map(const boost::program_options::variables_map& _map, std::ostream& out);
+std::unordered_map<std::string, std::string> variable_map_to_string_map(
+    const boost::program_options::variables_map& _map
+);
 
 
 } // namespace Akm

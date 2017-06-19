@@ -6,6 +6,7 @@
 #include <map>
 #include <typeinfo>
 #include <typeindex>
+#include <unordered_map>
 
 #include "type_instance_map.hh"
 
@@ -38,6 +39,14 @@ struct LoadCommandArgs : public ArgsGroup
     bool wipe_queue;
     bool allow_dups;
     bool prune;
+};
+
+struct DebugMapArgs : public ArgsGroup
+{
+    DebugMapArgs(const std::unordered_map<std::string, std::string>& _map)
+        : debug_map(_map) { }
+
+    std::unordered_map<std::string, std::string> debug_map;
 };
 
 

@@ -3,6 +3,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include "src/utils.hh"
+#include "src/log.hh"
 
 namespace Fred {
 namespace Akm {
@@ -23,8 +24,12 @@ void split_on(const std::string& _in_string, const char _delimiter, std::vector<
 }
 
 
-void dump_variable_map(const boost::program_options::variables_map& _map, std::ostream& out)
+std::unordered_map<std::string, std::string> variable_map_to_string_map(
+    const boost::program_options::variables_map& _map
+)
 {
+    std::unordered_map<std::string, std::string> str_map;
+
     for (const auto kv : _map)
     {
         const std::string& name = kv.first;
@@ -96,9 +101,12 @@ void dump_variable_map(const boost::program_options::variables_map& _map, std::o
         {
             value = "<unhandled type>";
         }
-        out << name << ": " << value << " " << flags << std::endl;
+
+        str_map[name] = value + (!flags.empty() ? " " + flags : "");
     }
+    return str_map;
 }
+
 
 } // namespace Akm
 } // namespace Fred

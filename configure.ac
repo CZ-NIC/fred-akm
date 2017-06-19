@@ -40,6 +40,12 @@ AX_LIB_SQLITE3
 
 PKG_CHECK_MODULES(OMNIORB4, [omniORB4 > 4.1.1, omniDynamic4, omnithread3])
 
+AC_LANG_PUSH([C++])
+CPPFLAGS_SAVED=$CPPFLAGS
+CPPFLAGS="-std=c++11 $CPPFLAGS"
+AC_CHECK_HEADER([spdlog/spdlog.h], [], [AC_MSG_ERROR([Missing spdlog header])])
+CPPFLAGS=$CPPFLAGS_SAVED
+
 AC_ARG_WITH(
 	[idldir],
 	[AS_HELP_STRING(
@@ -67,7 +73,6 @@ AC_CHECK_FILE(
 		(use --with-idldir)]
 	)]
 )
-
 
 # Last line: actually generate all required output files.
 AC_OUTPUT
