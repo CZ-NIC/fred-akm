@@ -36,6 +36,11 @@ void command_scan(const IStorage& _storage, IScanner& _scanner)
 
     auto tasks = _storage.get_scan_queue_tasks();
     log()->info("loaded scan queue ({} namserver(s))", tasks.size());
+    if (tasks.size() == 0)
+    {
+        log()->info("queue empty...");
+        return;
+    }
 
     typedef std::vector<std::string> Nameservers;
     typedef std::unordered_map<Domain, Nameservers, DomainHash, DomainEqual> DomainNameserversMap;
