@@ -251,11 +251,8 @@ namespace {
 
 
 
-ExternalScannerTool::ExternalScannerTool(
-    const std::string& _external_tool_path, const unsigned long long _queries_per_second
-)
-    : queries_per_second_(_queries_per_second),
-      external_tool_path_()
+ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
+    :  external_tool_path_()
 {
     split_on(_external_tool_path, ' ', external_tool_path_);
     if (external_tool_path_.size() < 2)
@@ -267,18 +264,16 @@ ExternalScannerTool::ExternalScannerTool(
 
 void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const
 {
-    auto runtime = compute_best_runtime_for_input(_tasks, queries_per_second_);
-    /* TODO: better way to add runtime parameter
-     * (originally complete command path with args was taken from configuration...)
-     */
+    // auto runtime = compute_best_runtime_for_input(_tasks, queries_per_second_);
+    // auto runtime_arg = boost::lexical_cast<std::string>(runtime);
+
     std::vector<const char*> subprocess_argv;
-    auto runtime_arg = boost::lexical_cast<std::string>(runtime);
     for (const auto& path_part : external_tool_path_)
     {
         /* path_part.c_str() is owned by external_tool_path_ vector */
         subprocess_argv.push_back(path_part.c_str());
     }
-    subprocess_argv.push_back(runtime_arg.c_str());
+    // subprocess_argv.push_back(runtime_arg.c_str());
     subprocess_argv.push_back(nullptr);
 
 
