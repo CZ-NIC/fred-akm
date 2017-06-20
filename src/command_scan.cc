@@ -50,8 +50,21 @@ void command_scan(const IStorage& _storage, IScanner& _scanner)
         }
     }
 
-    auto batch_ns_max = std::min(tasks.size() / 10, tasks.size());
-    auto batch_ds_max = std::min(inverse_tasks.size() / 50, inverse_tasks.size());
+    auto run_batch_scan = [&_storage, &_scanner](const NameserverDomainsCollection& _batch)
+    {
+        long iteration_id = _storage.start_new_scan_iteration();
+        log()->info("started new scan iteration (id={})", iteration_id);
+        _scanner.scan(_batch, [&_storage, &iteration_id](const std::vector<ScanResult>& _results)
+            { _storage.save_scan_results(_results, iteration_id); }
+        );
+        _storage.end_scan_iteration(iteration_id);
+        log()->info("scan iteration finished (id={})", iteration_id);
+    };
+
+    const auto BATCH_NS_MIN = 2000UL;
+    const auto BATCH_DS_MIN = 10000UL;
+    auto batch_ns_max = std::max(tasks.size() / 10, BATCH_NS_MIN);
+    auto batch_ds_max = std::max(inverse_tasks.size() / 50, BATCH_DS_MIN);
     log()->debug("ns total:{} batch-max:{}", tasks.size(), batch_ns_max);
     log()->debug("ds total:{} batch-max:{}", inverse_tasks.size(), batch_ds_max);
 
@@ -72,13 +85,7 @@ void command_scan(const IStorage& _storage, IScanner& _scanner)
         if (batch.size() >= batch_ns_max || batch_domains_count >= batch_ds_max)
         {
             {
-                long iteration_id = _storage.start_new_scan_iteration();
-                log()->info("started new scan iteration (id={})", iteration_id);
-                _scanner.scan(batch, [&_storage, &iteration_id](const std::vector<ScanResult>& _results)
-                    { _storage.save_scan_results(_results, iteration_id); }
-                );
-                _storage.end_scan_iteration(iteration_id);
-                log()->info("scan iteration finished (id={})", iteration_id);
+                run_batch_scan(batch);
             }
 
             batch_domains_count = 0;
@@ -86,6 +93,7 @@ void command_scan(const IStorage& _storage, IScanner& _scanner)
         }
         ++it;
     }
+    run_batch_scan(batch);
     log()->debug("all done");
 }
 
