@@ -33,6 +33,8 @@ public:
     void wipe_unfinished_scan_iterations() const;
 
 private:
+    sqlite3pp::database get_db() const;
+
     std::string filename_;
 };
 

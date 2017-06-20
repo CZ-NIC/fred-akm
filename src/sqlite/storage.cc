@@ -64,8 +64,8 @@ void create_schema_scan_notification(sqlite3pp::database& _db)
     _db.execute(
         "CREATE TABLE IF NOT EXISTS scan_notification ("
             " domain_id INTEGER PRIMARY KEY NOT NULL,"
-            " last_at TEXT,"
-            " FOREIGN KEY (domain_id) REFERENCES scan_result(domain_id))"
+            " last_at TEXT)"
+            // " FOREIGN KEY (domain_id) REFERENCES scan_result(domain_id))"
     );
 }
 
@@ -157,16 +157,24 @@ void clear_scan_queue(sqlite3pp::database& _db)
 }
 
 
+sqlite3pp::database SqliteStorage::get_db() const
+{
+    sqlite3pp::database db(filename_.c_str());
+    db.enable_foreign_keys(true);
+    db.enable_triggers(true);
+    return db;
+}
+
+
 SqliteStorage::SqliteStorage(const std::string& _filename)
     : filename_(_filename)
 {
 }
 
 
-
 void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _data) const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
     create_schema(db);
     Impl::append_to_scan_queue(db, _data);
@@ -176,8 +184,7 @@ void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _dat
 
 void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const
 {
-    sqlite3pp::database db(filename_.c_str());
-    db.set_rollback_handler([]{ throw std::runtime_error("sqlite storage error"); });
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
     create_schema(db);
     Impl::append_to_scan_queue_if_not_exists(db, _data);
@@ -187,7 +194,7 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCo
 
 void SqliteStorage::wipe_scan_queue() const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
     db.execute("DROP TABLE IF EXISTS scan_queue");
     create_schema_scan_queue(db);
@@ -197,7 +204,7 @@ void SqliteStorage::wipe_scan_queue() const
 
 void SqliteStorage::prune_scan_queue() const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
     db.execute(
         "DELETE FROM scan_queue WHERE"
@@ -212,7 +219,7 @@ void SqliteStorage::prune_scan_queue() const
 
 NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
     sqlite3pp::query tasks_query(
         db,
@@ -245,8 +252,7 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, l
     {
         throw std::runtime_error("invalid scan iteration id");
     }
-    sqlite3pp::database db(filename_.c_str());
-    //db.set_rollback_handler([]{ throw std::runtime_error("sqlite storage error"); });
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
 
     sqlite3pp::command i_result(db);
@@ -359,7 +365,7 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, l
 
 long long SqliteStorage::start_new_scan_iteration() const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
 
     sqlite3pp::command i_result(db, "INSERT INTO scan_iteration (end_at) VALUES (NULL)");
@@ -380,7 +386,7 @@ void SqliteStorage::end_scan_iteration(const long long _iteration_id) const
     {
         throw std::runtime_error("invalid scan iteration id");
     }
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
 
     sqlite3pp::command u_result(db, "UPDATE scan_iteration SET end_at = datetime('now')"
@@ -398,7 +404,7 @@ void SqliteStorage::end_scan_iteration(const long long _iteration_id) const
 
 void SqliteStorage::wipe_unfinished_scan_iterations() const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
 
     sqlite3pp::command d_result(db,
