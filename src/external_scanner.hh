@@ -16,7 +16,6 @@ public:
 
 private:
     std::vector<std::string> external_tool_path_;
-    std::vector<const char*> subprocess_argv_;
     NameserverDomainsCollection tasks_;
 };
 
