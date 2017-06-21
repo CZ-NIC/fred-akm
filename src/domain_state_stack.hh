@@ -51,12 +51,11 @@ struct DomainStateStack {
     Domains domains;
 };
 
-boost::optional<DomainState> get_last_domain_state(
+boost::optional<DomainState> get_last_domain_state_if_domain_nameservers_are_coherent(
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         int _scan_result_row_timediff_max,
-        int _scan_result_row_sequence_timediff_min,
-        bool& _domain_nameservers_coherent);
+        int _scan_result_row_sequence_timediff_min);
 
 void print(const DomainStateStack& _haystack);
 

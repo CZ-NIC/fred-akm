@@ -120,6 +120,7 @@ std::ostream& operator<<(std::ostream& os, const DomainState& domain_state);
 std::istream& operator>>(std::istream& is, DomainState& domain_state);
 std::string to_string(const DomainState& domain_state);
 
+bool has_deletekey(const DomainState& _domain_state);
 bool are_coherent(const DomainState& domain_state, const DomainState& domain_state2);
 
 } // namespace Fred::Akm

@@ -20,7 +20,9 @@
 
 #include "src/cdnskey.hh"
 
+#include <algorithm>
 #include <istream>
+#include <iterator>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -47,17 +49,19 @@ std::ostream& operator<<(std::ostream& os, const DomainState& domain_state)
     static const std::string delim = ", ";
     os << "["
        << quote(domain_state.scan_at) << delim
-       //<< quote(domain_state.scan_at_seconds) << delim
        << quote(domain_state.domain_id) << delim
        << quote(domain_state.domain_name) << delim
        << quote(domain_state.has_keyset) << delim;
-       //<< quote(domain_state.nameserver) << delim
-       //<< quote(domain_state.nameserver_ip) << delim;
     for (const auto& cdnskey : domain_state.cdnskeys)
     {
         os << cdnskey.second;
     }
     os << "]";
+    os << " ("
+       << "taken from NS: " << quote(domain_state.nameserver) << delim
+       << "with IP: " << quote(domain_state.nameserver_ip) << delim
+       << "at: " << quote(domain_state.scan_at)
+       << ")";
 
     return os;
 }
@@ -70,18 +74,29 @@ std::string to_string(const DomainState& domain_state)
     std::string retval;
     retval = "[" +
             quote(domain_state.scan_at) + delim +
-            //quote(domain_state.scan_at_seconds) + delim +
             quote(domain_state.has_keyset) + delim +
             quote(domain_state.domain_id) + delim +
-            quote(domain_state.domain_name); // + delim +
-            //quote(domain_state.nameserver) + delim +
-            //quote(domain_state.nameserver_ip);
+            quote(domain_state.domain_name);
             for (const auto& cdnskey : domain_state.cdnskeys)
             {
                 retval += delim + to_string(cdnskey.second);
             }
             retval += "]";
+            retval += std::string(" (") +
+            "taken from NS: " + quote(domain_state.nameserver) + delim +
+            "with IP: " + quote(domain_state.nameserver_ip) + delim +
+            "at: " + quote(domain_state.scan_at);
     return retval;
+}
+
+bool has_deletekey(const DomainState& _domain_state) {
+    return std::find_if(
+                   _domain_state.cdnskeys.begin(),
+                   _domain_state.cdnskeys.end(),
+                   [](std::pair<std::string, Cdnskey> cdnskeys_item) {
+                     return is_deletekey(cdnskeys_item.second);
+                   })
+           != _domain_state.cdnskeys.end();
 }
 
 bool are_coherent(const DomainState& _first, const DomainState& _second)

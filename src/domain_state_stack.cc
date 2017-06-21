@@ -54,6 +54,10 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
     boost::optional<DomainState> last_domain_state;
     for (const auto& r : _scan_result_rows)
     {
+        if (!is_insecure_with_data(r))
+        {
+            log()->debug("not importing scan_result_row: {}", to_string(r));
+        }
         if (is_valid(r)) {
             log()->debug("importig scan_result_row: {}", to_string(r));
         }
@@ -115,19 +119,18 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
     }
 }
 
-boost::optional<DomainState> get_last_domain_state(
+boost::optional<DomainState> get_last_domain_state_if_domain_nameservers_are_coherent(
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         const int _scan_result_row_timediff_max,
-        const int _scan_result_row_sequence_timediff_min,
-        bool& _domain_nameservers_coherent)
+        const int _scan_result_row_sequence_timediff_min)
 {
     bool domain_ok = true;
     bool scan_result_row_timediff_max_ok = true;
     bool key_check_ok = true;
     bool scan_result_row_sequence_timediff_min_ok = false;
 
-    boost::optional<DomainState> newest_domain_state;
+    boost::optional<DomainState> newest_domain_state; // domain state as reported by its most recently scanned namserver_ip
     for (const auto& nameserver : _nameservers) {
         //indented_print(1, nameserver.first);
         for (const auto& nameserver_ip : nameserver.second) {
@@ -141,6 +144,10 @@ boost::optional<DomainState> get_last_domain_state(
                 {
                     newest_domain_state = domain_state;
                 }
+            }
+            else {
+                log()->info("no IP addresses for nameserver {}", nameserver.first);
+                return boost::optional<DomainState>();
             }
         }
     }
@@ -220,8 +227,7 @@ boost::optional<DomainState> get_last_domain_state(
 
     indented_print(1, std::string("DOMAIN CHECK ") + (domain_ok ? "OK" : "KO"));
 
-    _domain_nameservers_coherent = domain_ok;
-    return newest_domain_state;
+    return domain_ok ? newest_domain_state : boost::optional<DomainState>();
 }
 
 

@@ -139,10 +139,11 @@ bool is_empty(const Cdnskey& _cdnskey)
 // RFC 8078 section 4. DNSSEC Delete Algorithm
 bool is_deletekey(const Cdnskey& _cdnskey)
 {
+    const std::string base64_zero = "AA==";
     if (_cdnskey.flags == 0 &&
         _cdnskey.proto == 3 &&
         _cdnskey.alg == 0 &&
-        _cdnskey.public_key == "0")
+        _cdnskey.public_key == base64_zero)
     {
         return true;
     }

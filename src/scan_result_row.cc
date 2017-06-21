@@ -203,7 +203,33 @@ bool is_insecure(const ScanResultRow& _scan_result_row)
 {
     if (_scan_result_row.has_keyset == 0 &&
         (_scan_result_row.cdnskey.status == "insecure" ||
+         _scan_result_row.cdnskey.status == "insecure-empty" ||
+         _scan_result_row.cdnskey.status == "unresolved" ||
+         _scan_result_row.cdnskey.status == "unresolved-ip"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_insecure_with_data(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.has_keyset == 0 &&
+        (_scan_result_row.cdnskey.status == "insecure" ||
          _scan_result_row.cdnskey.status == "insecure-empty"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_secure(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.has_keyset == 1 &&
+        (_scan_result_row.cdnskey.status == "secure" ||
+         _scan_result_row.cdnskey.status == "secure-empty" ||
+         _scan_result_row.cdnskey.status == "untrustworthy" ||
+         _scan_result_row.cdnskey.status == "unknown"))
     {
         return true;
     }
