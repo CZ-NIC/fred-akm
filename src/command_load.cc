@@ -133,6 +133,8 @@ void command_load(const IStorage& _storage, const std::string& _filename, const 
     if (_whitelist_filename.length())
     {
         data = Impl::whitelist_filter(data, _whitelist_filename);
+        log()->info("forcing scan queue wipe on filtered input");
+        _flags |= LoadFlags::WIPE_QUEUE;
     }
     Impl::command_load(_storage, data, _flags);
     log()->info("imported to database");
@@ -146,6 +148,8 @@ void command_load(const IStorage& _storage, const IAkm& _backend, const std::str
     if (_whitelist_filename.length())
     {
         data = Impl::whitelist_filter(data, _whitelist_filename);
+        log()->info("forcing scan queue wipe on filtered input");
+        _flags |= LoadFlags::WIPE_QUEUE;
     }
     Impl::command_load(_storage, data, _flags);
     log()->info("imported to database");

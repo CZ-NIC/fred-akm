@@ -48,7 +48,7 @@ Args parse_args(int argc, char* argv[])
             ("prune", po::bool_switch(&command_load_args->prune)->default_value(false),
              "prune domain with older id when importing same domain name")
             ("whitelist-file", po::value<std::string>(&command_load_args->whitelist_file)->default_value(""),
-             "whitelist file with domain names (one per line) which can be imported to scan queue");
+             "whitelist file with domain names (one per line) which can be imported to scan queue (enforces --wipe-queue)");
         po::options_description command_update("Update options");
         po::options_description command_notify("Notify options");
 
