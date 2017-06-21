@@ -148,11 +148,11 @@ void command_notify(
                         0,
                         domain_nameservers_coherent);
 
-        log()->debug("newest_domain_state: {}: {}", domain_nameservers_coherent ? "OK" : "KO", to_string(newest_domain_state.value_or(DomainState())));
+        log()->debug("newest domain_state: {}: {}", domain_nameservers_coherent ? "OK" : "KO", to_string(newest_domain_state.value_or(DomainState())));
 
         boost::optional<NotifiedDomainState> notified_domain_state = _storage.get_last_notified_domain_state(domain.first.id);
 
-        log()->debug("last notified_domain_state: {}: {}", !notified_domain_state ? "NOT FOUND" : notified_domain_state->notification_type == domain_state_ok ? "OK" : notified_domain_state->notification_type == domain_state_ko ? "KO" : "UNKNOWN NOTIFICATION TYPE", to_string(notified_domain_state.value_or(NotifiedDomainState())));
+        log()->debug("last notified state: {}: {}", !notified_domain_state ? "NOT FOUND" : notified_domain_state->notification_type == domain_state_ok ? "OK" : notified_domain_state->notification_type == domain_state_ko ? "KO" : "UNKNOWN NOTIFICATION TYPE", to_string(notified_domain_state.value_or(NotifiedDomainState())));
 
         if (domain_nameservers_coherent)
         {

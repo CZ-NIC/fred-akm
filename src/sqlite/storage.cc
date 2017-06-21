@@ -243,19 +243,19 @@ void set_notified_domain_state(sqlite3pp::database& _db, const NotifiedDomainSta
 boost::optional<NotifiedDomainState> get_last_notified_domain_state(sqlite3pp::database& _db, const unsigned long long _domain_id)
 {
     sqlite3pp::query query(_db);
-    query.prepare(boost::str(boost::format(
+    query.prepare(
         "SELECT domain_id, "
                "domain_name, "
                "has_keyset, "
                "cdnskeys, "
                "notification_type, "
                "last_at, "
-               "strftime('%%s', datetime(last_at)) as last_at_seconds "
+               "strftime('%s', datetime(last_at)) as last_at_seconds "
           "FROM notified_domain_state "
-         "WHERE domain_id == '%1%' "
-         "ORDER BY id DESC") % (static_cast<long long>(_domain_id))).c_str());
+         "WHERE domain_id == ? "
+         "ORDER BY id DESC");
 
-    //query.bind(1, _domain_id * -1); // TODO
+    query.bind(1, static_cast<long long>(_domain_id));
 
     // how to check that the query is empty?
     // query.begin() == query.end() has some side-effect, if used, following (*query.begin()).getter() does not work
