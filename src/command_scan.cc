@@ -33,6 +33,8 @@ struct DomainEqual
 void command_scan(const IStorage& _storage, IScanner& _scanner)
 {
     _storage.wipe_unfinished_scan_iterations();
+    auto removed_tasks = _storage.prune_finished_scan_queue();
+    log()->info("removed {} finished tasks from scan queue", removed_tasks);
 
     auto tasks = _storage.get_scan_queue_tasks();
     log()->info("loaded scan queue ({} namserver(s))", tasks.size());

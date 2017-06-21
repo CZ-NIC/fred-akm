@@ -31,6 +31,8 @@ public:
     virtual void end_scan_iteration(const long long _iteration_id) const = 0;
 
     virtual void wipe_unfinished_scan_iterations() const = 0;
+
+    virtual long long prune_finished_scan_queue() const = 0;
 };
 
 

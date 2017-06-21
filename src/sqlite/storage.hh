@@ -32,6 +32,8 @@ public:
 
     void wipe_unfinished_scan_iterations() const;
 
+    long long prune_finished_scan_queue() const;
+
 private:
     sqlite3pp::database get_db() const;
 
