@@ -402,6 +402,19 @@ void SqliteStorage::end_scan_iteration(const long long _iteration_id) const
 }
 
 
+long long SqliteStorage::prune_finished_scan_queue() const
+{
+    auto db = get_db();
+    sqlite3pp::transaction xct(db);
+    db.execute(
+        "DELETE FROM scan_queue WHERE id IN"
+        " (SELECT sq.id FROM scan_iteration si JOIN scan_result sr ON sr.scan_iteration_id = si.id AND si.end_at IS NOT NULL"
+        " JOIN scan_queue sq ON sq.domain_id = sr.domain_id AND sr.scan_at > sq.import_at)"
+    );
+    xct.commit();
+    return db.changes();
+}
+
 void SqliteStorage::wipe_unfinished_scan_iterations() const
 {
     auto db = get_db();
