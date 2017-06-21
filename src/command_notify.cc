@@ -74,7 +74,7 @@ void send_and_save_notified_domain_state(
     template_parameters["domain"] = _notified_domain_state.domain_name; // TODO hardcoded
     template_parameters["zone"] = ".cz"; // TODO hardcoded
     template_parameters["datetime"] = _notified_domain_state.last_at;
-    template_parameters["days_to_left"] = 7; // TODO get from config (notify_update_within_x_days)
+    template_parameters["days_to_left"] = "7"; // TODO get from config (notify_update_within_x_days)
     std::vector<std::string> keys;
     boost::split(keys, _notified_domain_state.serialized_cdnskeys, boost::is_any_of("|"));
     for (int i = 0; i < keys.size(); ++i) {
