@@ -103,6 +103,29 @@ TechContacts Akm::get_nsset_notification_emails_by_domain_id(unsigned long long 
     }
 }
 
+void Akm::update_domain_automatic_keyset(unsigned long long _domain_id, Nsset _current_nsset, Keyset _new_keyset) const
+{
+    try
+    {
+        namespace AkmModule = Registry::AutomaticKeysetManagement;
+        AkmModule::AutomaticKeysetManagementIntf_var akm =
+                AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
+
+        AkmModule::Nsset current_nsset = wrap_Nsset(_current_nsset);
+        AkmModule::Keyset new_keyset = wrap_Keyset(_new_keyset);
+
+        akm->update_domain_automatic_keyset(_domain_id, current_nsset, new_keyset);
+
+    }
+    catch (const CORBA::SystemException& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::Exception& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+}
 
 } // namespace Corba
 } // namespace Akm

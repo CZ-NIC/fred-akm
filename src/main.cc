@@ -14,6 +14,7 @@
 #include "src/command_load.hh"
 #include "src/command_notify.hh"
 #include "src/command_scan.hh"
+#include "src/command_update.hh"
 
 
 void debug_input_params(
@@ -108,7 +109,20 @@ void dispatch_command_update(
     const Fred::Akm::Args& _args,
     const Fred::Akm::Conf& _conf)
 {
-    throw std::runtime_error("not implemented");
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
+    const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
+    const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
+    const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
+    const auto dry_run = _args.get<Fred::Akm::GeneralArgs>()->dry_run;
+
+    command_update(
+            db,
+            akm_backend,
+            maximal_time_between_scan_results,
+            minimal_scan_result_sequence_length_to_update,
+            notify_from_last_iteration_only,
+            dry_run);
 }
 
 

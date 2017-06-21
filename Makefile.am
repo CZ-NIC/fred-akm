@@ -35,6 +35,8 @@ fred_akm_SOURCES = \
 	src/external_scanner.cc \
 	src/command_notify.hh \
 	src/command_notify.cc \
+	src/command_update.hh \
+	src/command_update.cc \
 	src/notified_domain_state.hh \
 	src/notified_domain_state.cc \
 	src/cdnskey.hh \
