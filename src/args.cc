@@ -31,7 +31,9 @@ Args parse_args(int argc, char* argv[])
             ("command", po::value<std::string>(&general_args->command),
              "command to execute")
             ("command_args", po::value<std::vector<std::string>>(),
-             "command arguments");
+             "command arguments")
+            ("dry_run",
+             "dry run");
 
         po::positional_options_description positional;
         positional.add("command", 1).add("command_args", -1);
@@ -100,6 +102,8 @@ Args parse_args(int argc, char* argv[])
                 std::cout << command_desc << std::endl;
                 throw HelpExitHelper();
             }
+
+            general_args->dry_run = vm.count("dry_run") ? true : false;
 
             // parse so far unrecognized args with specific command parser
             po::store(

@@ -14,6 +14,8 @@ class IAkm
 {
 public:
     virtual NameserverDomainsCollection get_nameservers_with_automatically_managed_domain_candidates() const = 0;
+
+    virtual std::vector<std::string> get_nsset_notification_emails_by_domain_id(unsigned long long domain_id) const = 0;
 };
 
 

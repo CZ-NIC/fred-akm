@@ -3,6 +3,13 @@
 
 #include "src/corba/nameservice.hh"
 #include "src/i_akm.hh"
+#include "src/keyset.hh"
+#include "src/nameserver_domains.hh"
+#include "src/nsset.hh"
+#include "src/tech_contacts.hh"
+
+#include <string>
+#include <vector>
 
 namespace Fred {
 namespace Akm {
@@ -15,6 +22,10 @@ public:
     Akm(const Nameservice& _ns, const std::string& _ns_path_akm);
 
     NameserverDomainsCollection get_nameservers_with_automatically_managed_domain_candidates() const;
+
+    std::vector<std::string> get_nsset_notification_emails_by_domain_id(unsigned long long _domain_id) const;
+
+    void save_notification(unsigned long long domain_id, const std::string& last_at) const;
 
 private:
     const Nameservice& ns_;

@@ -22,12 +22,12 @@ public:
 
 private:
     const Nameservice& ns_;
-    std::string _ns_path_mailer_;
+    std::string ns_path_mailer_;
 };
 
 
+} // namespace Fred::Akm::Corba
+} // namespace Fred::Akm
 } // namespace Fred
-} // namespace Akm
-} // namespace Corba
 
 #endif//CORBA_MAILER_HH_207838907A1B10CB5C28A8E6721AFAD7

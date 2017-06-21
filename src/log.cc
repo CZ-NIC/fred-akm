@@ -1,5 +1,7 @@
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/null_sink.h>
+#include <spdlog/spdlog.h>
+
+#include <iostream>
 
 #include "src/utils.hh"
 

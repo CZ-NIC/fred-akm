@@ -6,7 +6,7 @@ namespace Corba {
 
 
 Mailer::Mailer(const Nameservice& _ns, const std::string& _ns_path_mailer)
-    : ns_(_ns), _ns_path_mailer_(_ns_path_mailer)
+    : ns_(_ns), ns_path_mailer_(_ns_path_mailer)
 {
 }
 
@@ -20,7 +20,7 @@ void Mailer::enqueue(
     try
     {
 
-        ccReg::Mailer_var mailer = ccReg::Mailer::_narrow(ns_.resolve(_ns_path_mailer_));
+        ccReg::Mailer_var mailer = ccReg::Mailer::_narrow(ns_.resolve(ns_path_mailer_));
 
         ccReg::MailHeader header;
         header.h_to = CORBA::string_dup(_header.to.c_str());
@@ -66,6 +66,6 @@ void Mailer::enqueue(
 }
 
 
+} // namespace Fred::Akm::Corba
+} // namespace Fred::Akm
 } // namespace Fred
-} // namespace Akm
-} // namespace Corba

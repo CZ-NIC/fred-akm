@@ -6,11 +6,13 @@
 #include "src/corba/corba_context.hh"
 #include "src/corba/nameservice.hh"
 #include "src/corba/akm.hh"
+#include "src/corba/mailer.hh"
 #include "src/sqlite/storage.hh"
 #include "src/external_scanner.hh"
 #include "src/log.hh"
 
 #include "src/command_load.hh"
+#include "src/command_notify.hh"
 #include "src/command_scan.hh"
 
 
@@ -59,7 +61,7 @@ void dispatch_command_load(
     }
     else
     {
-        auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path);
+        auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
         command_load(db, akm_backend, whitelist_file, load_flags);
     }
 }
@@ -82,6 +84,22 @@ void dispatch_command_notify(
     const Fred::Akm::Args& _args,
     const Fred::Akm::Conf& _conf)
 {
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
+    auto mailer_backend = Fred::Akm::Corba::Mailer(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_mailer);
+    const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
+    const auto minimal_scan_result_sequence_length_to_notify = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_notify;
+    const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
+    const auto dry_run = _args.get<Fred::Akm::GeneralArgs>()->dry_run;
+
+    command_notify(
+            db,
+            akm_backend,
+            mailer_backend,
+            maximal_time_between_scan_results,
+            minimal_scan_result_sequence_length_to_notify,
+            notify_from_last_iteration_only,
+            dry_run);
 }
 
 
@@ -90,6 +108,7 @@ void dispatch_command_update(
     const Fred::Akm::Args& _args,
     const Fred::Akm::Conf& _conf)
 {
+    throw std::runtime_error("not implemented");
 }
 
 
@@ -100,7 +119,7 @@ int main(int argc, char* argv[])
         const auto args = Fred::Akm::parse_args(argc, argv);
 
         const auto general_args = args.get<Fred::Akm::GeneralArgs>();
-        auto config_file = std::ifstream(general_args->config_file);
+        std::ifstream config_file(general_args->config_file); // = constructor is deleted
         if (!config_file.is_open())
         {
             throw std::runtime_error("config file not found");

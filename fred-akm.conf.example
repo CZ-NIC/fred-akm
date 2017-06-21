@@ -1,10 +1,22 @@
 [nameservice]
 host = localhost
 port = 2809
-object_path = fred.AKM
+object_path_akm = fred.AutomaticKeysetManagement
+object_path_mailer = fred.Mailer
 
 [database]
 filename = fred-akm.db
 
 [scanner]
 tool_path = /usr/bin/python tools/test-cdnskeyscanner.py
+
+[scan_results]
+maximal_time_between_scan_results = 172800
+minimal_scan_result_sequence_length_to_notify = 172800
+minimal_scan_result_sequence_length_to_update = 604800
+notify_from_last_iteration_only = false
+
+[logging]
+sink = console
+sink = file ./fred-akm.log
+level = debug
