@@ -39,6 +39,7 @@ struct LoadCommandArgs : public ArgsGroup
     bool wipe_queue;
     bool allow_dups;
     bool prune;
+    std::string whitelist_file;
 };
 
 struct DebugMapArgs : public ArgsGroup

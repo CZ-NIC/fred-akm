@@ -39,6 +39,7 @@ void dispatch_command_load(
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
     const auto load_args = _args.get<Fred::Akm::LoadCommandArgs>();
     const auto& input_file = load_args->input_file;
+    const auto& whitelist_file = load_args->whitelist_file;
     int load_flags = 0;
     if (load_args->wipe_queue)
     {
@@ -54,12 +55,12 @@ void dispatch_command_load(
     }
     if (input_file.length())
     {
-        command_load(db, input_file, load_flags);
+        command_load(db, input_file, whitelist_file, load_flags);
     }
     else
     {
         auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path);
-        command_load(db, akm_backend, load_flags);
+        command_load(db, akm_backend, whitelist_file, load_flags);
     }
 }
 
