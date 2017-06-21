@@ -104,8 +104,18 @@ namespace {
             return result;
         }
 
+        ScanResult parse_type_unresolved_ip(const Tokens& _tokens) const
+        {
+            ScanResult result;
+            result.cdnskey_status = RESULT_TYPE_UNRESOLVED_IP;
+
+            result.nameserver = _tokens.at(1);
+
+            return result;
+        }
 
     public:
+        static constexpr const char* RESULT_TYPE_UNRESOLVED_IP = "unresolved-ip";
         static constexpr const char* RESULT_TYPE_INSECURE = "insecure";
         static constexpr const char* RESULT_TYPE_INSECURE_EMPTY = "insecure-empty";
         static constexpr const char* RESULT_TYPE_UNRESOLVED = "unresolved";
@@ -123,6 +133,7 @@ namespace {
 
             typedef std::function<ScanResult(const ScanResultParser&, const Tokens&)> SubParser;
             const std::map<std::string, SubParser> subparsers_mapping = {
+                {RESULT_TYPE_UNRESOLVED_IP, &ScanResultParser::parse_type_unresolved_ip},
                 {RESULT_TYPE_INSECURE, &ScanResultParser::parse_type_insecure},
                 {RESULT_TYPE_INSECURE_EMPTY, &ScanResultParser::parse_type_insecure_empty},
                 {RESULT_TYPE_UNRESOLVED, &ScanResultParser::parse_type_unresolved},
@@ -155,6 +166,7 @@ namespace {
         }
     };
 
+    constexpr const char* ScanResultParser::RESULT_TYPE_UNRESOLVED_IP;
     constexpr const char* ScanResultParser::RESULT_TYPE_INSECURE;
     constexpr const char* ScanResultParser::RESULT_TYPE_INSECURE_EMPTY;
     constexpr const char* ScanResultParser::RESULT_TYPE_UNRESOLVED;
