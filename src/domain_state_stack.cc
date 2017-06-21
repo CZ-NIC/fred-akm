@@ -244,7 +244,7 @@ void print(const DomainStateStack& _haystack)
 
 bool operator<(const Domain& lhs, const Domain& rhs)
 {
-    return lhs.fqdn < rhs.fqdn || lhs.id < rhs.id;
+    return lhs.id < rhs.id;
 }
 
 } //namespace Fred::Akm
