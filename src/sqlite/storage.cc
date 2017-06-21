@@ -54,10 +54,10 @@ void create_schema_scan_result(sqlite3pp::database& _db)
             " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
             " scan_iteration_id INTEGER NOT NULL,"
             " scan_at TEXT NOT NULL DEFAULT (datetime('now')),"
-            " domain_id INTEGER NOT NULL CHECK(domain_id > 0),"
-            " domain_name TEXT NOT NULL CHECK(COALESCE(domain_name, '') != ''),"
+            " domain_id INTEGER CHECK(domain_id > 0),"
+            " domain_name TEXT,"
             " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)),"
-            " cdnskey_status TEXT NOT NULL CHECK(cdnskey_status IN ('insecure','insecure-empty','unresolved','secure','secure-empty','untrustworthy','unknown')),"
+            " cdnskey_status TEXT NOT NULL CHECK(cdnskey_status IN ('insecure','insecure-empty','unresolved','secure','secure-empty','untrustworthy','unknown','unresolved-ip')),"
             " nameserver TEXT,"
             " nameserver_ip TEXT,"
             " cdnskey_flags INTEGER,"
@@ -459,10 +459,24 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, l
         }
 
         i_result.bind(":scan_iteration_id", _iteration_id);
-        i_result.bind(":domain_id", task_domain_id);
-        i_result.bind(":domain_name", result.domain_name, sqlite3pp::nocopy);
         i_result.bind(":has_keyset", task_has_keyset);
         i_result.bind(":cdnskey_status", result.cdnskey_status, sqlite3pp::nocopy);
+        if (task_domain_id != 0)
+        {
+            i_result.bind(":domain_id", task_domain_id);
+        }
+        else
+        {
+            i_result.bind(":domain_id", sqlite3pp::null_type());
+        }
+        if (result.domain_name.length())
+        {
+            i_result.bind(":domain_name", result.domain_name, sqlite3pp::nocopy);
+        }
+        else
+        {
+            i_result.bind(":domain_name", sqlite3pp::null_type());
+        }
         if (result.nameserver)
         {
             i_result.bind(":nameserver", *(result.nameserver), sqlite3pp::nocopy);
