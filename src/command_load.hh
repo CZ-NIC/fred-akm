@@ -21,10 +21,20 @@ struct LoadFlags
 };
 
 
-void command_load(const IStorage& _storage, const std::string& _filename, int _flags);
+void command_load(
+    const IStorage& _storage,
+    const std::string& _filename,
+    const std::string& _whitelist_filename,
+    int _flags
+);
 
 
-void command_load(const IStorage& _storage, const IAkm& _backend, int _flags);
+void command_load(
+    const IStorage& _storage,
+    const IAkm& _backend,
+    const std::string& _whitelist_filename,
+    int _flags
+);
 
 
 } //namespace Akm
