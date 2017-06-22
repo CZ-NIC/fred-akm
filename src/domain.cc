@@ -17,16 +17,13 @@
  */
 
 #include "src/domain.hh"
-#include "src/notified_domain_state.hh"
 
 #include <istream>
 #include <ostream>
 #include <string>
-#include <vector>
 
 namespace Fred {
 namespace Akm {
-
 
 namespace {
 
@@ -34,7 +31,6 @@ std::string quote(const std::string& str) {
     return "\"" + str + "\"";
 }
 
-// int, bool, ...
 std::string quote(int value) {
     return std::to_string(value);
 }
@@ -42,30 +38,26 @@ std::string quote(int value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const NotifiedDomainState& notified_domain_state)
+std::ostream& operator<<(std::ostream& os, const Domain& _domain)
 {
     static const std::string delim = ", ";
     os      << "["
-            << notified_domain_state.domain << delim
-            << quote(notified_domain_state.serialized_cdnskeys) << delim
-            << quote(notified_domain_state.notification_type) << delim
-            << quote(notified_domain_state.last_at)
+            << quote(_domain.id) << delim
+            << quote(_domain.fqdn) << delim
+            << quote(_domain.has_keyset)
             << "]";
 
     return os;
 }
 
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, NotifiedDomainState& notified_domain_state)
+std::istream& operator>>(std::istream& is, Domain& _domain)
 {
     try {
         is
-                >> notified_domain_state.domain.id
-                >> notified_domain_state.domain.fqdn
-                >> notified_domain_state.domain.has_keyset
-                >> notified_domain_state.serialized_cdnskeys
-                >> notified_domain_state.notification_type
-                >> notified_domain_state.last_at;
+                >> _domain.id
+                >> _domain.fqdn
+                >> _domain.has_keyset;
     }
     catch (...)
     {
@@ -74,17 +66,29 @@ std::istream& operator>>(std::istream& is, NotifiedDomainState& notified_domain_
     return is;
 }
 
-std::string to_string(const NotifiedDomainState& notified_domain_state)
+std::string to_string(const Domain& _domain)
 {
     static const std::string delim = ", ";
-    return  "[" +
-            to_string(notified_domain_state.domain) + delim +
-            quote(notified_domain_state.serialized_cdnskeys) + delim +
-            quote(notified_domain_state.notification_type) + delim +
-            quote(notified_domain_state.last_at) +
-            "]";
+    return std::string("[") +
+           quote(_domain.id) + delim +
+           quote(_domain.fqdn) + delim +
+           quote(_domain.has_keyset) +
+           "]";
+}
+
+bool operator==(const Domain& _lhs, const Domain& _rhs)
+{
+    return
+        _lhs.id == _rhs.id &&
+        _lhs.fqdn == _rhs.fqdn &&
+        _lhs.has_keyset == _rhs.has_keyset;
 }
 
 
-} // namespace Fred::Akm
-} // namespace Fred
+bool operator!=(const Domain& _lhs, const Domain& _rhs)
+{
+    return !(_lhs == _rhs);
+}
+
+} //namespace Fred::Akm
+} //namespace Fred

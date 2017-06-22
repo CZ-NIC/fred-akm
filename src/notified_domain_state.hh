@@ -19,6 +19,7 @@
 #ifndef NOTIFIED_DOMAIN_STATE_HH_BBDA2A17589B41BC810D2B3BC4EF8ABE
 #define NOTIFIED_DOMAIN_STATE_HH_BBDA2A17589B41BC810D2B3BC4EF8ABE
 
+#include "src/domain.hh"
 #include "src/scan_result_row.hh"
 
 #include <istream>
@@ -33,9 +34,7 @@ namespace Akm {
 struct NotifiedDomainState
 {
     NotifiedDomainState()
-        : domain_id(),
-          domain_name(),
-          has_keyset(),
+        : domain(),
           serialized_cdnskeys(),
           notification_type(),
           last_at()
@@ -43,24 +42,18 @@ struct NotifiedDomainState
     }
 
     NotifiedDomainState(
-        unsigned long long _domain_id,
-        const std::string& _domain_name,
-        bool _has_keyset,
+        const Domain& _domain,
         const std::string& _serialized_cdnskeys, // serialized _cdnskeys
         int _notification_type,
         std::string _last_at)
-        : domain_id(_domain_id),
-          domain_name(_domain_name),
-          has_keyset(_has_keyset),
+        : domain(_domain),
           serialized_cdnskeys(_serialized_cdnskeys),
           notification_type(_notification_type),
           last_at(_last_at)
     {
     }
 
-    unsigned long long domain_id;
-    std::string domain_name;
-    bool has_keyset;
+    Domain domain;
     std::string serialized_cdnskeys; // serialized cdnskeys
     int notification_type;
     std::string last_at;

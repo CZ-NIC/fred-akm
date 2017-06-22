@@ -1,6 +1,8 @@
 #ifndef NAMESERVER_DOMAINS_HH_BD50E84D81AF2A84043E22FA4923D539//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
 #define NAMESERVER_DOMAINS_HH_BD50E84D81AF2A84043E22FA4923D539
 
+#include "src/domain.hh"
+
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -8,18 +10,6 @@
 namespace Fred {
 namespace Akm {
 
-
-struct Domain
-{
-    Domain(unsigned long long _id, const std::string& _fqdn, bool _has_keyset)
-        : id(_id), fqdn(_fqdn), has_keyset(_has_keyset)
-    {
-    }
-
-    unsigned long long id;
-    std::string fqdn;
-    bool has_keyset;
-};
 
 struct NameserverDomains
 {

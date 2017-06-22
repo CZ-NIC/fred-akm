@@ -71,9 +71,7 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
             last_domain_state = DomainState(
                             r.scan_at,
                             r.scan_at_seconds,
-                            r.domain_id,
-                            r.domain_name,
-                            r.has_keyset,
+                            Domain(r.domain_id, r.domain_name, r.has_keyset),
                             r.nameserver,
                             r.nameserver_ip,
                             r.cdnskey);
@@ -84,14 +82,12 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
                 last_domain_state->add(r.cdnskey);
             }
             else {
-                domains[Domain(last_domain_state->domain_id, last_domain_state->domain_name, false)][last_domain_state->nameserver][last_domain_state->nameserver_ip]
+                domains[last_domain_state->domain][last_domain_state->nameserver][last_domain_state->nameserver_ip]
                         .emplace_back(*last_domain_state);
                 last_domain_state = DomainState(
                         r.scan_at,
                         r.scan_at_seconds,
-                        r.domain_id,
-                        r.domain_name,
-                        r.has_keyset,
+                        Domain(r.domain_id, r.domain_name, r.has_keyset),
                         r.nameserver,
                         r.nameserver_ip,
                         r.cdnskey);
@@ -99,7 +95,7 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
         }
         if (&r == &_scan_result_rows.back())
         {
-            domains[Domain(last_domain_state->domain_id, last_domain_state->domain_name, false)][last_domain_state->nameserver][last_domain_state->nameserver_ip]
+            domains[last_domain_state->domain][last_domain_state->nameserver][last_domain_state->nameserver_ip]
                     .emplace_back(*last_domain_state);
         }
     }

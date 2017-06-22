@@ -20,6 +20,7 @@
 #define SCAN_RESULT_HH_598C167E29DF4307BB188D70F565A42A
 
 #include "src/cdnskey.hh"
+#include "src/domain.hh"
 
 #include <istream>
 #include <map>
@@ -35,9 +36,7 @@ struct DomainState
     DomainState()
         : scan_at(),
           scan_at_seconds(),
-          domain_id(),
-          domain_name(),
-          has_keyset(),
+          domain(),
           nameserver(),
           nameserver_ip(),
           cdnskeys()
@@ -47,17 +46,13 @@ struct DomainState
     DomainState(
             const std::string& _scan_at,
             int _scan_at_seconds,
-            unsigned long long _domain_id,
-            const std::string& _domain_name,
-            bool _has_keyset,
+            const Domain& _domain,
             const std::string& _nameserver,
             const std::string& _nameserver_ip,
             const std::map<std::string, Cdnskey>& _cdnskeys)
         : scan_at(_scan_at),
           scan_at_seconds(_scan_at_seconds),
-          domain_id(_domain_id),
-          domain_name(_domain_name),
-          has_keyset(_has_keyset),
+          domain(_domain),
           nameserver(_nameserver),
           nameserver_ip(_nameserver_ip),
           cdnskeys(_cdnskeys)
@@ -67,17 +62,13 @@ struct DomainState
     DomainState(
             const std::string& _scan_at,
             int _scan_at_seconds,
-            unsigned long long _domain_id,
-            const std::string& _domain_name,
-            bool _has_keyset,
+            const Domain& _domain,
             const std::string& _nameserver,
             const std::string& _nameserver_ip,
             const Cdnskey& _cdnskey)
         : scan_at(_scan_at),
           scan_at_seconds(_scan_at_seconds),
-          domain_id(_domain_id),
-          domain_name(_domain_name),
-          has_keyset(_has_keyset),
+          domain(_domain),
           nameserver(_nameserver),
           nameserver_ip(_nameserver_ip)
     {
@@ -89,9 +80,7 @@ struct DomainState
     DomainState(const DomainState& _domain_state)
         : scan_at(_domain_state.scan_at),
           scan_at_seconds(_domain_state.scan_at_seconds),
-          domain_id(_domain_state.domain_id),
-          domain_name(_domain_state.domain_name),
-          has_keyset(_domain_state.has_keyset),
+          domain(_domain_state.domain),
           nameserver(_domain_state.nameserver),
           nameserver_ip(_domain_state.nameserver_ip),
           cdnskeys(_domain_state.cdnskeys)
@@ -106,9 +95,7 @@ struct DomainState
 
     std::string scan_at;
     int scan_at_seconds;
-    unsigned long long domain_id;
-    std::string domain_name;
-    bool has_keyset;
+    Domain domain;
     std::string nameserver;
     std::string nameserver_ip;
     std::map<std::string, Cdnskey> cdnskeys;

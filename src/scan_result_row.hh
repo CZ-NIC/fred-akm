@@ -88,7 +88,7 @@ struct ScanResultRow
     int scan_iteration_id;
     std::string scan_at;
     int scan_at_seconds;
-    int domain_id;
+    long long domain_id;
     std::string domain_name;
     bool has_keyset;
     std::string nameserver;

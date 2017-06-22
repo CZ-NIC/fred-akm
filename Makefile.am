@@ -41,6 +41,8 @@ fred_akm_SOURCES = \
 	src/notified_domain_state.cc \
 	src/cdnskey.hh \
 	src/cdnskey.cc \
+	src/domain.cc \
+	src/domain.hh \
 	src/domain_state.hh \
 	src/domain_state.cc \
 	src/scan_result_row.hh \

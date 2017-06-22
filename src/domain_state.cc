@@ -19,6 +19,7 @@
 #include "src/domain_state.hh"
 
 #include "src/cdnskey.hh"
+#include "src/domain.hh"
 
 #include <algorithm>
 #include <istream>
@@ -49,9 +50,7 @@ std::ostream& operator<<(std::ostream& os, const DomainState& domain_state)
     static const std::string delim = ", ";
     os << "["
        << quote(domain_state.scan_at) << delim
-       << quote(domain_state.domain_id) << delim
-       << quote(domain_state.domain_name) << delim
-       << quote(domain_state.has_keyset) << delim;
+       << domain_state.domain << delim;
     for (const auto& cdnskey : domain_state.cdnskeys)
     {
         os << cdnskey.second;
@@ -74,9 +73,7 @@ std::string to_string(const DomainState& domain_state)
     std::string retval;
     retval = "[" +
             quote(domain_state.scan_at) + delim +
-            quote(domain_state.has_keyset) + delim +
-            quote(domain_state.domain_id) + delim +
-            quote(domain_state.domain_name);
+            to_string(domain_state.domain);
             for (const auto& cdnskey : domain_state.cdnskeys)
             {
                 retval += delim + to_string(cdnskey.second);
@@ -101,10 +98,7 @@ bool has_deletekey(const DomainState& _domain_state) {
 
 bool are_coherent(const DomainState& _first, const DomainState& _second)
 {
-    if (_first.domain_name != _second.domain_name) {
-        return false;
-    }
-    if (_first.has_keyset != _second.has_keyset) {
+    if (_first.domain != _second.domain) {
         return false;
     }
     if (_first.cdnskeys != _second.cdnskeys) {

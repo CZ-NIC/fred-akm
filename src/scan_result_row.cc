@@ -238,19 +238,19 @@ bool is_secure(const ScanResultRow& _scan_result_row)
 
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state)
 {
-    if (_scan_result_row.domain_id != _domain_state.domain_id) {
+    if (_scan_result_row.domain_id != _domain_state.domain.id) {
         return false;
     }
-    if (_scan_result_row.domain_name != _domain_state.domain_name) {
+    if (_scan_result_row.domain_name != _domain_state.domain.fqdn) {
+        return false;
+    }
+    if (_scan_result_row.has_keyset != _domain_state.domain.has_keyset) {
         return false;
     }
     if (_scan_result_row.nameserver != _domain_state.nameserver) {
         return false;
     }
     if (_scan_result_row.nameserver_ip != _domain_state.nameserver_ip) {
-        return false;
-    }
-    if (_scan_result_row.has_keyset != _domain_state.has_keyset) {
         return false;
     }
     return true;

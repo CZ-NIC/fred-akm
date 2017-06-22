@@ -111,6 +111,7 @@ void dispatch_command_update(
 {
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
     auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
+    auto mailer_backend = Fred::Akm::Corba::Mailer(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_mailer);
     const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
     const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
     const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
@@ -119,9 +120,9 @@ void dispatch_command_update(
     command_update(
             db,
             akm_backend,
+            mailer_backend,
             maximal_time_between_scan_results,
             minimal_scan_result_sequence_length_to_update,
-            notify_from_last_iteration_only,
             dry_run);
 }
 

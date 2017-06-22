@@ -32,9 +32,9 @@ namespace Akm {
 void command_update(
         const IStorage& _storage,
         const IAkm& _akm_backend,
+        const IMailer& _mailer_backend,
         const unsigned long _maximal_time_between_scan_results,
         const unsigned long _minimal_scan_result_sequence_length_to_update,
-        bool _notify_from_last_iteration_only,
         bool _dry_run);
 
 

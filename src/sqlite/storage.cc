@@ -231,9 +231,9 @@ void set_notified_domain_state(sqlite3pp::database& _db, const NotifiedDomainSta
         "INSERT INTO notified_domain_state (domain_id, domain_name, has_keyset, cdnskeys, notification_type, last_at) "
         "VALUES (?, ?, ?, ?, ?, ?)");
     insert.binder()
-            << static_cast<long long>(_notified_domain_state.domain_id)
-            << _notified_domain_state.domain_name
-            << _notified_domain_state.has_keyset
+            << static_cast<long long>(_notified_domain_state.domain.id)
+            << _notified_domain_state.domain.fqdn
+            << _notified_domain_state.domain.has_keyset
             << _notified_domain_state.serialized_cdnskeys
             << _notified_domain_state.notification_type
             << _notified_domain_state.last_at;
@@ -265,11 +265,11 @@ boost::optional<NotifiedDomainState> get_last_notified_domain_state(sqlite3pp::d
         long long domain_id;
         row.getter()
             >> domain_id
-            >> notified_domain_state.domain_name
-            >> notified_domain_state.has_keyset
+            >> notified_domain_state.domain.fqdn
+            >> notified_domain_state.domain.has_keyset
             >> notified_domain_state.serialized_cdnskeys
             >> notified_domain_state.notification_type;
-        notified_domain_state.domain_id = static_cast<unsigned long long>(domain_id);
+        notified_domain_state.domain.id = static_cast<unsigned long long>(domain_id);
         return notified_domain_state;
     }
 
@@ -386,12 +386,11 @@ NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
     for (auto row : tasks_query)
     {
         std::string nameserver;
+        Domain domain;
         long long domain_id;
-        std::string domain_name;
-        bool has_keyset;
-        row.getter() >> nameserver >> domain_id >> domain_name >> has_keyset;
+        row.getter() >> nameserver >> domain_id >> domain.fqdn >> domain.has_keyset;
+        domain.id = static_cast<unsigned long long>(domain_id);
 
-        Domain domain(domain_id, domain_name, has_keyset);
         auto& record = tasks[nameserver];
         record.nameserver = nameserver;
         record.nameserver_domains.emplace_back(domain);

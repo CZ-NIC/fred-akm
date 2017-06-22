@@ -97,10 +97,10 @@ void send_and_save_notified_domain_state(
     const std::string mail_reply_to = "";
 
     log()->info("shall notify template \"{}\"", _template_name);
-    log()->info("asking backend for emails for domain id {}", _notified_domain_state.domain_id);
+    log()->info("asking backend for emails for domain id {}", _notified_domain_state.domain.id);
     try
     {
-        auto tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_state.domain_id);
+        auto tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_state.domain.id);
 
         std::string emails = boost::algorithm::join(tech_contacts, ", ");
         Fred::Akm::IMailer::Header header(emails, mail_from, mail_reply_to);
@@ -110,8 +110,8 @@ void send_and_save_notified_domain_state(
         const IMailer::TemplateName template_name = _template_name;
 
         IMailer::TemplateParameters template_parameters;
-        template_parameters["domain"] = _notified_domain_state.domain_name;
-        template_parameters["zone"] = ".cz"; // TODO hardwired, get from domain_name
+        template_parameters["domain"] = _notified_domain_state.domain.fqdn;
+        template_parameters["zone"] = ".cz"; // TODO hardwired, get from domain.name
         template_parameters["datetime"] = _notified_domain_state.last_at;
         template_parameters["days_to_left"] = "7"; // TODO hardwired, get from config (notify_update_within_x_days)
         std::vector<std::string> keys;
@@ -143,9 +143,7 @@ void send_and_save_notified_domain_state(
 bool are_coherent(const DomainState& _domain_state, const NotifiedDomainState& _notified_domain_state)
 {
     return
-            _domain_state.domain_id == _notified_domain_state.domain_id &&
-            _domain_state.domain_name == _notified_domain_state.domain_name &&
-            _domain_state.has_keyset == _notified_domain_state.has_keyset &&
+            _domain_state.domain == _notified_domain_state.domain &&
             serialize(_domain_state.cdnskeys) == _notified_domain_state.serialized_cdnskeys;
 }
 
@@ -226,9 +224,7 @@ void command_notify(
 
             send_and_save_notified_domain_state(
                     NotifiedDomainState(
-                            newest_domain_state->domain_id,
-                            newest_domain_state->domain_name,
-                            newest_domain_state->has_keyset,
+                            newest_domain_state->domain,
                             serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
                             domain_status,
                             newest_domain_state->scan_at),
@@ -251,9 +247,7 @@ void command_notify(
 
                 send_and_save_notified_domain_state(
                         NotifiedDomainState(
-                                newest_domain_state->domain_id,
-                                newest_domain_state->domain_name,
-                                newest_domain_state->has_keyset,
+                                newest_domain_state->domain,
                                 "", //serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
                                 domain_status,
                                 newest_domain_state->scan_at),
@@ -276,7 +270,7 @@ void command_notify(
     }
 
     stats.print();
-    log()->debug("done");
+    log()->debug("command notify done");
 }
 
 
