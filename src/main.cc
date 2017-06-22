@@ -132,8 +132,10 @@ int main(int argc, char* argv[])
         debug_input_params(args.get<Fred::Akm::DebugMapArgs>()->debug_map, "args");
         debug_input_params(conf.get<Fred::Akm::DebugMapConf>()->debug_map, "conf");
 
+
         const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
-        const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
+        const char* options[][2] = { { "nativeCharCodeSet", "UTF-8" }, { 0, 0 } };
+        const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port, options);
 
         typedef std::function<void(Fred::Akm::Corba::CorbaContext, Fred::Akm::Args, Fred::Akm::Conf)> CommandDispatchFunc;
         const std::map<std::string, CommandDispatchFunc> command_dispatch = {
