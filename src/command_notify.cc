@@ -61,33 +61,33 @@ void send_and_save_notified_domain_state(
 
     log()->info("shall notify template \"{}\"", _template_name);
     log()->info("asking backend for emails for domain id {}", _notified_domain_state.domain_id);
-    auto tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_state.domain_id);
-
-    std::string emails = boost::algorithm::join(tech_contacts, ", ");
-    Fred::Akm::IMailer::Header header(emails, mail_from, mail_reply_to);
-    log()->debug("will send to email(s): {}", header.to);
-    log()->debug("prepare template parameters for template \"{}\"", _template_name);
-
-    const IMailer::TemplateName template_name = _template_name;
-
-    IMailer::TemplateParameters template_parameters;
-    template_parameters["domain"] = _notified_domain_state.domain_name; // TODO hardcoded
-    template_parameters["zone"] = ".cz"; // TODO hardcoded
-    template_parameters["datetime"] = _notified_domain_state.last_at;
-    template_parameters["days_to_left"] = "7"; // TODO get from config (notify_update_within_x_days)
-    std::vector<std::string> keys;
-    boost::split(keys, _notified_domain_state.serialized_cdnskeys, boost::is_any_of("|"));
-    for (int i = 0; i < keys.size(); ++i) {
-        template_parameters["keys." + std::to_string(i)] = keys[i];
-    }
-
-    for (const auto& template_parameter : template_parameters)
-    {
-        log()->debug("template_parameter[\"{}\"] = \"{}\"", template_parameter.first, template_parameter.second);
-    }
-
     try
     {
+        auto tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_state.domain_id);
+
+        std::string emails = boost::algorithm::join(tech_contacts, ", ");
+        Fred::Akm::IMailer::Header header(emails, mail_from, mail_reply_to);
+        log()->debug("will send to email(s): {}", header.to);
+        log()->debug("prepare template parameters for template \"{}\"", _template_name);
+
+        const IMailer::TemplateName template_name = _template_name;
+
+        IMailer::TemplateParameters template_parameters;
+        template_parameters["domain"] = _notified_domain_state.domain_name; // TODO hardcoded
+        template_parameters["zone"] = ".cz"; // TODO hardcoded
+        template_parameters["datetime"] = _notified_domain_state.last_at;
+        template_parameters["days_to_left"] = "7"; // TODO get from config (notify_update_within_x_days)
+        std::vector<std::string> keys;
+        boost::split(keys, _notified_domain_state.serialized_cdnskeys, boost::is_any_of("|"));
+        for (int i = 0; i < keys.size(); ++i) {
+            template_parameters["keys." + std::to_string(i)] = keys[i];
+        }
+
+        for (const auto& template_parameter : template_parameters)
+        {
+            log()->debug("template_parameter[\"{}\"] = \"{}\"", template_parameter.first, template_parameter.second);
+        }
+
         if (!_dry_run) {
             log()->debug("sending notification to template_name \"{}\"", template_name);
             _mailer_backend.enqueue(header, template_name, template_parameters);
@@ -97,7 +97,7 @@ void send_and_save_notified_domain_state(
     }
     catch (std::runtime_error& e)
     {
-        // TODO log error
+        // TODO log error and continue
         throw e;
     }
 }
