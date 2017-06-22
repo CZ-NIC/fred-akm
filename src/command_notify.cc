@@ -166,7 +166,11 @@ void command_notify(
         {domain_status_ko, "akm_candidate_state_ko"}
     };
 
-    auto scan_result_rows = _storage.get_insecure_scan_result_rows(_minimal_scan_result_sequence_length_to_notify, _notify_from_last_iteration_only); // FIXME
+    auto scan_result_rows =
+            _storage.get_insecure_scan_result_rows(
+                    _minimal_scan_result_sequence_length_to_notify,
+                    _notify_from_last_iteration_only);
+
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
     DomainStateStack haystack(scan_result_rows);
@@ -189,13 +193,27 @@ void command_notify(
             log()->info("domain state seems ok, but DELETE KEY(S) are present -> status is KO");
         }
 
-        const int domain_status = newest_domain_state && !is_newest_state_with_deletekey ? domain_status_ok : domain_status_ko;
+        const int domain_status =
+                newest_domain_state && !is_newest_state_with_deletekey
+                        ? domain_status_ok
+                        : domain_status_ko;
 
-        log()->debug("newest domain_status: {}: {}", domain_status == domain_status_ok ? "OK" : "KO", to_string(newest_domain_state.value_or(DomainState())));
+        log()->debug("newest domain_status: {}: {}",
+                domain_status == domain_status_ok ? "OK" : "KO",
+                to_string(newest_domain_state.value_or(DomainState())));
 
-        boost::optional<NotifiedDomainState> notified_domain_state = _storage.get_last_notified_domain_state(domain.first.id);
+        boost::optional<NotifiedDomainState> notified_domain_state =
+                _storage.get_last_notified_domain_state(domain.first.id);
 
-        log()->debug("last notified state: {}: {}", !notified_domain_state ? "NOT FOUND" : notified_domain_state->notification_type == domain_status_ok ? "OK" : notified_domain_state->notification_type == domain_status_ko ? "KO" : "UNKNOWN NOTIFICATION TYPE", to_string(notified_domain_state.value_or(NotifiedDomainState())));
+        log()->debug("last notified state: {}: {}",
+                !notified_domain_state
+                        ? "NOT FOUND"
+                        : notified_domain_state->notification_type == domain_status_ok
+                                ? "OK"
+                                : notified_domain_state->notification_type == domain_status_ko
+                                        ? "KO"
+                                        : "UNKNOWN NOTIFICATION TYPE",
+                to_string(notified_domain_state.value_or(NotifiedDomainState())));
 
         if (domain_status == domain_status_ok)
         {
@@ -248,7 +266,7 @@ void command_notify(
                 send_and_save_notified_domain_state(
                         NotifiedDomainState(
                                 newest_domain_state->domain,
-                                "", //serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
+                                "",
                                 domain_status,
                                 newest_domain_state->scan_at),
                         _storage,
