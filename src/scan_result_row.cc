@@ -64,31 +64,6 @@ std::ostream& operator<<(std::ostream& os, const ScanResultRow& scan_result_row)
 }
 
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, ScanResultRow& scan_result_row)
-{
-    try {
-        is
-                >> scan_result_row.id
-                >> scan_result_row.scan_iteration_id
-                >> scan_result_row.scan_at
-                >> scan_result_row.scan_at_seconds
-                >> scan_result_row.domain_id
-                >> scan_result_row.domain_name
-                >> scan_result_row.has_keyset
-                >> scan_result_row.cdnskey.status
-                >> scan_result_row.nameserver
-                >> scan_result_row.nameserver_ip
-                >> scan_result_row.cdnskey.flags
-                >> scan_result_row.cdnskey.proto
-                >> scan_result_row.cdnskey.alg
-                >> scan_result_row.cdnskey.public_key;
-    }
-    catch (...)
-    {
-        is.setstate(std::ios::failbit);
-    }
-    return is;
-}
 
 std::string to_string(const ScanResultRow& scan_result_row)
 {

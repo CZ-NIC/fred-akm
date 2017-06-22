@@ -22,7 +22,6 @@
 #include "src/cdnskey.hh"
 #include "src/domain_state.hh"
 
-#include <istream>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -99,7 +98,6 @@ struct ScanResultRow
 typedef std::vector<ScanResultRow> ScanResultRows;
 
 std::ostream& operator<<(std::ostream& os, const ScanResultRow& scan_result_row);
-std::istream& operator>>(std::istream& is, ScanResultRow& scan_result_row);
 std::string to_string(const ScanResultRow& scan_result_row);
 
 bool is_valid(const ScanResultRow& _scan_result_row);

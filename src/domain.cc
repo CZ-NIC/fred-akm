@@ -18,7 +18,6 @@
 
 #include "src/domain.hh"
 
-#include <istream>
 #include <ostream>
 #include <string>
 
@@ -51,20 +50,6 @@ std::ostream& operator<<(std::ostream& os, const Domain& _domain)
 }
 
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, Domain& _domain)
-{
-    try {
-        is
-                >> _domain.id
-                >> _domain.fqdn
-                >> _domain.has_keyset;
-    }
-    catch (...)
-    {
-        is.setstate(std::ios::failbit);
-    }
-    return is;
-}
 
 std::string to_string(const Domain& _domain)
 {
@@ -90,5 +75,10 @@ bool operator!=(const Domain& _lhs, const Domain& _rhs)
     return !(_lhs == _rhs);
 }
 
-} //namespace Fred::Akm
-} //namespace Fred
+bool operator<(const Domain& _lhs, const Domain& _rhs)
+{
+    return _lhs.fqdn < _rhs.fqdn;
+}
+
+} // namespace Fred::Akm
+} // namespace Fred

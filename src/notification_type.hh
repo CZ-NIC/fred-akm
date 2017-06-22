@@ -16,36 +16,32 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-#define KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-
-#include "src/dnskey.hh"
+#ifndef NOTIFICATION_TYPE_HH_1D0A5C1DFBA24C848C92899ED47FBDC8
+#define NOTIFICATION_TYPE_HH_1D0A5C1DFBA24C848C92899ED47FBDC8
 
 #include <string>
-#include <vector>
 
 namespace Fred {
 namespace Akm {
 
-
-struct Keyset
+struct NotificationType
 {
-    Keyset()
-        : dnskeys()
+    enum Enum
+    {
+        akm_notification_candidate_ok, ///< domain state seems ok to switch to AKM
+        akm_notification_candidate_ko, ///< domain state prevents switching to AKM
+        akm_notification_managed_ok, ///< domain state prevents switching to AKM
+    };
+
+    NotificationType()
     {
     }
-
-    Keyset(const std::vector<Dnskey>& _dnskeys)
-        : dnskeys(_dnskeys)
-    {
-    }
-
-    std::vector<Dnskey> dnskeys;
 };
 
-std::string to_string(const Keyset& _keyset);
+std::string to_string(const NotificationType::Enum& _notification_type_enum);
+int to_db_handle(const NotificationType::Enum& _type);
 
+} // namespace Fred::Akm
 } // namespace Fred
-} // namespace Akm
 
 #endif

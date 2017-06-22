@@ -16,36 +16,44 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-#define KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-
+#include "src/keyset.hh"
 #include "src/dnskey.hh"
 
+#include <boost/algorithm/string/join.hpp>
+
+#include <ostream>
 #include <string>
-#include <vector>
 
 namespace Fred {
 namespace Akm {
 
+namespace {
 
-struct Keyset
+std::string quote(const std::string& str) {
+    return "\"" + str + "\"";
+}
+
+std::string quote(int value) {
+    return std::to_string(value);
+}
+
+} // namespace Fred::Akim::{anonymous}
+
+std::string to_string(const Keyset& _keyset)
 {
-    Keyset()
-        : dnskeys()
+    static const std::string delim = ", ";
+    std::string retval;
+    retval = "[";
+    for (const auto& dnskey : _keyset.dnskeys)
     {
+        retval += to_string(dnskey);
+        if (&dnskey != &_keyset.dnskeys.back()) {
+            retval += delim;
+        }
     }
+    retval += "]";
+    return retval;
+}
 
-    Keyset(const std::vector<Dnskey>& _dnskeys)
-        : dnskeys(_dnskeys)
-    {
-    }
-
-    std::vector<Dnskey> dnskeys;
-};
-
-std::string to_string(const Keyset& _keyset);
-
+} // namespace Fred::Akm
 } // namespace Fred
-} // namespace Akm
-
-#endif

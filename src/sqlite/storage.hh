@@ -37,9 +37,11 @@ public:
 
     ScanResultRows get_insecure_scan_result_rows(int _seconds_back, bool _notify_from_last_iteration_only) const;
 
-    void set_notified_domain_state(const NotifiedDomainState& _notified_domain_state) const;
+    ScanResultRows get_insecure_scan_result_rows_for_update(int _seconds_back) const;
 
-    boost::optional<NotifiedDomainState> get_last_notified_domain_state(unsigned long long _domain_id) const;
+    void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const;
+
+    boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(unsigned long long _domain_id) const;
 
 private:
     sqlite3pp::database get_db() const;

@@ -49,14 +49,33 @@ TechContacts unwrap_TechContactSeq(Registry::AutomaticKeysetManagement::TechCont
 
 Registry::AutomaticKeysetManagement::Nsset wrap_Nsset(Nsset _nsset)
 {
-    Registry::AutomaticKeysetManagement::Nsset_var nsset;
-    return nsset; // TODO
+    Registry::AutomaticKeysetManagement::Nsset nsset;
+
+    CORBA::ULong i = 0;
+    nsset.nameservers.length(_nsset.nameservers.size());
+    for (const auto& nameserver : _nsset.nameservers)
+    {
+        nsset.nameservers[i] = nameserver.c_str();
+        ++i;
+    }
+    return nsset;
 }
 
 Registry::AutomaticKeysetManagement::Keyset wrap_Keyset(Keyset _keyset)
 {
-    Registry::AutomaticKeysetManagement::Keyset_var keyset;
-    return keyset; // TODO
+    Registry::AutomaticKeysetManagement::Keyset keyset;
+
+    CORBA::ULong i = 0;
+    keyset.dns_keys.length(_keyset.dnskeys.size());
+    for (const auto& dnskey : _keyset.dnskeys)
+    {
+        keyset.dns_keys[i].flags = dnskey.flags;
+        keyset.dns_keys[i].protocol = dnskey.proto;
+        keyset.dns_keys[i].alg = dnskey.alg;
+        keyset.dns_keys[i].public_key = dnskey.public_key.c_str();
+        ++i;
+    }
+    return keyset;
 }
 
 } // Fred::Akm::{anonymous}

@@ -23,7 +23,6 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <istream>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -59,22 +58,6 @@ std::ostream& operator<<(std::ostream& os, const Cdnskey& _cdnskey)
 }
 
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, Cdnskey& _cdnskey)
-{
-    try {
-        is
-                >> _cdnskey.status
-                >> _cdnskey.flags
-                >> _cdnskey.proto
-                >> _cdnskey.alg
-                >> _cdnskey.public_key;
-    }
-    catch (...)
-    {
-        is.setstate(std::ios::failbit);
-    }
-    return is;
-}
 
 std::string to_string(const Cdnskey& _cdnskey)
 {
@@ -122,12 +105,7 @@ std::string serialize(const std::map<std::string, Cdnskey>& _cdnskeys)
 
 bool is_valid(const Cdnskey& _cdnskey)
 {
-    if (_cdnskey.proto != 3) {
-        return false;
-    }
-    if (_cdnskey.public_key.empty()) {
-        return false;
-    }
+    // we accept everything
     return true;
 }
 
@@ -139,11 +117,15 @@ bool is_empty(const Cdnskey& _cdnskey)
 // RFC 8078 section 4. DNSSEC Delete Algorithm
 bool is_deletekey(const Cdnskey& _cdnskey)
 {
-    const std::string base64_zero = "AA==";
+    // if (_cdnskey.alg == 0)
+    // {
+    //     return true;
+    // }
+    const std::string base64_encoded_zero = "AA==";
     if (_cdnskey.flags == 0 &&
         _cdnskey.proto == 3 &&
         _cdnskey.alg == 0 &&
-        _cdnskey.public_key == base64_zero)
+        _cdnskey.public_key == base64_encoded_zero)
     {
         return true;
     }

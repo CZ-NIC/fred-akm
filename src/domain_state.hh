@@ -103,12 +103,13 @@ struct DomainState
 
 typedef std::vector<DomainState> DomainStates;
 
-std::ostream& operator<<(std::ostream& os, const DomainState& domain_state);
-std::istream& operator>>(std::istream& is, DomainState& domain_state);
-std::string to_string(const DomainState& domain_state);
+std::ostream& operator<<(std::ostream& os, const DomainState& _domain_state);
+std::istream& operator>>(std::istream& is, DomainState& _domain_state);
+std::string to_string(const DomainState& _domain_state);
+bool operator==(const DomainState& _lhs, const DomainState& _rhs);
 
 bool has_deletekey(const DomainState& _domain_state);
-bool are_coherent(const DomainState& domain_state, const DomainState& domain_state2);
+bool are_coherent(const DomainState& _domain_state, const DomainState& domain_state2);
 
 } // namespace Fred::Akm
 } // namespace Fred
