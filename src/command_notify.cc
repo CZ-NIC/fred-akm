@@ -48,6 +48,43 @@ namespace Akm {
 
 namespace {
 
+struct Stats {
+    int domains_loaded;
+    int domains_checked;
+    int domains_ok;
+    int domains_ko;
+
+    int sent_notifications;
+    int sent_ok_notifications;
+    int sent_ko_notifications;
+    int sent_first_ok_notifications;
+    int sent_first_ko_notifications;
+    int not_sent_first_ko_notifications;
+    int not_sent_still_ok_notifications;
+    int not_sent_still_ko_notifications;
+
+    void print()
+    {
+        log()->info("================== STATS ====================");
+        log()->info("domains loaded:                      {:>8}", domains_loaded);
+        log()->info("domains checked:                     {:>8}", domains_checked);
+        log()->info("  domains ok:                        {:>8}", domains_ok);
+        log()->info("  domains ko:                        {:>8}", domains_ko);
+        log()->info("---------------------------------------------");
+        log()->info("sent notifications:                  {:>8}", sent_notifications);
+        log()->info("  sent ok notifications:             {:>8}", sent_ok_notifications);
+        log()->info("    sent first ok notifications:     {:>8}", sent_first_ok_notifications);
+        log()->info("  sent ko notifications:             {:>8}", sent_ko_notifications);
+        log()->info("    sent first ko notifications:     {:>8}", sent_first_ko_notifications);
+        log()->info("not sent first ko notifications:     {:>8}", not_sent_first_ko_notifications);
+        log()->info("not sent still ok notifications:     {:>8}", not_sent_still_ok_notifications);
+        log()->info("not sent still ko notifications:     {:>8}", not_sent_still_ko_notifications);
+        log()->info("=============================================");
+    }
+};
+
+Stats stats;
+
 void send_and_save_notified_domain_state(
         const NotifiedDomainState& _notified_domain_state,
         const IStorage& _storage,
@@ -73,10 +110,10 @@ void send_and_save_notified_domain_state(
         const IMailer::TemplateName template_name = _template_name;
 
         IMailer::TemplateParameters template_parameters;
-        template_parameters["domain"] = _notified_domain_state.domain_name; // TODO hardcoded
-        template_parameters["zone"] = ".cz"; // TODO hardcoded
+        template_parameters["domain"] = _notified_domain_state.domain_name;
+        template_parameters["zone"] = ".cz"; // TODO hardwired, get from domain_name
         template_parameters["datetime"] = _notified_domain_state.last_at;
-        template_parameters["days_to_left"] = "7"; // TODO get from config (notify_update_within_x_days)
+        template_parameters["days_to_left"] = "7"; // TODO hardwired, get from config (notify_update_within_x_days)
         std::vector<std::string> keys;
         boost::split(keys, _notified_domain_state.serialized_cdnskeys, boost::is_any_of("|"));
         for (int i = 0; i < keys.size(); ++i) {
@@ -98,6 +135,7 @@ void send_and_save_notified_domain_state(
     catch (std::runtime_error& e)
     {
         // TODO log error and continue
+        stats.print();
         throw e;
     }
 }
@@ -137,6 +175,7 @@ void command_notify(
 
     print(haystack);
 
+    stats.domains_loaded = haystack.domains.size();
     for (const auto& domain : haystack.domains) {
         log()->info(domain.first.fqdn);
         boost::optional<DomainState> newest_domain_state =
@@ -152,27 +191,35 @@ void command_notify(
             log()->info("domain state seems ok, but DELETE KEY(S) are present -> status is KO");
         }
 
-        const int domain_state = newest_domain_state && !is_newest_state_with_deletekey ? domain_status_ok : domain_status_ko;
+        const int domain_status = newest_domain_state && !is_newest_state_with_deletekey ? domain_status_ok : domain_status_ko;
 
-        log()->debug("newest domain_state: {}: {}", domain_state == domain_status_ok ? "OK" : "KO", to_string(newest_domain_state.value_or(DomainState())));
+        log()->debug("newest domain_status: {}: {}", domain_status == domain_status_ok ? "OK" : "KO", to_string(newest_domain_state.value_or(DomainState())));
 
         boost::optional<NotifiedDomainState> notified_domain_state = _storage.get_last_notified_domain_state(domain.first.id);
 
         log()->debug("last notified state: {}: {}", !notified_domain_state ? "NOT FOUND" : notified_domain_state->notification_type == domain_status_ok ? "OK" : notified_domain_state->notification_type == domain_status_ko ? "KO" : "UNKNOWN NOTIFICATION TYPE", to_string(notified_domain_state.value_or(NotifiedDomainState())));
 
-        if (domain_state == domain_status_ok)
+        if (domain_status == domain_status_ok)
         {
             if (notified_domain_state && (notified_domain_state->notification_type == domain_status_ok))
             {
-                if (are_coherent(*newest_domain_state, notified_domain_state.value_or(NotifiedDomainState())))
+                stats.domains_ok++;
+                if (are_coherent(*newest_domain_state, *notified_domain_state))
                 {
                     log()->debug("domain status ok, already notified");
+                    stats.not_sent_still_ok_notifications++;
                     continue;
                 }
                 else
                 {
                     log()->debug("ok status recently notified, but for different domain state -> notify the new one now");
+                    stats.sent_notifications++;
+                    stats.sent_ok_notifications++;
                 }
+            }
+            if (!notified_domain_state)
+            {
+                stats.sent_first_ok_notifications++;
             }
 
             log()->debug("domain status: OK");
@@ -183,21 +230,24 @@ void command_notify(
                             newest_domain_state->domain_name,
                             newest_domain_state->has_keyset,
                             serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
-                            domain_state,
+                            domain_status,
                             newest_domain_state->scan_at),
                     _storage,
                     _akm_backend,
                     _mailer_backend,
-                    template_names[domain_state],
+                    template_names[domain_status],
                     _dry_run);
         }
         else {
+            stats.domains_ko++;
             if (!notified_domain_state) {
                 log()->debug("domain status KO, but OK STATUS NEVER NOTIFIED (so this is NOT THE OK->KO STATUS CHANGE, bye for now)");
+                stats.not_sent_first_ko_notifications++;
                 continue;
             }
             if (notified_domain_state->notification_type == domain_status_ok) {
                 log()->debug("domain status KO, last notified status OK, so NOTIFY OK-KO CHANGE now");
+                stats.sent_first_ko_notifications++;
 
                 send_and_save_notified_domain_state(
                         NotifiedDomainState(
@@ -205,15 +255,16 @@ void command_notify(
                                 newest_domain_state->domain_name,
                                 newest_domain_state->has_keyset,
                                 "", //serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
-                                domain_state,
+                                domain_status,
                                 newest_domain_state->scan_at),
                         _storage,
                         _akm_backend,
                         _mailer_backend,
-                        template_names[domain_state],
+                        template_names[domain_status],
                         _dry_run);
             }
             else if (notified_domain_state->notification_type == domain_status_ko) {
+                stats.not_sent_still_ko_notifications++;
                 log()->debug("domain ko, already notified");
                 continue;
             }
@@ -221,8 +272,10 @@ void command_notify(
                 throw std::runtime_error("unknown notification_type");
             }
         }
+        stats.domains_checked++;
     }
 
+    stats.print();
     log()->debug("done");
 }
 
