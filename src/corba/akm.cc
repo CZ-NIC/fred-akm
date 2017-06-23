@@ -13,7 +13,10 @@ Akm::Akm(const Nameservice& _ns, const std::string& _ns_path_akm)
 
 namespace {
 
-NameserverDomainsCollection unwrap_NameserverDomains(Registry::AutomaticKeysetManagement::NameserverDomainsSeq_var c_all_nameserver_domains)
+NameserverDomainsCollection unwrap_NameserverDomains(
+    Registry::AutomaticKeysetManagement::NameserverDomainsSeq_var c_all_nameserver_domains,
+    bool _has_keyset
+)
 {
     NameserverDomainsCollection all_nameserver_domains;
 
@@ -25,7 +28,7 @@ NameserverDomainsCollection unwrap_NameserverDomains(Registry::AutomaticKeysetMa
         for (unsigned long long j = 0; j < c_all_nameserver_domains[i].nameserver_domains.length(); ++j)
         {
             const auto& c_domain = c_all_nameserver_domains[i].nameserver_domains[j];
-            one_ns.nameserver_domains.emplace_back(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), false));
+            one_ns.nameserver_domains.emplace_back(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), _has_keyset));
         }
         all_nameserver_domains[one_ns.nameserver] = one_ns;
     }
@@ -69,7 +72,27 @@ NameserverDomainsCollection Akm::get_nameservers_with_automatically_managed_doma
         AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
         AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_automatically_managed_domain_candidates();
 
-        return unwrap_NameserverDomains(c_all_nameserver_domains);
+        return unwrap_NameserverDomains(c_all_nameserver_domains, false);
+    }
+    catch (const CORBA::SystemException& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::Exception& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+}
+
+NameserverDomainsCollection Akm::get_nameservers_with_automatically_managed_domains() const
+{
+    try
+    {
+        namespace AkmModule = Registry::AutomaticKeysetManagement;
+        AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
+        AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_automatically_managed_domains();
+
+        return unwrap_NameserverDomains(c_all_nameserver_domains, true);
     }
     catch (const CORBA::SystemException& e)
     {
