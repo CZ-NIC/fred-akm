@@ -487,11 +487,11 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, l
         }
         if (result.nameserver_ip)
         {
-            i_result.bind(":nameserver_ip", *result.nameserver_ip, sqlite3pp::nocopy);
+            i_result.bind(":nameserver_ip", *(result.nameserver_ip), sqlite3pp::nocopy);
         }
         else
         {
-            i_result.bind(":nameserver_ip", sqlite3pp::nocopy);
+            i_result.bind(":nameserver_ip", sqlite3pp::null_type());
         }
         if (result.cdnskey_flags)
         {

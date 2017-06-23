@@ -23,6 +23,8 @@ public:
 
     NameserverDomainsCollection get_nameservers_with_automatically_managed_domain_candidates() const;
 
+    NameserverDomainsCollection get_nameservers_with_automatically_managed_domains() const;
+
     std::vector<std::string> get_nsset_notification_emails_by_domain_id(unsigned long long _domain_id) const;
 
     void save_notification(unsigned long long domain_id, const std::string& last_at) const;

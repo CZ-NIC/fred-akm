@@ -144,6 +144,15 @@ void command_load(const IStorage& _storage, const std::string& _filename, const 
 void command_load(const IStorage& _storage, const IAkm& _backend, const std::string& _whitelist_filename, int _flags)
 {
     auto data = _backend.get_nameservers_with_automatically_managed_domain_candidates();
+    for (const auto kv : _backend.get_nameservers_with_automatically_managed_domains())
+    {
+        const auto ns = kv.second.nameserver;
+        const auto ns_domains = kv.second.nameserver_domains;
+
+        auto& dest = data[ns].nameserver_domains;
+        dest.reserve(dest.size() + ns_domains.size());
+        std::copy(ns_domains.begin(), ns_domains.end(), std::back_inserter(dest));
+    }
     log()->info("loaded tasks from backend ({} nameserver(s))", data.size());
     if (_whitelist_filename.length())
     {
