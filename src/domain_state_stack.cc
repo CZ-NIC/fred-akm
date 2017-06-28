@@ -19,6 +19,7 @@
 #include "src/domain_state_stack.hh"
 
 #include "src/domain_state.hh"
+#include "src/scan_iteration.hh"
 #include "src/log.hh"
 
 #include <boost/lexical_cast.hpp>
@@ -49,27 +50,22 @@ namespace {
 
 DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
 {
-    std::set<std::string> domains_with_invalid_scan_result_rows;
-
     boost::optional<DomainState> last_domain_state;
+    boost::optional<ScanIteration> scan_iteration;
     for (const auto& r : _scan_result_rows)
     {
-        if (is_valid(r)) {
-            log()->debug("importig scan_result_row: {}", to_string(r));
+        if (is_valid(r) && is_insecure_with_data(r)) {
+            log()->debug("importig scan_result_row:        {}", to_string(r));
         }
         else {
-            log()->error("SKIPPED INVALID scan_result_row: {}", to_string(r));
-            domains_with_invalid_scan_result_rows.insert(r.domain_name);
-            continue;
+            throw std::logic_error("invalid or not-insecure-with-data scan_result_row; only valid expected here");
         }
 
         if (!last_domain_state) {
             last_domain_state = DomainState(
                             r.scan_at,
                             r.scan_at_seconds,
-                            r.domain_id,
-                            r.domain_name,
-                            r.has_keyset,
+                            Domain(r.domain_id, r.domain_name, r.has_keyset),
                             r.nameserver,
                             r.nameserver_ip,
                             r.cdnskey);
@@ -80,54 +76,43 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
                 last_domain_state->add(r.cdnskey);
             }
             else {
-                domains[Domain(last_domain_state->domain_id, last_domain_state->domain_name, false)][last_domain_state->nameserver][last_domain_state->nameserver_ip]
+                scan_iterations[*scan_iteration][last_domain_state->domain][last_domain_state->nameserver][last_domain_state->nameserver_ip]
                         .emplace_back(*last_domain_state);
                 last_domain_state = DomainState(
                         r.scan_at,
                         r.scan_at_seconds,
-                        r.domain_id,
-                        r.domain_name,
-                        r.has_keyset,
+                        Domain(r.domain_id, r.domain_name, r.has_keyset),
                         r.nameserver,
                         r.nameserver_ip,
                         r.cdnskey);
             }
         }
+        if (!scan_iteration) {
+            scan_iteration = ScanIteration(r.scan_iteration_id, r.scan_at, r.scan_at_seconds, "");
+        }
+        else if (r.scan_iteration_id != scan_iteration->id) {
+            scan_iteration = ScanIteration(r.scan_iteration_id, r.scan_at, r.scan_at_seconds, "");
+        }
         if (&r == &_scan_result_rows.back())
         {
-            domains[Domain(last_domain_state->domain_id, last_domain_state->domain_name, false)][last_domain_state->nameserver][last_domain_state->nameserver_ip]
+            scan_iterations[*scan_iteration][last_domain_state->domain][last_domain_state->nameserver][last_domain_state->nameserver_ip]
                     .emplace_back(*last_domain_state);
-        }
-    }
-
-    auto domain = domains.begin();
-    while(domain != domains.end())
-    {
-        if (domains_with_invalid_scan_result_rows.find(domain->first.fqdn) != domains_with_invalid_scan_result_rows.end())
-        {
-            log()->error("ERROR: domain \"{}\" has invalid scan_result(s), skipping this domain", domain->first.fqdn);
-            domain = domains.erase(domain);
-        }
-        else
-        {
-            ++domain;
         }
     }
 }
 
-boost::optional<DomainState> get_last_domain_state(
+boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent(
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         const int _scan_result_row_timediff_max,
-        const int _scan_result_row_sequence_timediff_min,
-        bool& _domain_nameservers_coherent)
+        const int _scan_result_row_sequence_timediff_min)
 {
     bool domain_ok = true;
     bool scan_result_row_timediff_max_ok = true;
     bool key_check_ok = true;
     bool scan_result_row_sequence_timediff_min_ok = false;
 
-    boost::optional<DomainState> newest_domain_state;
+    boost::optional<DomainState> newest_domain_state; // domain state as reported by its most recently scanned namserver_ip
     for (const auto& nameserver : _nameservers) {
         //indented_print(1, nameserver.first);
         for (const auto& nameserver_ip : nameserver.second) {
@@ -142,12 +127,16 @@ boost::optional<DomainState> get_last_domain_state(
                     newest_domain_state = domain_state;
                 }
             }
+            else {
+                log()->info("no IP addresses for nameserver {}", nameserver.first);
+                return boost::optional<DomainState>();
+            }
         }
     }
 
     if (newest_domain_state && newest_domain_state->cdnskeys.size()) {
         indented_print(0, "domain newest: " + to_string(*newest_domain_state));
-        indented_print(0, "-------------' ");
+        indented_print(0, "");
 
         for (const auto& nameserver : _nameservers) {
             indented_print(1, nameserver.first);
@@ -220,21 +209,24 @@ boost::optional<DomainState> get_last_domain_state(
 
     indented_print(1, std::string("DOMAIN CHECK ") + (domain_ok ? "OK" : "KO"));
 
-    _domain_nameservers_coherent = domain_ok;
-    return newest_domain_state;
+    return domain_ok ? newest_domain_state : boost::optional<DomainState>();
 }
 
 
-void print(const DomainStateStack& _haystack)
+void print(const DomainStateStack& _domain_state_stack)
 {
-    for (const auto& domain : _haystack.domains) {
-        indented_print(0, domain.first.fqdn);
-        for (const auto& nameserver : domain.second) {
-            indented_print(1, nameserver.first);
-            for (const auto& nameserver_ip : nameserver.second) {
-                indented_print(2, nameserver_ip.first);
-                for (const auto& scan_result_row : nameserver_ip.second) {
-                    indented_print(3, to_string(scan_result_row));
+    indented_print(0, ";== [DomainStateStack] ==========");
+    for (const auto& scan_iteration : _domain_state_stack.scan_iterations) {
+        indented_print(0, "Iteration " + to_string(scan_iteration.first));
+        for (const auto& domain : scan_iteration.second) {
+            indented_print(1, domain.first.fqdn);
+            for (const auto& nameserver : domain.second) {
+                indented_print(2, nameserver.first);
+                for (const auto& nameserver_ip : nameserver.second) {
+                    indented_print(3, nameserver_ip.first);
+                    for (const auto& scan_result_row : nameserver_ip.second) {
+                        indented_print(4, to_string(scan_result_row));
+                    }
                 }
             }
         }
@@ -242,9 +234,72 @@ void print(const DomainStateStack& _haystack)
     log()->debug("");
 }
 
-bool operator<(const Domain& lhs, const Domain& rhs)
+void remove_scan_result_rows_from_older_scan_iterations_per_domain(ScanResultRows& _scan_result_rows)
 {
-    return lhs.id < rhs.id;
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        auto domain = domains.find(_scan_result_row.domain_id);
+                        if (domain != domains.end()) {
+                            return _scan_result_row.scan_iteration_id != domain->second;
+                        }
+                        domains[_scan_result_row.domain_id] = _scan_result_row.scan_iteration_id;
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_rows)
+{
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        if (!is_insecure(_scan_result_row)) {
+                            log()->error("IGNORING NOT INSECURE scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(ScanResultRows& _scan_result_rows)
+{
+    std::set<unsigned long long> domains_with_invalid_scan_result_rows;
+    for (const auto& r : _scan_result_rows)
+    {
+        if (!is_valid(r)) {
+            log()->error("SKIPPED INVALID scan_result_row:       {}", to_string(r));
+            domains_with_invalid_scan_result_rows.insert(r.domain_id);
+            continue;
+        }
+    }
+    for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
+    {
+        log()->info("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
+    }
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        auto domain = domains_with_invalid_scan_result_rows.find(_scan_result_row.domain_id);
+                        if (domain != domains_with_invalid_scan_result_rows.end()) {
+                            //log()->error("SKIPPED scan_result_row for DOMAIN with invalid scan_result_row(s): {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
 }
 
 } //namespace Fred::Akm

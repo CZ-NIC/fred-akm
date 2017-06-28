@@ -22,7 +22,6 @@
 #include "src/cdnskey.hh"
 #include "src/domain_state.hh"
 
-#include <istream>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -88,7 +87,7 @@ struct ScanResultRow
     int scan_iteration_id;
     std::string scan_at;
     int scan_at_seconds;
-    int domain_id;
+    long long domain_id;
     std::string domain_name;
     bool has_keyset;
     std::string nameserver;
@@ -99,11 +98,12 @@ struct ScanResultRow
 typedef std::vector<ScanResultRow> ScanResultRows;
 
 std::ostream& operator<<(std::ostream& os, const ScanResultRow& scan_result_row);
-std::istream& operator>>(std::istream& is, ScanResultRow& scan_result_row);
 std::string to_string(const ScanResultRow& scan_result_row);
 
 bool is_valid(const ScanResultRow& _scan_result_row);
 bool is_insecure(const ScanResultRow& _scan_result_row);
+bool is_insecure_with_data(const ScanResultRow& _scan_result_row);
+bool is_secure(const ScanResultRow& _scan_result_row);
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state);
 
 } // namespace Fred::Akm

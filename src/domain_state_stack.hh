@@ -21,6 +21,7 @@
 
 #include "src/cdnskey.hh"
 #include "src/nameserver_domains.hh"
+#include "src/scan_iteration.hh"
 #include "src/scan_result_row.hh"
 #include "src/domain_state.hh"
 #include "src/utils.hh"
@@ -45,22 +46,26 @@ struct DomainStateStack {
     typedef std::map<NameserverIp, DomainStates> NameserverIps;
     typedef std::map<Nameserver, NameserverIps> Nameservers;
     typedef std::map<Domain, Nameservers> Domains;
+    typedef std::map<ScanIteration, Domains> ScanIterations;
 
     DomainStateStack(const ScanResultRows& _scan_result_rows);
 
-    Domains domains;
+    ScanIterations scan_iterations;
 };
 
-boost::optional<DomainState> get_last_domain_state(
+boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent(
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         int _scan_result_row_timediff_max,
-        int _scan_result_row_sequence_timediff_min,
-        bool& _domain_nameservers_coherent);
+        int _scan_result_row_sequence_timediff_min);
 
-void print(const DomainStateStack& _haystack);
+void print(const DomainStateStack& _domain_state_stack);
 
 bool operator<(const Domain& lhs, const Domain& rhs);
+
+void remove_scan_result_rows_from_older_scan_iterations_per_domain(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_rows);
+void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(ScanResultRows& _scan_result_rows);
 
 } //namespace Fred::Akm
 } //namespace Fred

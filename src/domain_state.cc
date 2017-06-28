@@ -19,8 +19,10 @@
 #include "src/domain_state.hh"
 
 #include "src/cdnskey.hh"
+#include "src/domain.hh"
 
-#include <istream>
+#include <algorithm>
+#include <iterator>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -42,54 +44,76 @@ std::string quote(unsigned long long value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const DomainState& domain_state)
+std::ostream& operator<<(std::ostream& os, const DomainState& _domain_state)
 {
     static const std::string delim = ", ";
     os << "["
-       << quote(domain_state.scan_at) << delim
-       //<< quote(domain_state.scan_at_seconds) << delim
-       << quote(domain_state.domain_id) << delim
-       << quote(domain_state.domain_name) << delim
-       << quote(domain_state.has_keyset) << delim;
-       //<< quote(domain_state.nameserver) << delim
-       //<< quote(domain_state.nameserver_ip) << delim;
-    for (const auto& cdnskey : domain_state.cdnskeys)
+       << quote(_domain_state.scan_at) << delim
+       << _domain_state.domain << delim;
+    for (const auto& cdnskey : _domain_state.cdnskeys)
     {
         os << cdnskey.second;
     }
     os << "]";
+    os << " ("
+       << "taken from NS: " << quote(_domain_state.nameserver) << delim
+       << "with IP: " << quote(_domain_state.nameserver_ip) << delim
+       << "at: " << quote(_domain_state.scan_at)
+       << ")";
 
     return os;
 }
 
 // see "src/sqlite/storage.cc"
 
-std::string to_string(const DomainState& domain_state)
+std::string to_string(const DomainState& _domain_state)
 {
     static const std::string delim = ", ";
     std::string retval;
     retval = "[" +
-            quote(domain_state.scan_at) + delim +
-            //quote(domain_state.scan_at_seconds) + delim +
-            quote(domain_state.has_keyset) + delim +
-            quote(domain_state.domain_id) + delim +
-            quote(domain_state.domain_name); // + delim +
-            //quote(domain_state.nameserver) + delim +
-            //quote(domain_state.nameserver_ip);
-            for (const auto& cdnskey : domain_state.cdnskeys)
-            {
-                retval += delim + to_string(cdnskey.second);
-            }
-            retval += "]";
+            quote(_domain_state.scan_at) + delim +
+            to_string(_domain_state.domain);
+    for (const auto& cdnskey : _domain_state.cdnskeys)
+    {
+        retval += delim + to_string(cdnskey.second);
+    }
+    retval += "]";
+    retval += std::string(" (") +
+              "taken from NS: " + quote(_domain_state.nameserver) + delim +
+              "with IP: " + quote(_domain_state.nameserver_ip) + delim +
+              "at: " + quote(_domain_state.scan_at);
     return retval;
+}
+
+bool operator==(const DomainState& _lhs, const DomainState& _rhs)
+{
+    return
+        _lhs.scan_at == _rhs.scan_at &&
+        _lhs.scan_at_seconds == _rhs.scan_at_seconds &&
+        _lhs.domain == _rhs.domain &&
+        _lhs.nameserver == _rhs.nameserver &&
+        _lhs.nameserver_ip == _rhs.nameserver_ip &&
+        _lhs.cdnskeys == _rhs.cdnskeys;
+}
+
+bool operator!=(const DomainState& _lhs, const DomainState& _rhs)
+{
+    return !(_lhs == _rhs);
+}
+
+bool has_deletekey(const DomainState& _domain_state) {
+    return std::find_if(
+                   _domain_state.cdnskeys.begin(),
+                   _domain_state.cdnskeys.end(),
+                   [](std::pair<std::string, Cdnskey> cdnskeys_item) {
+                     return is_deletekey(cdnskeys_item.second);
+                   })
+           != _domain_state.cdnskeys.end();
 }
 
 bool are_coherent(const DomainState& _first, const DomainState& _second)
 {
-    if (_first.domain_name != _second.domain_name) {
-        return false;
-    }
-    if (_first.has_keyset != _second.has_keyset) {
+    if (_first.domain != _second.domain) {
         return false;
     }
     if (_first.cdnskeys != _second.cdnskeys) {

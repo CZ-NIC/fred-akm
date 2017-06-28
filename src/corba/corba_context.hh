@@ -14,7 +14,7 @@ namespace Corba {
 class CorbaContext
 {
 public:
-    CorbaContext(int argc, char* argv[], const std::string& _ns_host, const unsigned int _ns_port);
+    CorbaContext(int _argc, char* _argv[], const std::string& _ns_host, const unsigned int _ns_port, const char* options[][2]=0);
 
     const Nameservice& get_nameservice() const;
 

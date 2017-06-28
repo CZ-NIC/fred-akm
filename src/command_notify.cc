@@ -18,24 +18,26 @@
 
 #include "src/command_notify.hh"
 
-#include "src/nameserver_domains.hh"
-#include "src/domain_state_stack.hh"
 #include "src/domain_state.hh"
-#include "src/notified_domain_state.hh"
+#include "src/domain_state_stack.hh"
+#include "src/domain_status.hh"
+#include "src/domain_status_stack.hh"
 #include "src/log.hh"
+#include "src/nameserver_domains.hh"
+#include "src/notification_type.hh"
+#include "src/notification.hh"
+#include "src/notified_domain_status.hh"
 #include "src/utils.hh"
 
-#include <boost/range/adaptors.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/range/adaptors.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <ctime>
 #include <fstream>
-#include <chrono>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -48,68 +50,46 @@ namespace Akm {
 
 namespace {
 
-void send_and_save_notified_domain_state(
-        const NotifiedDomainState& _notified_domain_state,
-        const IStorage& _storage,
-        const IAkm& _akm_backend,
-        const IMailer& _mailer_backend,
-        const std::string& _template_name,
-        const bool _dry_run)
-{
-    const std::string mail_from = "";
-    const std::string mail_reply_to = "";
+struct Stats {
+    int domains_loaded;
+    int domains_checked;
+    int domains_ok;
+    int domains_ko;
+    int domains_unknown_no_data;
 
-    log()->info("shall notify template \"{}\"", _template_name);
-    log()->info("asking backend for emails for domain id {}", _notified_domain_state.domain_id);
-    auto tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_state.domain_id);
+    int sent_notifications;
+    int sent_ok_notifications;
+    int sent_ko_notifications;
+    int sent_first_ok_notifications;
+    int sent_first_ko_notifications;
+    int not_sent_first_ko_notifications;
+    int not_sent_still_ok_notifications;
+    int not_sent_still_ko_notifications;
+    int sending_notification_failures;
 
-    std::string emails = boost::algorithm::join(tech_contacts, ", ");
-    Fred::Akm::IMailer::Header header(emails, mail_from, mail_reply_to);
-    log()->debug("will send to email(s): {}", header.to);
-    log()->debug("prepare template parameters for template \"{}\"", _template_name);
-
-    const IMailer::TemplateName template_name = _template_name;
-
-    IMailer::TemplateParameters template_parameters;
-    template_parameters["domain"] = _notified_domain_state.domain_name; // TODO hardcoded
-    template_parameters["zone"] = ".cz"; // TODO hardcoded
-    template_parameters["datetime"] = _notified_domain_state.last_at;
-    template_parameters["days_to_left"] = "7"; // TODO get from config (notify_update_within_x_days)
-    std::vector<std::string> keys;
-    boost::split(keys, _notified_domain_state.serialized_cdnskeys, boost::is_any_of("|"));
-    for (int i = 0; i < keys.size(); ++i) {
-        template_parameters["keys." + std::to_string(i)] = keys[i];
-    }
-
-    for (const auto& template_parameter : template_parameters)
+    void print()
     {
-        log()->debug("template_parameter[\"{}\"] = \"{}\"", template_parameter.first, template_parameter.second);
+        log()->info("================== STATS ====================");
+        log()->info("domains loaded:                      {:>8}", domains_loaded);
+        log()->info("  domains checked:                   {:>8}", domains_checked);
+        log()->info("    domains ok:                      {:>8}", domains_ok);
+        log()->info("    domains ko:                      {:>8}", domains_ko);
+        log()->info("    no data:                         {:>8}", domains_unknown_no_data);
+        log()->info("---------------------------------------------");
+        log()->info("sent notifications:                  {:>8}", sent_notifications);
+        log()->info("  sent ok notifications:             {:>8}", sent_ok_notifications);
+        log()->info("    sent first ok notifications:     {:>8}", sent_first_ok_notifications);
+        log()->info("  sent ko notifications:             {:>8}", sent_ko_notifications);
+        log()->info("    sent first ko notifications:     {:>8}", sent_first_ko_notifications);
+        log()->info("not sent first ko notifications:     {:>8}", not_sent_first_ko_notifications);
+        log()->info("not sent still ok notifications:     {:>8}", not_sent_still_ok_notifications);
+        log()->info("not sent still ko notifications:     {:>8}", not_sent_still_ko_notifications);
+        log()->info("sending notification failures:       {:>8}", sending_notification_failures);
+        log()->info("=============================================");
     }
+};
 
-    try
-    {
-        if (!_dry_run) {
-            log()->debug("sending notification to template_name \"{}\"", template_name);
-            _mailer_backend.enqueue(header, template_name, template_parameters);
-            // TODO (exceptions thrown by enqueue? (combination of "email sent + exception throw" would spam)
-            _storage.set_notified_domain_state(_notified_domain_state);
-        }
-    }
-    catch (std::runtime_error& e)
-    {
-        // TODO log error
-        throw e;
-    }
-}
-
-bool are_coherent(const DomainState& _domain_state, const NotifiedDomainState& _notified_domain_state)
-{
-    return
-            _domain_state.domain_id == _notified_domain_state.domain_id &&
-            _domain_state.domain_name == _notified_domain_state.domain_name &&
-            _domain_state.has_keyset == _notified_domain_state.has_keyset &&
-            serialize(_domain_state.cdnskeys) == _notified_domain_state.serialized_cdnskeys;
-}
+Stats stats;
 
 } // namespace Fred::Akm::{anonymous}
 
@@ -119,109 +99,166 @@ void command_notify(
         const IMailer& _mailer_backend,
         unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_notify,
-        bool  _notify_from_last_iteration_only,
+        bool  _notify_from_last_scan_iteration_only,
         const bool _dry_run)
 {
-    // TODO enum
-    const int domain_state_ok = 0;
-    const int domain_state_ko = 1;
-    std::map<int, std::string> template_names = {
-        {domain_state_ok, "akm_candidate_state_ok"},
-        {domain_state_ko, "akm_candidate_state_ko"}
-    };
+    auto scan_result_rows =
+            _storage.get_insecure_scan_result_rows(
+                    _minimal_scan_result_sequence_length_to_notify,
+                    _notify_from_last_scan_iteration_only);
 
-    auto scan_result_rows = _storage.get_insecure_scan_result_rows(_minimal_scan_result_sequence_length_to_notify, _notify_from_last_iteration_only); // FIXME
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
-    DomainStateStack haystack(scan_result_rows);
+    remove_scan_result_rows_other_than_insecure(scan_result_rows);
+    remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(scan_result_rows);
+    log()->debug("removed invalid and possibly other than insecure scan_iterations -> finally remains {} scan result(s)", scan_result_rows.size());
 
-    print(haystack);
+    DomainStateStack domain_state_stack(scan_result_rows);
+    print(domain_state_stack);
 
-    for (const auto& domain : haystack.domains) {
-        bool domain_nameservers_coherent;
-        log()->info(domain.first.fqdn);
-        boost::optional<DomainState> newest_domain_state =
-                get_last_domain_state(
-                        domain.first,
-                        domain.second,
-                        _maximal_time_between_scan_results,
-                        0,
-                        domain_nameservers_coherent);
+    for (const auto& scan_iteration : domain_state_stack.scan_iterations) {
+        stats.domains_loaded += scan_iteration.second.size();
+    }
 
-        log()->debug("newest_domain_state: {}: {}", domain_nameservers_coherent ? "OK" : "KO", to_string(newest_domain_state.value_or(DomainState())));
+    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results);
+    print(domain_status_stack);
 
-        boost::optional<NotifiedDomainState> notified_domain_state = _storage.get_last_notified_domain_state(domain.first.id);
+    log()->info(";== [command_notify] =========================================================================");
 
-        log()->debug("last notified_domain_state: {}: {}", !notified_domain_state ? "NOT FOUND" : notified_domain_state->notification_type == domain_state_ok ? "OK" : notified_domain_state->notification_type == domain_state_ko ? "KO" : "UNKNOWN NOTIFICATION TYPE", to_string(notified_domain_state.value_or(NotifiedDomainState())));
-
-        if (domain_nameservers_coherent)
-        {
-            if (notified_domain_state && (notified_domain_state->notification_type == domain_state_ok))
-            {
-                if (are_coherent(*newest_domain_state, notified_domain_state.value_or(NotifiedDomainState())))
-                {
-                    log()->debug("domain ok, already notified");
-                    continue;
-                }
-                else
-                {
-                    log()->debug("ok state notified, but different one, notify the new one");
-                }
-            }
-
-            log()->debug("domain ok");
-
-            const int domain_state = domain_state_ok;
-            send_and_save_notified_domain_state(
-                    NotifiedDomainState(
-                            newest_domain_state->domain_id,
-                            newest_domain_state->domain_name,
-                            newest_domain_state->has_keyset,
-                            serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
-                            domain_state,
-                            newest_domain_state->scan_at),
-                    _storage,
-                    _akm_backend,
-                    _mailer_backend,
-                    template_names[domain_state],
-                    _dry_run);
+    stats.domains_loaded = domain_status_stack.domains.size();
+    for (const auto& domain : domain_status_stack.domains) {
+        if (domain.second.empty()) {
+            log()->error("no statuses for domain {}", domain.first.fqdn);
+            stats.domains_unknown_no_data++;
+            continue;
         }
-        else {
-            if (!notified_domain_state) {
-                log()->debug("domain ko, but ok state never notified (so this is not the ok->ko state change, bye)");
-                continue;
-            }
-            if (notified_domain_state->notification_type == domain_state_ok) {
-                log()->debug("domain ko, last notified state ok, so notify ok-ko change");
+        stats.domains_checked++;
 
-                const int domain_state = domain_state_ko;
-                send_and_save_notified_domain_state(
-                        NotifiedDomainState(
-                                newest_domain_state->domain_id,
-                                newest_domain_state->domain_name,
-                                newest_domain_state->has_keyset,
-                                "", //serialize(newest_domain_state->cdnskeys), // boost::algorithm::join(newest_domain_state->cdnskeys | boost::adaptors::map_keys, ","),
-                                domain_state,
-                                newest_domain_state->scan_at),
+        log()->debug(";-- [domain {}] --------------------------", to_string(domain.first));
+
+        boost::optional<NotifiedDomainStatus> notified_domain_status =
+                _storage.get_last_notified_domain_status(domain.first.id);
+
+        log()->debug("last notified status: {}: {}",
+                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
+                notified_domain_status ? to_string(*notified_domain_status) : "-");
+
+        DomainStatus newest_domain_status = domain.second.back();
+
+        log()->debug("newest domain_status: {}: {}",
+                to_status_string(newest_domain_status),
+                to_string(newest_domain_status));
+
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+        {
+
+            bool no_ok_notification_sent = false;
+            for (const auto& domain_status : boost::adaptors::reverse(domain.second))
+            {
+                if (domain_status.status != DomainStatus::akm_status_candidate_ok &&
+                    domain_status.scan_iteration.start_at > notified_domain_status->last_at)
+                {
+                    log()->debug("ok->...(ko)...->ok (ko@scan_iteration {})", to_string(domain_status.scan_iteration));
+                    stats.sent_first_ok_notifications++;
+                    no_ok_notification_sent = true;
+                    try {
+                        NotifiedDomainStatus new_notified_domain_status =
+                                NotifiedDomainStatus(
+                                        domain.first,
+                                        domain_status);
+                        notify_and_save_domain_status(
+                                new_notified_domain_status,
+                                _storage,
+                                _akm_backend,
+                                _mailer_backend,
+                                _dry_run);
+
+                        notified_domain_status = new_notified_domain_status;
+                                //_storage.get_last_notified_domain_status(domain.first.id);
+                        log()->debug("last notified status now: {}: {}",
+                                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
+                                notified_domain_status ? to_string(*notified_domain_status) : "");
+
+                    }
+                    catch (const NotificationFailed&)
+                    {
+                        stats.sending_notification_failures++;
+                    }
+                }
+            }
+            if (no_ok_notification_sent) {
+                stats.sent_first_ko_notifications++;
+            }
+            else {
+                stats.not_sent_still_ok_notifications++;
+            }
+        }
+
+        if (!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+        {
+            log()->debug("new->ok");
+        }
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
+        {
+            log()->debug("ok->ko");
+        }
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+        {
+            log()->debug("ko->ok");
+        }
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok && 
+             !are_coherent(*newest_domain_status.domain_state, *notified_domain_status))
+        {
+            log()->debug("ok->ok2 (different)");
+        }
+
+        if ((!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ok) ||
+            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko) ||
+            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok) ||
+            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok && 
+             !are_coherent(*newest_domain_status.domain_state, *notified_domain_status)) )
+        {
+
+            stats.sent_notifications++;
+            if (newest_domain_status.status == DomainStatus::akm_status_candidate_ok) {
+                stats.sent_ok_notifications++;
+                stats.domains_ok++;
+            }
+            else if (newest_domain_status.status == DomainStatus::akm_status_candidate_ko) {
+                stats.sent_ko_notifications++;
+                stats.domains_ko++;
+            }
+            if (!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+            {
+                stats.sent_first_ok_notifications++;
+            }
+            try {
+                notify_and_save_domain_status(
+                        NotifiedDomainStatus(
+                                domain.first,
+                                newest_domain_status),
                         _storage,
                         _akm_backend,
                         _mailer_backend,
-                        template_names[domain_state],
                         _dry_run);
             }
-            else if (notified_domain_state->notification_type == domain_state_ko) {
-                log()->debug("domain ko, already notified");
-                continue;
-            }
-            else {
-                throw std::runtime_error("unknown notification_type");
+            catch (const NotificationFailed&)
+            {
+                stats.sending_notification_failures++;
             }
         }
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
+        {
+            stats.not_sent_still_ko_notifications++;
+            // log()->info("DO NOT NOTIFY...");
+        }
+
     }
 
-    log()->debug("done");
+    stats.print();
+    log()->debug("command notify done");
 }
 
 
-} //namespace Fred::Akm
-} //namespace Fred
+} // namespace Fred::Akm
+} // namespace Fred

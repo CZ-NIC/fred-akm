@@ -16,34 +16,39 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-#define KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-
-#include "src/dnskey.hh"
+#ifndef DOMAIN_HH_9DD89238F84C428B978A55200B409D98
+#define DOMAIN_HH_9DD89238F84C428B978A55200B409D98
 
 #include <string>
-#include <vector>
 
 namespace Fred {
 namespace Akm {
 
 
-struct Keyset
+struct Domain
 {
-    Keyset()
-        : dnskeys()
+    Domain()
+        : id(), fqdn(), has_keyset()
     {
     }
 
-    Keyset(const std::vector<Dnskey>& _dnskeys)
-        : dnskeys(_dnskeys)
+    Domain(unsigned long long _id, const std::string& _fqdn, bool _has_keyset)
+        : id(_id), fqdn(_fqdn), has_keyset(_has_keyset)
     {
     }
 
-    std::vector<Dnskey> dnskeys;
+    unsigned long long id;
+    std::string fqdn;
+    bool has_keyset;
 };
 
-std::string to_string(const Keyset& _keyset);
+bool operator==(const Domain& _lhs, const Domain& _rhs);
+bool operator!=(const Domain& _lhs, const Domain& _rhs);
+bool operator<(const Domain& _lhs, const Domain& _rhs);
+
+std::ostream& operator<<(std::ostream& os, const Domain& _domain);
+std::istream& operator>>(std::istream& is, Domain& _domain);
+std::string to_string(const Domain& _domain);
 
 } // namespace Fred
 } // namespace Akm

@@ -5,8 +5,8 @@ namespace Akm {
 namespace Corba {
 
 
-CorbaContext::CorbaContext(int _argc, char* _argv[], const std::string& _ns_host, const unsigned int _ns_port)
-    : orb_(CORBA::ORB_init(_argc, _argv)),
+CorbaContext::CorbaContext(int _argc, char* _argv[], const std::string& _ns_host, const unsigned int _ns_port, const char* options[][2])
+    : orb_(CORBA::ORB_init(_argc, _argv, "", options)),
       ns_(orb_, _ns_host, _ns_port)
 {
 }

@@ -64,31 +64,6 @@ std::ostream& operator<<(std::ostream& os, const ScanResultRow& scan_result_row)
 }
 
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, ScanResultRow& scan_result_row)
-{
-    try {
-        is
-                >> scan_result_row.id
-                >> scan_result_row.scan_iteration_id
-                >> scan_result_row.scan_at
-                >> scan_result_row.scan_at_seconds
-                >> scan_result_row.domain_id
-                >> scan_result_row.domain_name
-                >> scan_result_row.has_keyset
-                >> scan_result_row.cdnskey.status
-                >> scan_result_row.nameserver
-                >> scan_result_row.nameserver_ip
-                >> scan_result_row.cdnskey.flags
-                >> scan_result_row.cdnskey.proto
-                >> scan_result_row.cdnskey.alg
-                >> scan_result_row.cdnskey.public_key;
-    }
-    catch (...)
-    {
-        is.setstate(std::ios::failbit);
-    }
-    return is;
-}
 
 std::string to_string(const ScanResultRow& scan_result_row)
 {
@@ -203,7 +178,33 @@ bool is_insecure(const ScanResultRow& _scan_result_row)
 {
     if (_scan_result_row.has_keyset == 0 &&
         (_scan_result_row.cdnskey.status == "insecure" ||
+         _scan_result_row.cdnskey.status == "insecure-empty" ||
+         _scan_result_row.cdnskey.status == "unresolved" ||
+         _scan_result_row.cdnskey.status == "unresolved-ip"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_insecure_with_data(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.has_keyset == 0 &&
+        (_scan_result_row.cdnskey.status == "insecure" ||
          _scan_result_row.cdnskey.status == "insecure-empty"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_secure(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.has_keyset == 1 &&
+        (_scan_result_row.cdnskey.status == "secure" ||
+         _scan_result_row.cdnskey.status == "secure-empty" ||
+         _scan_result_row.cdnskey.status == "untrustworthy" ||
+         _scan_result_row.cdnskey.status == "unknown"))
     {
         return true;
     }
@@ -212,19 +213,19 @@ bool is_insecure(const ScanResultRow& _scan_result_row)
 
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state)
 {
-    if (_scan_result_row.domain_id != _domain_state.domain_id) {
+    if (_scan_result_row.domain_id != _domain_state.domain.id) {
         return false;
     }
-    if (_scan_result_row.domain_name != _domain_state.domain_name) {
+    if (_scan_result_row.domain_name != _domain_state.domain.fqdn) {
+        return false;
+    }
+    if (_scan_result_row.has_keyset != _domain_state.domain.has_keyset) {
         return false;
     }
     if (_scan_result_row.nameserver != _domain_state.nameserver) {
         return false;
     }
     if (_scan_result_row.nameserver_ip != _domain_state.nameserver_ip) {
-        return false;
-    }
-    if (_scan_result_row.has_keyset != _domain_state.has_keyset) {
         return false;
     }
     return true;

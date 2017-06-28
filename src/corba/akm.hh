@@ -29,6 +29,8 @@ public:
 
     void save_notification(unsigned long long domain_id, const std::string& last_at) const;
 
+    void update_domain_automatic_keyset(unsigned long long domain_id, Nsset current_nsset, Keyset new_keyset) const;
+
 private:
     const Nameservice& ns_;
     std::string ns_path_akm_;

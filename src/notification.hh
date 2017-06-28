@@ -16,36 +16,37 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-#define KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
+#ifndef NOTIFICATION_HH_B0C7F73BF9F144C58424D79896AAD48A
+#define NOTIFICATION_HH_B0C7F73BF9F144C58424D79896AAD48A
 
-#include "src/dnskey.hh"
+#include "src/i_akm.hh"
+#include "src/i_mailer.hh"
+#include "src/i_storage.hh"
+#include "src/notified_domain_status.hh"
 
-#include <string>
-#include <vector>
+#include <stdexcept>
 
 namespace Fred {
 namespace Akm {
 
-
-struct Keyset
+struct NotificationFailed
+    : virtual std::exception
 {
-    Keyset()
-        : dnskeys()
+    virtual const char* what() const throw ()
     {
+        return "notification failed";
     }
-
-    Keyset(const std::vector<Dnskey>& _dnskeys)
-        : dnskeys(_dnskeys)
-    {
-    }
-
-    std::vector<Dnskey> dnskeys;
 };
 
-std::string to_string(const Keyset& _keyset);
+void notify_and_save_domain_status(
+        const NotifiedDomainStatus& _notified_domain_status,
+        const IStorage& _storage,
+        const IAkm& _akm_backend,
+        const IMailer& _mailer_backend,
+        const bool _dry_run);
 
+
+} // namespace Fred::Akm
 } // namespace Fred
-} // namespace Akm
 
 #endif

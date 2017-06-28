@@ -16,36 +16,29 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-#define KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-
-#include "src/dnskey.hh"
+#ifndef COMMAND_UPDATE_HH_756843D0C1F14AE28487B8CC7820AD57
+#define COMMAND_UPDATE_HH_756843D0C1F14AE28487B8CC7820AD57
 
 #include <string>
-#include <vector>
+
+#include "src/i_akm.hh"
+#include "src/i_mailer.hh"
+#include "src/i_storage.hh"
 
 namespace Fred {
 namespace Akm {
 
 
-struct Keyset
-{
-    Keyset()
-        : dnskeys()
-    {
-    }
+void command_update(
+        const IStorage& _storage,
+        const IAkm& _akm_backend,
+        const IMailer& _mailer_backend,
+        const unsigned long _maximal_time_between_scan_results,
+        const unsigned long _minimal_scan_result_sequence_length_to_update,
+        bool _dry_run);
 
-    Keyset(const std::vector<Dnskey>& _dnskeys)
-        : dnskeys(_dnskeys)
-    {
-    }
 
-    std::vector<Dnskey> dnskeys;
-};
-
-std::string to_string(const Keyset& _keyset);
-
-} // namespace Fred
-} // namespace Akm
+} //namespace Fred::Akm
+} //namespace Fred
 
 #endif

@@ -4,7 +4,7 @@
 #include "src/i_scanner.hh"
 #include "src/nameserver_domains.hh"
 #include "src/scan_result_row.hh"
-#include "src/notified_domain_state.hh"
+#include "src/notified_domain_status.hh"
 
 #include <boost/optional.hpp>
 
@@ -40,9 +40,11 @@ public:
 
     virtual ScanResultRows get_insecure_scan_result_rows(int _seconds_back, bool _notify_from_last_iteration_only) const = 0;
 
-    virtual void set_notified_domain_state(const NotifiedDomainState& _notified_domain_state) const = 0;
+    virtual ScanResultRows get_insecure_scan_result_rows_for_update(int _seconds_back) const = 0;
 
-    virtual boost::optional<NotifiedDomainState> get_last_notified_domain_state(unsigned long long _domain_id) const = 0;
+    virtual void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const = 0;
+
+    virtual boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(unsigned long long _domain_id) const = 0;
 };
 
 

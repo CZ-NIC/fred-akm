@@ -35,16 +35,36 @@ fred_akm_SOURCES = \
 	src/external_scanner.cc \
 	src/command_notify.hh \
 	src/command_notify.cc \
-	src/notified_domain_state.hh \
-	src/notified_domain_state.cc \
+	src/command_update.hh \
+	src/command_update.cc \
+	src/notified_domain_status.hh \
+	src/notified_domain_status.cc \
+	src/notification.hh \
+	src/notification.cc \
+	src/notification_type.hh \
+	src/notification_type.cc \
+	src/keyset.hh \
+	src/keyset.cc \
+	src/nsset.hh \
+	src/nsset.cc \
 	src/cdnskey.hh \
 	src/cdnskey.cc \
+	src/dnskey.hh \
+	src/dnskey.cc \
+	src/domain.cc \
+	src/domain.hh \
 	src/domain_state.hh \
 	src/domain_state.cc \
+	src/domain_status.hh \
+	src/domain_status.cc \
+	src/scan_iteration.hh \
+	src/scan_iteration.cc \
 	src/scan_result_row.hh \
 	src/scan_result_row.cc \
 	src/domain_state_stack.hh \
 	src/domain_state_stack.cc \
+	src/domain_status_stack.hh \
+	src/domain_status_stack.cc \
 	src/main.cc
 
 fred_akm_LDADD = \

@@ -16,36 +16,28 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
-#define KEYSET_HH_7AC3F151D2294A44A5DF4DFCB9A76D3B
+#ifndef DOMAIN_STATUS_STACK_HH_0DF9FFB1B9B54D9DA39E857EF0E6FC73
+#define DOMAIN_STATUS_STACK_HH_0DF9FFB1B9B54D9DA39E857EF0E6FC73
 
-#include "src/dnskey.hh"
-
-#include <string>
-#include <vector>
+#include "src/domain_state.hh"
+#include "src/domain_state_stack.hh"
+#include "src/domain_status.hh"
 
 namespace Fred {
 namespace Akm {
 
+struct DomainStatusStack {
+    typedef std::vector<DomainStatus> DomainStatuses;
+    typedef std::map<Domain, DomainStatuses> Domains;
 
-struct Keyset
-{
-    Keyset()
-        : dnskeys()
-    {
-    }
+    DomainStatusStack(const DomainStateStack& _domain_state_stack, unsigned long _maximal_time_between_scan_results);
 
-    Keyset(const std::vector<Dnskey>& _dnskeys)
-        : dnskeys(_dnskeys)
-    {
-    }
-
-    std::vector<Dnskey> dnskeys;
+    Domains domains;
 };
 
-std::string to_string(const Keyset& _keyset);
+void print(const DomainStatusStack& _domain_status_stack);
 
-} // namespace Fred
-} // namespace Akm
+} //namespace Fred::Akm
+} //namespace Fred
 
 #endif

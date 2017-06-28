@@ -28,8 +28,21 @@ namespace Akm {
 
 struct Nsset
 {
+
+    Nsset()
+        : nameservers()
+    {
+    }
+
+    Nsset(const std::vector<std::string>& _nameservers)
+        : nameservers(_nameservers)
+    {
+    }
+
+    std::vector<std::string> nameservers;
 };
 
+std::string to_string(const Nsset& _nsset);
 
 } // namespace Fred
 } // namespace Akm

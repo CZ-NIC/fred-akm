@@ -14,6 +14,7 @@
 #include "src/command_load.hh"
 #include "src/command_notify.hh"
 #include "src/command_scan.hh"
+#include "src/command_update.hh"
 
 
 void debug_input_params(
@@ -108,7 +109,21 @@ void dispatch_command_update(
     const Fred::Akm::Args& _args,
     const Fred::Akm::Conf& _conf)
 {
-    throw std::runtime_error("not implemented");
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
+    auto mailer_backend = Fred::Akm::Corba::Mailer(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_mailer);
+    const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
+    const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
+    const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
+    const auto dry_run = _args.get<Fred::Akm::GeneralArgs>()->dry_run;
+
+    command_update(
+            db,
+            akm_backend,
+            mailer_backend,
+            maximal_time_between_scan_results,
+            minimal_scan_result_sequence_length_to_update,
+            dry_run);
 }
 
 
@@ -132,8 +147,10 @@ int main(int argc, char* argv[])
         debug_input_params(args.get<Fred::Akm::DebugMapArgs>()->debug_map, "args");
         debug_input_params(conf.get<Fred::Akm::DebugMapConf>()->debug_map, "conf");
 
+
         const auto nameservice_conf = conf.get<Fred::Akm::NameserviceConf>();
-        const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port);
+        const char* options[][2] = { { "nativeCharCodeSet", "UTF-8" }, { 0, 0 } };
+        const Fred::Akm::Corba::CorbaContext cctx(argc, argv, nameservice_conf->host, nameservice_conf->port, options);
 
         typedef std::function<void(Fred::Akm::Corba::CorbaContext, Fred::Akm::Args, Fred::Akm::Conf)> CommandDispatchFunc;
         const std::map<std::string, CommandDispatchFunc> command_dispatch = {
