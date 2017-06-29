@@ -25,14 +25,14 @@ std::string to_string(const NotificationType::Enum& _notification_type_enum)
 {
     switch (_notification_type_enum) {
         case NotificationType::akm_notification_candidate_ok:
-            return "akm_notification_candidate_ok";
-            break;
+                       return "akm_notification_candidate_ok";
+                       break;
         case NotificationType::akm_notification_candidate_ko:
-            return "akm_status_candidate_ko";
-            break;
+                       return "akm_notification_candidate_ko";
+                       break;
         case NotificationType::akm_notification_managed_ok:
-            return "akm_status_candidate_ko";
-            break;
+                       return "akm_notification_managed_ok";
+                       break;
     }
 }
 
@@ -46,7 +46,7 @@ int to_db_handle(const NotificationType::Enum& _notification_type_enum)
             return 1;
             break;
         case NotificationType::akm_notification_managed_ok:
-            return 1;
+            return 2;
             break;
     }
 }

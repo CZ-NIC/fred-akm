@@ -81,14 +81,14 @@ std::string to_string(const DomainStatus::Enum& _domain_status_enum)
 {
     switch (_domain_status_enum) {
         case DomainStatus::akm_status_candidate_ok:
-            return "akm_status_candidate_ok";
-            break;
+                   return "akm_status_candidate_ok";
+                   break;
         case DomainStatus::akm_status_candidate_ko:
-            return "akm_status_candidate_ko";
-            break;
+                   return "akm_status_candidate_ko";
+                   break;
         case DomainStatus::akm_status_managed_ok:
-            return "akm_status_managed_ok";
-            break;
+                   return "akm_status_managed_ok";
+                   break;
     }
 }
 
