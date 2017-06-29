@@ -66,7 +66,7 @@ std::ostream& operator<<(std::ostream& os, const DomainState& _domain_state)
 
 // see "src/sqlite/storage.cc"
 
-std::string to_string(const DomainState& _domain_state)
+std::string to_string(const DomainState& _domain_state, const bool verbose)
 {
     static const std::string delim = ", ";
     std::string retval;
@@ -78,10 +78,12 @@ std::string to_string(const DomainState& _domain_state)
         retval += delim + to_string(cdnskey.second);
     }
     retval += "]";
-    retval += std::string(" (") +
-              "taken from NS: " + quote(_domain_state.nameserver) + delim +
-              "with IP: " + quote(_domain_state.nameserver_ip) + delim +
-              "at: " + quote(_domain_state.scan_at);
+    if (verbose) {
+        retval += std::string(" (") +
+                  "taken from NS: " + quote(_domain_state.nameserver) + delim +
+                  "with IP: " + quote(_domain_state.nameserver_ip) + delim +
+                  "at: " + quote(_domain_state.scan_at);
+    }
     return retval;
 }
 

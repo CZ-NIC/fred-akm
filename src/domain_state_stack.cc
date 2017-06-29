@@ -36,11 +36,11 @@ namespace Fred {
 namespace Akm {
 
 namespace {
-    void indented_print(const int _indent, const std::string& _message)
+    void indented_print(const int _indent, const std::string& _message, const std::string& _prefix = "")
     {
-        std::string result = "";
+        std::string result = _prefix;
         for (int i = 0; i < _indent; ++i) {
-            result += "\t";
+            result += "    ";
         }
         result += _message;
         log()->debug(result);
@@ -54,13 +54,6 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
     boost::optional<ScanIteration> scan_iteration;
     for (const auto& r : _scan_result_rows)
     {
-        if (is_valid(r) && is_insecure_with_data(r)) {
-            log()->debug("importig scan_result_row:        {}", to_string(r));
-        }
-        else {
-            throw std::logic_error("invalid or not-insecure-with-data scan_result_row; only valid expected here");
-        }
-
         if (!last_domain_state) {
             last_domain_state = DomainState(
                             r.scan_at,
@@ -111,12 +104,13 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
     bool scan_result_row_timediff_max_ok = true;
     bool key_check_ok = true;
     bool scan_result_row_sequence_timediff_min_ok = false;
+    int indent = 1;
 
     boost::optional<DomainState> newest_domain_state; // domain state as reported by its most recently scanned namserver_ip
     for (const auto& nameserver : _nameservers) {
-        //indented_print(1, nameserver.first);
+        //indented_print(indent + 1, nameserver.first);
         for (const auto& nameserver_ip : nameserver.second) {
-            //indented_print(2, nameserver_ip.first);
+            //indented_print(indent + 2, nameserver_ip.first);
             if (nameserver_ip.second.size()) {
                 const auto& domain_state = nameserver_ip.second.front();
                 if (!newest_domain_state) {
@@ -135,20 +129,20 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
     }
 
     if (newest_domain_state && newest_domain_state->cdnskeys.size()) {
-        indented_print(0, "domain newest: " + to_string(*newest_domain_state));
-        indented_print(0, "");
+        indented_print(indent + 0, "domain newest: " + to_string(*newest_domain_state));
+        indented_print(indent + 0, "");
 
         for (const auto& nameserver : _nameservers) {
-            indented_print(1, nameserver.first);
+            indented_print(indent + 1, nameserver.first);
             scan_result_row_sequence_timediff_min_ok = false;
             boost::optional<DomainState> last_domain_state = newest_domain_state;
             for (const auto& nameserver_ip : nameserver.second) {
-                indented_print(2, nameserver_ip.first);
+                indented_print(indent + 2, nameserver_ip.first);
                 for (const auto& domain_state : nameserver_ip.second) {
-                    indented_print(3, to_string(domain_state));
+                    indented_print(indent + 3, to_string(domain_state));
 
                     if (!domain_state.cdnskeys.size()) {
-                        indented_print(3, "KEY CHECK KO (no keys ~ insecure-empty)");
+                        indented_print(indent + 3, "KEY CHECK KO (no keys ~ insecure-empty)");
                         key_check_ok = false;
                         break;
                     }
@@ -156,32 +150,32 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
                     if (last_domain_state->scan_at_seconds - domain_state.scan_at_seconds
                         > _scan_result_row_timediff_max)
                     {
-                        indented_print(3, "TIMEDIFF CHECK KO ");
+                        indented_print(indent + 3, "TIMEDIFF CHECK KO ");
                         scan_result_row_timediff_max_ok = false;
                         break;
                     }
                     else {
-                        indented_print(3, "timediff check ok");
+                        indented_print(indent + 3, "timediff check ok");
                     }
 
                     if (!are_coherent(domain_state, *newest_domain_state)) {
-                        indented_print(3, "KEY CHECK KO");
+                        indented_print(indent + 3, "KEY CHECK KO");
                         key_check_ok = false;
                         break;
                     }
                     else {
-                        indented_print(3, "key check ok");
+                        indented_print(indent + 3, "key check ok");
                     }
 
                     if (newest_domain_state->scan_at_seconds - last_domain_state->scan_at_seconds
                         >= _scan_result_row_sequence_timediff_min)
                     {
-                        indented_print(3, "sequence timediff check reached ok, leaving this ns");
+                        indented_print(indent + 3, "sequence timediff check reached ok, leaving this ns");
                         scan_result_row_sequence_timediff_min_ok = true;
                         break; // requirements reached, can leave now
                     }
                     else {
-                        indented_print(3, "sequence timediff check pending");
+                        indented_print(indent + 3, "sequence timediff check pending");
                     }
 
                     last_domain_state = domain_state;
@@ -190,7 +184,7 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
         }
     }
     else {
-        indented_print(1, "KO, no recent scan result WITH CDNSKEYS for domain " + _domain.fqdn);
+        indented_print(indent + 1, "KO, no recent scan result WITH CDNSKEYS for domain " + _domain.fqdn);
         domain_ok = false;
     }
 
@@ -202,12 +196,12 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
     }
     if (!scan_result_row_sequence_timediff_min_ok) {
         if (domain_ok) {
-            indented_print(2, "SEQUENCE TIMEDIFF CHECK KO");
+            indented_print(indent + 2, "SEQUENCE TIMEDIFF CHECK KO");
         }
         domain_ok = false;
     }
 
-    indented_print(1, std::string("DOMAIN CHECK ") + (domain_ok ? "OK" : "KO"));
+    indented_print(indent + 1, std::string("DOMAIN STATUS for this iteration: ") + (domain_ok ? "OK" : "KO"));
 
     return domain_ok ? newest_domain_state : boost::optional<DomainState>();
 }
@@ -216,16 +210,21 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
 void print(const DomainStateStack& _domain_state_stack)
 {
     indented_print(0, ";== [DomainStateStack] ==========");
+    indented_print(0, "[scan_iteration]", ";");
+    indented_print(1, "[domain]", ";");
+    indented_print(2, "[nameserver]", ";");
+    indented_print(3, "[nameserver_ip]", ";");
+    indented_print(4, "[list of domain states (as reported by concrete namserver_ip)]", ";");
     for (const auto& scan_iteration : _domain_state_stack.scan_iterations) {
-        indented_print(0, "Iteration " + to_string(scan_iteration.first));
+        indented_print(0, to_string(scan_iteration.first));
         for (const auto& domain : scan_iteration.second) {
-            indented_print(1, domain.first.fqdn);
+            indented_print(1, to_string(domain.first));
             for (const auto& nameserver : domain.second) {
                 indented_print(2, nameserver.first);
                 for (const auto& nameserver_ip : nameserver.second) {
                     indented_print(3, nameserver_ip.first);
-                    for (const auto& scan_result_row : nameserver_ip.second) {
-                        indented_print(4, to_string(scan_result_row));
+                    for (const auto& domain_state : nameserver_ip.second) {
+                        indented_print(4, to_string(domain_state));
                     }
                 }
             }
@@ -264,6 +263,42 @@ void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_ro
                     {
                         if (!is_insecure(_scan_result_row)) {
                             log()->error("IGNORING NOT INSECURE scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan_result_rows)
+{
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        if (!is_insecure_with_data(_scan_result_row)) {
+                            log()->error("IGNORING NOT INSECURE scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows)
+{
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        if (!is_secure(_scan_result_row)) {
+                            log()->error("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;

@@ -164,31 +164,33 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const Nameserv
     }
 }
 
-ScanResultRows get_insecure_scan_result_rows(sqlite3pp::database& _db, const int _seconds_back, const bool _notify_from_last_iteration_only)
+ScanResultRows get_insecure_scan_result_rows_for_notify(sqlite3pp::database& _db, const int _seconds_back, const bool _notify_from_last_iteration_only)
 {
     sqlite3pp::query query(_db);
     query.prepare(boost::str(boost::format(
-        "SELECT id, "
-               "scan_iteration_id, "
-               "scan_at, "
+        "SELECT scan_result.id, "
+               "scan_result.scan_iteration_id, "
+               "scan_result.scan_at, "
                "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
-               "domain_id, "
-               "domain_name, "
-               "has_keyset, "
-               "cdnskey_status, "
-               "nameserver, "
-               "nameserver_ip, "
-               "cdnskey_flags, "
-               "cdnskey_proto, "
-               "cdnskey_alg, "
-               "cdnskey_public_key "
+               "scan_result.domain_id, "
+               "scan_result.domain_name, "
+               "scan_result.has_keyset, "
+               "scan_result.cdnskey_status, "
+               "scan_result.nameserver, "
+               "scan_result.nameserver_ip, "
+               "scan_result.cdnskey_flags, "
+               "scan_result.cdnskey_proto, "
+               "scan_result.cdnskey_alg, "
+               "scan_result.cdnskey_public_key "
           "FROM scan_result "
-         "WHERE scan_iteration_id IN "
+          "LEFT JOIN domain_status_notification ON scan_result.domain_id = domain_status_notification.domain_id "
+         "WHERE scan_result.scan_iteration_id IN "
              "(SELECT scan_iteration_id "
                 "FROM scan_result "
                "WHERE scan_at BETWEEN datetime('now', '%1% seconds') AND datetime('now') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND has_keyset = 0 "
+           "AND scan_result.has_keyset = 0 "
+           "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
            "%2%"
          "ORDER BY id DESC")
                    % (_seconds_back * -1)
@@ -219,18 +221,21 @@ ScanResultRows get_insecure_scan_result_rows(sqlite3pp::database& _db, const int
                 >> scan_result_row.cdnskey.alg
                 >> scan_result_row.cdnskey.public_key;
         scan_result.emplace_back(scan_result_row);
-        std::cout << scan_result_row << std::endl;
+        //std::cout << scan_result_row << std::endl;
     }
-    if (scan_result.empty()) {
-        throw std::runtime_error("no scan_results found");
-    }
+    //if (scan_result.empty()) {
+    //    throw std::runtime_error("no scan_results found");
+    //}
     return scan_result;
 }
 
 ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db, const int _seconds_back)
 {
+    const bool has_keyset = false;
+    const NotificationType::Enum notification_type = NotificationType::akm_notification_candidate_ok;
+
     sqlite3pp::query query(_db);
-    query.prepare(boost::str(boost::format(
+    std::string sql =
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
                "scan_result.scan_at, "
@@ -252,14 +257,17 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
                 "FROM scan_result "
                "WHERE scan_at BETWEEN datetime('now', '%1% seconds') AND datetime('now') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND scan_result.has_keyset = 0 "
-           "AND domain_status_notification.notification_type = 0 " // OK
+           "AND scan_result.has_keyset = :has_keyset "
+           "AND domain_status_notification.notification_type = :notification_type "
            "AND domain_status_notification.last_at <= datetime('now', '%2% seconds') "
-         "ORDER BY id DESC")
+         "ORDER BY id DESC";
+
+    query.prepare(boost::str(boost::format(sql)
                    % (_seconds_back * -1)
                    % (_seconds_back * -1)).c_str());
 
-    //query.bind(1, _seconds_back * -1); // TODO
+    query.bind(":has_keyset", has_keyset);
+    query.bind(":notification_type", to_db_handle(notification_type));
 
     // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
 
@@ -286,9 +294,77 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
         scan_result.emplace_back(scan_result_row);
         std::cout << scan_result_row << std::endl;
     }
-    if (scan_result.empty()) {
-        throw std::runtime_error("no scan_results found");
+    //if (scan_result.empty()) {
+    //    throw std::runtime_error("no scan_results found");
+    //}
+    return scan_result;
+}
+
+ScanResultRows get_secure_scan_result_rows_for_update(sqlite3pp::database& _db, const int _seconds_back)
+{
+    const bool has_keyset = true;
+    const NotificationType::Enum notification_type = NotificationType::akm_notification_managed_ok;
+
+    sqlite3pp::query query(_db);
+    std::string sql =
+        "SELECT scan_result.id, "
+               "scan_result.scan_iteration_id, "
+               "scan_result.scan_at, "
+               "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
+               "scan_result.domain_id, "
+               "scan_result.domain_name, "
+               "scan_result.has_keyset, "
+               "scan_result.cdnskey_status, "
+               "scan_result.nameserver, "
+               "scan_result.cdnskey_flags, "
+               "scan_result.cdnskey_proto, "
+               "scan_result.cdnskey_alg, "
+               "scan_result.cdnskey_public_key "
+          "FROM scan_result "
+          "JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
+         "WHERE scan_iteration_id IN "
+             "(SELECT scan_iteration_id "
+                "FROM scan_result "
+               "WHERE scan_at BETWEEN datetime('now', '%1% seconds') AND datetime('now') "
+               "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
+           "AND scan_result.has_keyset = :has_keyset "
+           "AND domain_status_notification.notification_type = :notification_type "
+           "AND scan_result.scan_at > domain_status_notification.last_at "
+         "ORDER BY id DESC";
+
+    query.prepare(boost::str(boost::format(sql)
+                   % (_seconds_back * -1)).c_str());
+
+    query.bind(":has_keyset", has_keyset);
+    query.bind(":notification_type", to_db_handle(notification_type));
+
+    // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
+
+    ScanResultRows scan_result;
+
+    boost::optional<ScanResultRow> last_scan_result_row;
+    for (auto row : query) {
+        ScanResultRow scan_result_row;
+        row.getter()
+                >> scan_result_row.id
+                >> scan_result_row.scan_iteration_id
+                >> scan_result_row.scan_at
+                >> scan_result_row.scan_at_seconds
+                >> scan_result_row.domain_id
+                >> scan_result_row.domain_name
+                >> scan_result_row.has_keyset
+                >> scan_result_row.cdnskey.status
+                >> scan_result_row.nameserver
+                >> scan_result_row.cdnskey.flags
+                >> scan_result_row.cdnskey.proto
+                >> scan_result_row.cdnskey.alg
+                >> scan_result_row.cdnskey.public_key;
+        scan_result.emplace_back(scan_result_row);
+        std::cout << scan_result_row << std::endl;
     }
+    //if (scan_result.empty()) {
+    //    throw std::runtime_error("no scan_results found");
+    //}
     return scan_result;
 }
 
@@ -398,12 +474,12 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCo
     xct.commit();
 }
 
-ScanResultRows SqliteStorage::get_insecure_scan_result_rows(const int _seconds_back, const bool _notify_from_last_iteration_only) const
+ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(const int _seconds_back, const bool _notify_from_last_iteration_only) const
 {
     sqlite3pp::database db(filename_.c_str());
     sqlite3pp::transaction xct(db);
     create_schema(db);
-    return Impl::get_insecure_scan_result_rows(db, _seconds_back, _notify_from_last_iteration_only);
+    return Impl::get_insecure_scan_result_rows_for_notify(db, _seconds_back, _notify_from_last_iteration_only);
 }
 
 ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_update(const int _seconds_back) const
@@ -412,6 +488,14 @@ ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_update(const int
     sqlite3pp::transaction xct(db);
     create_schema(db);
     return Impl::get_insecure_scan_result_rows_for_update(db, _seconds_back);
+}
+
+ScanResultRows SqliteStorage::get_secure_scan_result_rows_for_update(const int _seconds_back) const
+{
+    sqlite3pp::database db(filename_.c_str());
+    sqlite3pp::transaction xct(db);
+    create_schema(db);
+    return Impl::get_secure_scan_result_rows_for_update(db, _seconds_back);
 }
 
 void SqliteStorage::set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const

@@ -123,7 +123,7 @@ bool is_valid(const ScanResultRow& _scan_result_row)
         }
     }
     else if (_scan_result_row.cdnskey.status == "secure") {
-        if (_scan_result_row.nameserver_ip.empty()) {
+        if (_scan_result_row.nameserver.empty()) {
             return false;
         }
         if (!is_valid(_scan_result_row.cdnskey)) {

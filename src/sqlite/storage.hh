@@ -35,9 +35,11 @@ public:
 
     long long prune_finished_scan_queue() const;
 
-    ScanResultRows get_insecure_scan_result_rows(int _seconds_back, bool _notify_from_last_iteration_only) const;
+    ScanResultRows get_insecure_scan_result_rows_for_notify(int _seconds_back, bool _notify_from_last_iteration_only) const;
 
     ScanResultRows get_insecure_scan_result_rows_for_update(int _seconds_back) const;
+
+    ScanResultRows get_secure_scan_result_rows_for_update(int _seconds_back) const;
 
     void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const;
 

@@ -59,11 +59,11 @@ std::ostream& operator<<(std::ostream& os, const Cdnskey& _cdnskey)
 
 // see "src/sqlite/storage.cc"
 
+// do not change this, used for serialization
 std::string to_string(const Cdnskey& _cdnskey)
 {
     static const std::string delim = ", ";
     return std::string("[") +
-           //quote(_cdnskey.status) + delim +
            "flags: " + quote(_cdnskey.flags) + delim +
            "protocol: " + quote(_cdnskey.proto) + delim +
            "algorithm: " + quote(_cdnskey.alg) + delim +

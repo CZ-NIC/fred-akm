@@ -40,9 +40,10 @@ namespace Fred {
 namespace Akm {
 
 struct DomainStateStack {
-    typedef std::vector<DomainState> DomainStates;
     typedef std::string Nameserver;
     typedef std::string NameserverIp;
+
+    typedef std::vector<DomainState> DomainStates; // TODO: there will be just one state per iteration now, vector not needed
     typedef std::map<NameserverIp, DomainStates> NameserverIps;
     typedef std::map<Nameserver, NameserverIps> Nameservers;
     typedef std::map<Domain, Nameservers> Domains;
@@ -65,6 +66,8 @@ bool operator<(const Domain& lhs, const Domain& rhs);
 
 void remove_scan_result_rows_from_older_scan_iterations_per_domain(ScanResultRows& _scan_result_rows);
 void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows);
 void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(ScanResultRows& _scan_result_rows);
 
 } //namespace Fred::Akm
