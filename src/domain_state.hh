@@ -105,7 +105,7 @@ typedef std::vector<DomainState> DomainStates;
 
 std::ostream& operator<<(std::ostream& os, const DomainState& _domain_state);
 std::istream& operator>>(std::istream& is, DomainState& _domain_state);
-std::string to_string(const DomainState& _domain_state);
+std::string to_string(const DomainState& _domain_state, bool verbose = false);
 bool operator==(const DomainState& _lhs, const DomainState& _rhs);
 
 bool has_deletekey(const DomainState& _domain_state);

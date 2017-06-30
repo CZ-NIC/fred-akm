@@ -103,7 +103,7 @@ void command_notify(
         const bool _dry_run)
 {
     auto scan_result_rows =
-            _storage.get_insecure_scan_result_rows(
+            _storage.get_insecure_scan_result_rows_for_notify(
                     _minimal_scan_result_sequence_length_to_notify,
                     _notify_from_last_scan_iteration_only);
 
