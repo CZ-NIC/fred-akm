@@ -170,18 +170,18 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(sqlite3pp::database& _db
     query.prepare(boost::str(boost::format(
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
-               "scan_result.scan_at, "
+               "COALESCE(scan_result.scan_at, ''), "
                "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
                "scan_result.domain_id, "
-               "scan_result.domain_name, "
+               "COALESCE(scan_result.domain_name, ''), "
                "scan_result.has_keyset, "
-               "scan_result.cdnskey_status, "
-               "scan_result.nameserver, "
-               "scan_result.nameserver_ip, "
+               "COALESCE(scan_result.cdnskey_status, ''), "
+               "COALESCE(scan_result.nameserver, ''), "
+               "COALESCE(scan_result.nameserver_ip, ''), "
                "scan_result.cdnskey_flags, "
                "scan_result.cdnskey_proto, "
                "scan_result.cdnskey_alg, "
-               "scan_result.cdnskey_public_key "
+               "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
           "LEFT JOIN domain_status_notification ON scan_result.domain_id = domain_status_notification.domain_id "
          "WHERE scan_result.scan_iteration_id IN "
@@ -205,23 +205,28 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(sqlite3pp::database& _db
     boost::optional<ScanResultRow> last_scan_result_row;
     for (auto row : query) {
         ScanResultRow scan_result_row;
-        row.getter()
-                >> scan_result_row.id
-                >> scan_result_row.scan_iteration_id
-                >> scan_result_row.scan_at
-                >> scan_result_row.scan_at_seconds
-                >> scan_result_row.domain_id
-                >> scan_result_row.domain_name
-                >> scan_result_row.has_keyset
-                >> scan_result_row.cdnskey.status
-                >> scan_result_row.nameserver
-                >> scan_result_row.nameserver_ip
-                >> scan_result_row.cdnskey.flags
-                >> scan_result_row.cdnskey.proto
-                >> scan_result_row.cdnskey.alg
-                >> scan_result_row.cdnskey.public_key;
-        scan_result.emplace_back(scan_result_row);
-        //std::cout << scan_result_row << std::endl;
+        try {
+            row.getter()
+                    >> scan_result_row.id
+                    >> scan_result_row.scan_iteration_id
+                    >> scan_result_row.scan_at
+                    >> scan_result_row.scan_at_seconds
+                    >> scan_result_row.domain_id
+                    >> scan_result_row.domain_name
+                    >> scan_result_row.has_keyset
+                    >> scan_result_row.cdnskey.status
+                    >> scan_result_row.nameserver
+                    >> scan_result_row.nameserver_ip
+                    >> scan_result_row.cdnskey.flags
+                    >> scan_result_row.cdnskey.proto
+                    >> scan_result_row.cdnskey.alg
+                    >> scan_result_row.cdnskey.public_key;
+            scan_result.emplace_back(scan_result_row);
+        }
+        catch (...)
+        {
+            log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
+        }
     }
     //if (scan_result.empty()) {
     //    throw std::runtime_error("no scan_results found");
@@ -238,18 +243,18 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
     std::string sql =
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
-               "scan_result.scan_at, "
+               "COALESCE(scan_result.scan_at, ''), "
                "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
                "scan_result.domain_id, "
-               "scan_result.domain_name, "
+               "COALESCE(scan_result.domain_name, ''), "
                "scan_result.has_keyset, "
-               "scan_result.cdnskey_status, "
-               "scan_result.nameserver, "
-               "scan_result.nameserver_ip, "
+               "COALESCE(scan_result.cdnskey_status, ''), "
+               "COALESCE(scan_result.nameserver, ''), "
+               "COALESCE(scan_result.nameserver_ip, ''), "
                "scan_result.cdnskey_flags, "
                "scan_result.cdnskey_proto, "
                "scan_result.cdnskey_alg, "
-               "scan_result.cdnskey_public_key "
+               "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
           "JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
          "WHERE scan_iteration_id IN "
@@ -276,23 +281,28 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
     boost::optional<ScanResultRow> last_scan_result_row;
     for (auto row : query) {
         ScanResultRow scan_result_row;
-        row.getter()
-                >> scan_result_row.id
-                >> scan_result_row.scan_iteration_id
-                >> scan_result_row.scan_at
-                >> scan_result_row.scan_at_seconds
-                >> scan_result_row.domain_id
-                >> scan_result_row.domain_name
-                >> scan_result_row.has_keyset
-                >> scan_result_row.cdnskey.status
-                >> scan_result_row.nameserver
-                >> scan_result_row.nameserver_ip
-                >> scan_result_row.cdnskey.flags
-                >> scan_result_row.cdnskey.proto
-                >> scan_result_row.cdnskey.alg
-                >> scan_result_row.cdnskey.public_key;
-        scan_result.emplace_back(scan_result_row);
-        std::cout << scan_result_row << std::endl;
+        try {
+            row.getter()
+                    >> scan_result_row.id
+                    >> scan_result_row.scan_iteration_id
+                    >> scan_result_row.scan_at
+                    >> scan_result_row.scan_at_seconds
+                    >> scan_result_row.domain_id
+                    >> scan_result_row.domain_name
+                    >> scan_result_row.has_keyset
+                    >> scan_result_row.cdnskey.status
+                    >> scan_result_row.nameserver
+                    >> scan_result_row.nameserver_ip
+                    >> scan_result_row.cdnskey.flags
+                    >> scan_result_row.cdnskey.proto
+                    >> scan_result_row.cdnskey.alg
+                    >> scan_result_row.cdnskey.public_key;
+            scan_result.emplace_back(scan_result_row);
+        }
+        catch (...)
+        {
+            log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
+        }
     }
     //if (scan_result.empty()) {
     //    throw std::runtime_error("no scan_results found");
@@ -309,17 +319,17 @@ ScanResultRows get_secure_scan_result_rows_for_update(sqlite3pp::database& _db, 
     std::string sql =
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
-               "scan_result.scan_at, "
+               "COALESCE(scan_result.scan_at, ''), "
                "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
                "scan_result.domain_id, "
-               "scan_result.domain_name, "
+               "COALESCE(scan_result.domain_name, ''), "
                "scan_result.has_keyset, "
-               "scan_result.cdnskey_status, "
-               "scan_result.nameserver, "
+               "COALESCE(scan_result.cdnskey_status, ''), "
+               "COALESCE(scan_result.nameserver, ''), "
                "scan_result.cdnskey_flags, "
                "scan_result.cdnskey_proto, "
                "scan_result.cdnskey_alg, "
-               "scan_result.cdnskey_public_key "
+               "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
           "JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
          "WHERE scan_iteration_id IN "
@@ -345,22 +355,27 @@ ScanResultRows get_secure_scan_result_rows_for_update(sqlite3pp::database& _db, 
     boost::optional<ScanResultRow> last_scan_result_row;
     for (auto row : query) {
         ScanResultRow scan_result_row;
-        row.getter()
-                >> scan_result_row.id
-                >> scan_result_row.scan_iteration_id
-                >> scan_result_row.scan_at
-                >> scan_result_row.scan_at_seconds
-                >> scan_result_row.domain_id
-                >> scan_result_row.domain_name
-                >> scan_result_row.has_keyset
-                >> scan_result_row.cdnskey.status
-                >> scan_result_row.nameserver
-                >> scan_result_row.cdnskey.flags
-                >> scan_result_row.cdnskey.proto
-                >> scan_result_row.cdnskey.alg
-                >> scan_result_row.cdnskey.public_key;
-        scan_result.emplace_back(scan_result_row);
-        std::cout << scan_result_row << std::endl;
+        try {
+            row.getter()
+                    >> scan_result_row.id
+                    >> scan_result_row.scan_iteration_id
+                    >> scan_result_row.scan_at
+                    >> scan_result_row.scan_at_seconds
+                    >> scan_result_row.domain_id
+                    >> scan_result_row.domain_name
+                    >> scan_result_row.has_keyset
+                    >> scan_result_row.cdnskey.status
+                    >> scan_result_row.nameserver
+                    >> scan_result_row.cdnskey.flags
+                    >> scan_result_row.cdnskey.proto
+                    >> scan_result_row.cdnskey.alg
+                    >> scan_result_row.cdnskey.public_key;
+            scan_result.emplace_back(scan_result_row);
+        }
+        catch (...)
+        {
+            log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
+        }
     }
     //if (scan_result.empty()) {
     //    throw std::runtime_error("no scan_results found");

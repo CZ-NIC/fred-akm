@@ -280,7 +280,7 @@ void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan
                     [&](const ScanResultRow& _scan_result_row)
                     {
                         if (!is_insecure_with_data(_scan_result_row)) {
-                            log()->error("IGNORING NOT INSECURE scan_result_row: {}", to_string(_scan_result_row));
+                            log()->error("IGNORING NOT INSECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
@@ -299,6 +299,37 @@ void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows
                     {
                         if (!is_secure(_scan_result_row)) {
                             log()->error("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_scan_result_rows(ScanResultRows& _scan_result_rows)
+{
+    std::set<unsigned long long> domains_with_invalid_scan_result_rows;
+    for (const auto& r : _scan_result_rows)
+    {
+        if (!is_insecure_with_data(r)) {
+            log()->error("SKIPPED INVALID scan_result_row:       {}", to_string(r));
+            domains_with_invalid_scan_result_rows.insert(r.domain_id);
+            continue;
+        }
+    }
+    for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
+    {
+        log()->info("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
+    }
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        auto domain = domains_with_invalid_scan_result_rows.find(_scan_result_row.domain_id);
+                        if (domain != domains_with_invalid_scan_result_rows.end()) {
+                            //log()->error("SKIPPED scan_result_row for DOMAIN with invalid scan_result_row(s): {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
