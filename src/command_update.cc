@@ -133,9 +133,11 @@ void command_update_insecure(
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
     remove_scan_result_rows_other_than_insecure(scan_result_rows);
-    remove_scan_result_rows_other_than_insecure_with_data(scan_result_rows);
+    log()->debug("removed other than insecure scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
+    remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_scan_result_rows(scan_result_rows);
+    log()->debug("removed domains with other than insecure_with_data scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
     remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(scan_result_rows);
-    log()->debug("removed invalid and possibly other than insecure scan_iterations -> finally remains {} scan result(s)", scan_result_rows.size());
+    log()->debug("removed domains with invalid scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
 
     DomainStateStack domain_state_stack(scan_result_rows);
     print(domain_state_stack);
@@ -298,6 +300,8 @@ void command_update_secure(
 
     for (const auto& domain : domains) {
 
+        stats_secure.domains_checked++;
+
         Nsset current_nsset;
         const DomainStatus newest_domain_status(DomainStatus::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
 
@@ -315,6 +319,7 @@ void command_update_secure(
         log()->debug("new_keyset: {}", to_string(new_keyset));
 
         log()->debug("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.first.fqdn, to_string(new_keyset));
+        stats_secure.domains_for_update++;
 
         try {
             if (!_dry_run) {

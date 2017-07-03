@@ -110,8 +110,11 @@ void command_notify(
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
     remove_scan_result_rows_other_than_insecure(scan_result_rows);
+    log()->debug("removed other than insecure scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
+    remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_scan_result_rows(scan_result_rows);
+    log()->debug("removed domains with other than insecure_with_data scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
     remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(scan_result_rows);
-    log()->debug("removed invalid and possibly other than insecure scan_iterations -> finally remains {} scan result(s)", scan_result_rows.size());
+    log()->debug("removed domains with invalid scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
 
     DomainStateStack domain_state_stack(scan_result_rows);
     print(domain_state_stack);
