@@ -235,6 +235,16 @@ bool is_secure(const ScanResultRow& _scan_result_row)
     return false;
 }
 
+bool is_secure_with_data(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.has_keyset == 1 &&
+        (_scan_result_row.cdnskey.status == "secure"))
+    {
+        return true;
+    }
+    return false;
+}
+
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state)
 {
     if (_scan_result_row.domain_id != _domain_state.domain.id) {

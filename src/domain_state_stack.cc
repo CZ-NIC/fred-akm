@@ -306,6 +306,24 @@ void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows
             _scan_result_rows.end());
 }
 
+void remove_scan_result_rows_other_than_secure_with_data(ScanResultRows& _scan_result_rows)
+{
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        if (!is_secure_with_data(_scan_result_row)) {
+                            log()->error("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
 void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_scan_result_rows(ScanResultRows& _scan_result_rows)
 {
     std::set<unsigned long long> domains_with_invalid_scan_result_rows;
