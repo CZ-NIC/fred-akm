@@ -103,10 +103,10 @@ bool is_valid(const ScanResultRow& _scan_result_row)
     if (_scan_result_row.domain_name.empty()) {
         return false;
     }
-    if (_scan_result_row.nameserver.empty()) {
-        return false;
-    }
     if (_scan_result_row.cdnskey.status == "insecure") {
+        if (_scan_result_row.nameserver.empty()) {
+            return false;
+        }
         if (_scan_result_row.nameserver_ip.empty()) {
             return false;
         }
@@ -115,6 +115,9 @@ bool is_valid(const ScanResultRow& _scan_result_row)
         }
     }
     else if (_scan_result_row.cdnskey.status == "insecure-empty") {
+        if (_scan_result_row.nameserver.empty()) {
+            return false;
+        }
         if (_scan_result_row.nameserver_ip.empty()) {
             return false;
         }
@@ -123,7 +126,10 @@ bool is_valid(const ScanResultRow& _scan_result_row)
         }
     }
     else if (_scan_result_row.cdnskey.status == "secure") {
-        if (_scan_result_row.nameserver.empty()) {
+        if (!_scan_result_row.nameserver.empty()) {
+            return false;
+        }
+        if (!_scan_result_row.nameserver.empty()) {
             return false;
         }
         if (!is_valid(_scan_result_row.cdnskey)) {
@@ -131,7 +137,10 @@ bool is_valid(const ScanResultRow& _scan_result_row)
         }
     }
     else if (_scan_result_row.cdnskey.status == "secure-empty") {
-        if (_scan_result_row.nameserver_ip.empty()) {
+        if (!_scan_result_row.nameserver.empty()) {
+            return false;
+        }
+        if (!_scan_result_row.nameserver_ip.empty()) {
             return false;
         }
         if (!is_empty(_scan_result_row.cdnskey)) {
@@ -139,19 +148,31 @@ bool is_valid(const ScanResultRow& _scan_result_row)
         }
     }
     else if (_scan_result_row.cdnskey.status == "untrustworthy") {
-        if (_scan_result_row.nameserver_ip.empty()) {
+        if (!_scan_result_row.nameserver.empty()) {
             return false;
         }
-        if (!is_valid(_scan_result_row.cdnskey)) {
+        if (!_scan_result_row.nameserver_ip.empty()) {
+            return false;
+        }
+        if (!is_empty(_scan_result_row.cdnskey)) {
             return false;
         }
     }
     else if (_scan_result_row.cdnskey.status == "unknown") {
-        if (_scan_result_row.nameserver_ip.empty()) {
+        if (!_scan_result_row.nameserver.empty()) {
+            return false;
+        }
+        if (!_scan_result_row.nameserver_ip.empty()) {
+            return false;
+        }
+        if (!is_empty(_scan_result_row.cdnskey)) {
             return false;
         }
     }
     else if (_scan_result_row.cdnskey.status == "unresolved") {
+        if (_scan_result_row.nameserver.empty()) {
+            return false;
+        }
         if (_scan_result_row.nameserver_ip.empty()) {
             return false;
         }
@@ -160,6 +181,9 @@ bool is_valid(const ScanResultRow& _scan_result_row)
         }
     }
     else if (_scan_result_row.cdnskey.status == "unresolved-ip") {
+        if (_scan_result_row.nameserver.empty()) {
+            return false;
+        }
         if (!_scan_result_row.nameserver_ip.empty()) {
             return false;
         }
