@@ -99,6 +99,7 @@ struct StatsSecure {
     int domains_for_update;
     int domains_updated_ok;
     int domains_updated_ko;
+    int domains_not_for_update_same_keyset;
 
     StatsSecure()
         : domains_loaded(),
@@ -109,13 +110,14 @@ struct StatsSecure {
 
     void print()
     {
-        log()->info("============= STATS SECURE ==================");
-        log()->info("domains loaded:                      {:>8}", domains_loaded);
-        log()->info("domains checked:                     {:>8}", domains_checked);
-        log()->info("  domains for_update:                {:>8}", domains_for_update);
-        log()->info("    domains updated:                 {:>8}", domains_updated_ok);
-        log()->info("    domains failed:                  {:>8}", domains_updated_ko);
-        log()->info("=============================================");
+        log()->info("============= STATS SECURE =====================");
+        log()->info("domains loaded:                         {:>8}", domains_loaded);
+        log()->info("domains checked:                        {:>8}", domains_checked);
+        log()->info("  domains for_update:                   {:>8}", domains_for_update);
+        log()->info("    domains updated:                    {:>8}", domains_updated_ok);
+        log()->info("    domains failed:                     {:>8}", domains_updated_ko);
+        log()->info("  domains not for update (same keyset): {:>8}", domains_not_for_update_same_keyset);
+        log()->info("================================================");
     }
 };
 
@@ -239,7 +241,7 @@ void command_update_insecure(
                             NotifiedDomainStatus(
                                     domain.first,
                                     newest_domain_status);
-                    log()->debug("not sending any notification/template for first update of domain {}", domain.first.fqdn);
+                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.first.fqdn);
                     save_domain_status(new_notified_domain_status, _storage, _dry_run);
                 }
             }
@@ -314,6 +316,13 @@ void command_update_secure(
 
         stats_secure.domains_checked++;
 
+        boost::optional<NotifiedDomainStatus> notified_domain_status =
+                _storage.get_last_notified_domain_status(domain.first.id);
+
+        log()->debug("last notified status: {}: {}",
+                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
+                notified_domain_status ? to_string(*notified_domain_status) : "-");
+
         Nsset current_nsset;
         const DomainStatus newest_domain_status(DomainStatus::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
 
@@ -328,7 +337,17 @@ void command_update_secure(
                             cdnskey.second.alg,
                             cdnskey.second.public_key));
         }
-        log()->debug("new_keyset: {}", to_string(new_keyset));
+
+        log()->debug("newest domain_status: {}: {}",
+                to_status_string(newest_domain_status),
+                to_string(newest_domain_status));
+
+        if (are_coherent(*newest_domain_status.domain_state, *notified_domain_status))
+        {
+            log()->debug("will not update domain {} with {}, keyset is the same", domain.first.fqdn, to_string(new_keyset));
+            stats_secure.domains_not_for_update_same_keyset++;
+            continue;
+        }
 
         log()->debug("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.first.fqdn, to_string(new_keyset));
         stats_secure.domains_for_update++;
