@@ -268,10 +268,12 @@ void command_update_secure(
 
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
-    remove_scan_result_rows_other_than_secure(scan_result_rows);
     remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(scan_result_rows);
+    log()->debug("removed domains with invalid scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
+    remove_scan_result_rows_other_than_secure_with_data(scan_result_rows);
+    log()->debug("removed scan_result_rows with other than secure_with_data scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
     remove_scan_result_rows_from_older_scan_iterations_per_domain(scan_result_rows);
-    log()->debug("removed invalid and possibly other than secure scan_iterations -> finally remains {} scan result(s)", scan_result_rows.size());
+    log()->debug("removed scan_result_rows from older scan iterations than the latest one per domain -> remains {} scan result(s)", scan_result_rows.size());
 
     DomainStateStack domain_state_stack(scan_result_rows);
     print(domain_state_stack);

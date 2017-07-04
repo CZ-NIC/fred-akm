@@ -104,6 +104,7 @@ bool is_valid(const ScanResultRow& _scan_result_row);
 bool is_insecure(const ScanResultRow& _scan_result_row);
 bool is_insecure_with_data(const ScanResultRow& _scan_result_row);
 bool is_secure(const ScanResultRow& _scan_result_row);
+bool is_secure_with_data(const ScanResultRow& _scan_result_row);
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state);
 
 } // namespace Fred::Akm
