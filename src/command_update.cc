@@ -55,6 +55,8 @@ struct StatsInsecure {
     int domains_checked;
     int domains_ok;
     int domains_ok_for_update;
+    int domains_updated_ok;
+    int domains_updated_ko;
     int domains_ko;
     int domains_ko_for_update_not_all_historic_statuses_ok;
     int domains_ko_for_update_not_all_historic_statuses_coherent;
@@ -79,13 +81,14 @@ struct StatsInsecure {
         log()->info("domains checked:                     {:>8}", domains_checked);
         log()->info("  domains ok:                        {:>8}", domains_ok);
         log()->info("    domains ok_for_update:           {:>8}", domains_ok_for_update);
+        log()->info("      domains updated:               {:>8}", domains_updated_ok);
+        log()->info("      domains failed:                {:>8}", domains_updated_ko);
         log()->info("  domains ko:                        {:>8}", domains_ko);
         log()->info("    domains domains ko for update not all historic statuses ok:");
         log()->info("                                     {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
         log()->info("    domains domains ko for update not all historic statuses coherent:");
         log()->info("                                     {:>8}", domains_ko_for_update_not_all_historic_statuses_coherent);
         log()->info("    no data:                         {:>8}", domains_unknown_no_data);
-        log()->info("---------------------------------------------");
         log()->info("=============================================");
     }
 };
@@ -94,6 +97,8 @@ struct StatsSecure {
     int domains_loaded;
     int domains_checked;
     int domains_for_update;
+    int domains_updated_ok;
+    int domains_updated_ko;
 
     StatsSecure()
         : domains_loaded(),
@@ -108,7 +113,8 @@ struct StatsSecure {
         log()->info("domains loaded:                      {:>8}", domains_loaded);
         log()->info("domains checked:                     {:>8}", domains_checked);
         log()->info("  domains for_update:                {:>8}", domains_for_update);
-        log()->info("---------------------------------------------");
+        log()->info("    domains updated:                 {:>8}", domains_updated_ok);
+        log()->info("    domains failed:                  {:>8}", domains_updated_ko);
         log()->info("=============================================");
     }
 };
@@ -227,23 +233,27 @@ void command_update_insecure(
                 if (!_dry_run) {
                     _akm_backend.update_domain_automatic_keyset(domain.first.id, current_nsset, new_keyset); // FIXME
                     log()->debug("UPDATE OK for insecure domain {}", domain.first.fqdn);
+                    stats_insecure.domains_updated_ok++;
                     newest_domain_status.status = DomainStatus::akm_status_managed_ok;
                     NotifiedDomainStatus new_notified_domain_status =
                             NotifiedDomainStatus(
                                     domain.first,
                                     newest_domain_status);
-                    _storage.set_notified_domain_status(new_notified_domain_status);
+                    log()->debug("not sending any notification/template for first update of domain {}", domain.first.fqdn);
+                    save_domain_status(new_notified_domain_status, _storage, _dry_run);
                 }
             }
             catch(std::runtime_error& e)
             {
                 log()->debug("UPDATE FAILED for domain {}", domain.first.fqdn);
+                stats_insecure.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch(...)
             {
                 log()->debug("UPDATE FAILED for domain {}", domain.first.fqdn);
+                stats_insecure.domains_updated_ko++;
                 throw;
             }
         }
@@ -327,28 +337,37 @@ void command_update_secure(
             if (!_dry_run) {
                 _akm_backend.update_domain_automatic_keyset(domain.first.id, Nsset(), new_keyset); // FIXME
                 log()->debug("UPDATE OK for secure domain {}", domain.first.fqdn);
+                stats_secure.domains_updated_ok++;
                 NotifiedDomainStatus new_notified_domain_status =
                         NotifiedDomainStatus(
                                 domain.first,
                                 newest_domain_status);
-                // do notification of akm change because automatic keyset update notification goes from backend to automatic keyset sponsoring registrar only
-                notify_and_save_domain_status(
-                        new_notified_domain_status,
-                        _storage,
-                        _akm_backend,
-                        _mailer_backend,
-                        _dry_run);
+                if (!has_deletekey(*newest_domain_status.domain_state)) {
+                    // do notification of akm change because automatic keyset update notification goes from backend to automatic keyset sponsoring registrar only
+                    notify_and_save_domain_status(
+                            new_notified_domain_status,
+                            _storage,
+                            _akm_backend,
+                            _mailer_backend,
+                            _dry_run);
+                }
+                else {
+                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.first.fqdn);
+                    save_domain_status(new_notified_domain_status, _storage, _dry_run);
+                }
             }
         }
         catch(std::runtime_error& e)
         {
             log()->debug("UPDATE FAILED for domain {}", domain.first.fqdn);
+            stats_secure.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch(...)
         {
             log()->debug("UPDATE FAILED for domain {}", domain.first.fqdn);
+            stats_secure.domains_updated_ko++;
             throw;
         }
 

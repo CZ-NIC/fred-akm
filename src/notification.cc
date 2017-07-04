@@ -28,6 +28,17 @@
 namespace Fred {
 namespace Akm {
 
+void save_domain_status(
+        const NotifiedDomainStatus& _notified_domain_status,
+        const IStorage& _storage,
+        const bool _dry_run)
+{
+    if (!_dry_run) {
+        log()->debug("saving domain_status_notification of state \"{}\"", to_string(_notified_domain_status));
+        _storage.set_notified_domain_status(_notified_domain_status);
+    }
+}
+
 void notify_and_save_domain_status(
         const NotifiedDomainStatus& _notified_domain_status,
         const IStorage& _storage,
@@ -76,8 +87,7 @@ void notify_and_save_domain_status(
             log()->debug("sending notification to template_name \"{}\"", template_name);
             _mailer_backend.enqueue(header, template_name, template_parameters);
             // TODO (exceptions thrown by enqueue? (combination of "email sent + exception throw" would spam)
-            log()->debug("sending notification of state \"{}\"", to_string(_notified_domain_status));
-            _storage.set_notified_domain_status(_notified_domain_status);
+            save_domain_status(_notified_domain_status, _storage, _dry_run);
         }
     }
     catch (std::runtime_error& e)
