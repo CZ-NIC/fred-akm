@@ -316,7 +316,7 @@ void remove_scan_result_rows_other_than_secure_with_data(ScanResultRows& _scan_r
                     [&](const ScanResultRow& _scan_result_row)
                     {
                         if (!is_secure_with_data(_scan_result_row)) {
-                            log()->error("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
+                            log()->error("IGNORING NOT SECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;

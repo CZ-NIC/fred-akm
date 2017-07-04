@@ -38,6 +38,11 @@ struct NotificationFailed
     }
 };
 
+void save_domain_status(
+        const NotifiedDomainStatus& _notified_domain_status,
+        const IStorage& _storage,
+        const bool _dry_run);
+
 void notify_and_save_domain_status(
         const NotifiedDomainStatus& _notified_domain_status,
         const IStorage& _storage,
