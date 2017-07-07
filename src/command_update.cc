@@ -84,9 +84,9 @@ struct StatsInsecure {
         log()->info("      domains updated:               {:>8}", domains_updated_ok);
         log()->info("      domains failed:                {:>8}", domains_updated_ko);
         log()->info("  domains ko:                        {:>8}", domains_ko);
-        log()->info("    domains domains ko for update not all historic statuses ok:");
+        log()->info("    domains ko_for_update (not all historic statuses ok):");
         log()->info("                                     {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
-        log()->info("    domains domains ko for update not all historic statuses coherent:");
+        log()->info("    domains ko_for_update (not all historic statuses coherent):");
         log()->info("                                     {:>8}", domains_ko_for_update_not_all_historic_statuses_coherent);
         log()->info("    no data:                         {:>8}", domains_unknown_no_data);
         log()->info("=============================================");
@@ -157,7 +157,7 @@ void command_update_insecure(
     DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results);
     print(domain_status_stack);
 
-    log()->info(";== command_update (insecure): data ready");
+    log()->info(";== command_update (insecure) data ready");
     stats_insecure.domains_loaded = domain_status_stack.domains.size();
     for (const auto& domain : domain_status_stack.domains) {
         if (domain.second.empty()) {
@@ -241,7 +241,7 @@ void command_update_insecure(
                             NotifiedDomainStatus(
                                     domain.first,
                                     newest_domain_status);
-                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.first.fqdn);
+                    log()->debug("first update from insecure to secure: not sending any notification/template for domain {}", domain.first.fqdn);
                     save_domain_status(new_notified_domain_status, _storage, _dry_run);
                 }
             }
@@ -310,7 +310,7 @@ void command_update_secure(
         }
     }
 
-    log()->info(";== command_update (secure): data ready");
+    log()->info(";== command_update (secure) data ready");
 
     for (const auto& domain : domains) {
 
@@ -342,7 +342,7 @@ void command_update_secure(
                 to_status_string(newest_domain_status),
                 to_string(newest_domain_status));
 
-        if (are_coherent(*newest_domain_status.domain_state, *notified_domain_status))
+        if(serialize(newest_domain_status.domain_state->cdnskeys) == notified_domain_status->serialized_cdnskeys)
         {
             log()->debug("will not update domain {} with {}, keyset is the same", domain.first.fqdn, to_string(new_keyset));
             stats_secure.domains_not_for_update_same_keyset++;

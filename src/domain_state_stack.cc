@@ -262,7 +262,7 @@ void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_ro
                     [&](const ScanResultRow& _scan_result_row)
                     {
                         if (!is_insecure(_scan_result_row)) {
-                            log()->error("IGNORING NOT INSECURE scan_result_row: {}", to_string(_scan_result_row));
+                            log()->debug("IGNORING NOT INSECURE scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
@@ -280,7 +280,7 @@ void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan
                     [&](const ScanResultRow& _scan_result_row)
                     {
                         if (!is_insecure_with_data(_scan_result_row)) {
-                            log()->error("IGNORING NOT INSECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
+                            log()->debug("IGNORING NOT INSECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
@@ -298,7 +298,7 @@ void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows
                     [&](const ScanResultRow& _scan_result_row)
                     {
                         if (!is_secure(_scan_result_row)) {
-                            log()->error("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
+                            log()->debug("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
@@ -316,7 +316,7 @@ void remove_scan_result_rows_other_than_secure_with_data(ScanResultRows& _scan_r
                     [&](const ScanResultRow& _scan_result_row)
                     {
                         if (!is_secure_with_data(_scan_result_row)) {
-                            log()->error("IGNORING NOT SECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
+                            log()->debug("IGNORING NOT SECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
@@ -337,7 +337,7 @@ void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_sc
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->info("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
+        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
     }
     _scan_result_rows.erase(
             std::remove_if(
@@ -368,7 +368,7 @@ void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->info("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
+        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
     }
     _scan_result_rows.erase(
             std::remove_if(
