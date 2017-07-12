@@ -149,9 +149,16 @@ void command_load(const IStorage& _storage, const IAkm& _backend, const std::str
         const auto ns = kv.second.nameserver;
         const auto ns_domains = kv.second.nameserver_domains;
 
-        auto& dest = data[ns].nameserver_domains;
-        dest.reserve(dest.size() + ns_domains.size());
-        std::copy(ns_domains.begin(), ns_domains.end(), std::back_inserter(dest));
+        if (data.find(ns) == data.end())
+        {
+            data[ns] = NameserverDomains(ns, ns_domains);
+        }
+        else
+        {
+            auto& dest = data[ns].nameserver_domains;
+            dest.reserve(dest.size() + ns_domains.size());
+            std::copy(ns_domains.begin(), ns_domains.end(), std::back_inserter(dest));
+        }
     }
     log()->info("loaded tasks from backend ({} nameserver(s))", data.size());
     if (_whitelist_filename.length())
