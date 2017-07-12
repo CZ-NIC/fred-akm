@@ -23,7 +23,6 @@
 #include "src/domain_status.hh"
 #include "src/enum_conversions.hh"
 
-#include <ostream>
 #include <string>
 #include <vector>
 
@@ -45,46 +44,18 @@ std::string quote(int value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const NotifiedDomainStatus& _notified_domain_status)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << _notified_domain_status.domain << delim
-            << quote(_notified_domain_status.serialized_cdnskeys) << delim
-            << quote(to_string(_notified_domain_status.domain_status)) << delim
-            << quote(to_string(_notified_domain_status.notification_type)) << delim
-            << quote(_notified_domain_status.last_at)
-            << quote(_notified_domain_status.last_at_seconds)
-            << "]";
-
-    return os;
-}
-
 // see "src/sqlite/storage.cc"
 
 std::string to_string(const NotifiedDomainStatus& _notified_domain_status)
 {
     static const std::string delim = ", ";
     return  "[" +
+            quote(to_string(_notified_domain_status.domain_status)) + delim +
+            quote(_notified_domain_status.last_at) + delim +
             to_string(_notified_domain_status.domain) + delim +
             quote(_notified_domain_status.serialized_cdnskeys) + delim +
-            quote(to_string(_notified_domain_status.domain_status)) + delim +
-            quote(to_string(_notified_domain_status.notification_type)) + delim +
-            quote(_notified_domain_status.last_at) + delim +
-            quote(_notified_domain_status.last_at_seconds) +
+            quote(to_string(_notified_domain_status.notification_type)) +
             "]";
-}
-
-std::string to_status_string(const NotifiedDomainStatus& _notified_domain_status)
-{
-
-    return _notified_domain_status.notification_type ==
-           Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok)
-                   ? "OK"
-                   : _notified_domain_status.notification_type ==
-                     Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko)
-                             ? "KO"
-                             : "??";
 }
 
 bool are_coherent(const DomainState& _domain_state, const NotifiedDomainStatus& _notified_domain_status)

@@ -44,35 +44,7 @@ std::string quote(int value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const Dnskey& _dnskey)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << quote(_dnskey.flags) << delim
-            << quote(_dnskey.proto) << delim
-            << quote(_dnskey.alg) << delim
-            << quote(_dnskey.public_key)
-            << "]";
-
-    return os;
-}
-
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, Dnskey& _dnskey)
-{
-    try {
-        is
-                >> _dnskey.flags
-                >> _dnskey.proto
-                >> _dnskey.alg
-                >> _dnskey.public_key;
-    }
-    catch (...)
-    {
-        is.setstate(std::ios::failbit);
-    }
-    return is;
-}
 
 std::string to_string(const Dnskey& _dnskey)
 {

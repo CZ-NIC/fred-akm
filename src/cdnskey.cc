@@ -23,7 +23,6 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <ostream>
 #include <string>
 #include <vector>
 
@@ -42,20 +41,6 @@ std::string quote(int value) {
 
 } // namespace Fred::Akim::{anonymous}
 
-
-std::ostream& operator<<(std::ostream& os, const Cdnskey& _cdnskey)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << quote(_cdnskey.status) << delim
-            << quote(_cdnskey.flags) << delim
-            << quote(_cdnskey.proto) << delim
-            << quote(_cdnskey.alg) << delim
-            << quote(_cdnskey.public_key)
-            << "]";
-
-    return os;
-}
 
 // see "src/sqlite/storage.cc"
 

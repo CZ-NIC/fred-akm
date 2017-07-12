@@ -53,18 +53,6 @@ bool operator!=(const DomainStatus& _lhs, const DomainStatus& _rhs)
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const DomainStatus& _domain_status)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << quote(_domain_status.status) << delim
-            << _domain_status.scan_iteration
-            << _domain_status.domain_state.value_or(DomainState())
-            << "]";
-
-    return os;
-}
-
 // see "src/sqlite/storage.cc"
 
 std::string to_string(const DomainStatus& _domain_status)
@@ -72,8 +60,8 @@ std::string to_string(const DomainStatus& _domain_status)
     static const std::string delim = ", ";
     return std::string("[") +
            quote(to_string(_domain_status.status)) + delim +
-           to_string(_domain_status.scan_iteration) +
            to_string(_domain_status.domain_state.value_or(DomainState())) +
+           to_string(_domain_status.scan_iteration) +
            "]";
 }
 
@@ -90,15 +78,6 @@ std::string to_string(const DomainStatus::Enum& _domain_status_enum)
                    return "akm_status_managed_ok";
                    break;
     }
-}
-
-std::string to_status_string(const DomainStatus& _domain_status)
-{
-    return _domain_status.status == DomainStatus::akm_status_candidate_ok
-            ? "OK"
-            : _domain_status.status == DomainStatus::akm_status_candidate_ko
-                    ? "KO"
-                    : "??";
 }
 
 int to_db_handle(const DomainStatus::Enum& _status)

@@ -142,15 +142,12 @@ void command_notify(
         boost::optional<NotifiedDomainStatus> notified_domain_status =
                 _storage.get_last_notified_domain_status(domain.first.id);
 
-        log()->debug("last notified status: {}: {}",
-                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
-                notified_domain_status ? to_string(*notified_domain_status) : "-");
+        log()->debug("last notified status: {}",
+                notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
         DomainStatus newest_domain_status = domain.second.back();
 
-        log()->debug("newest domain_status: {}: {}",
-                to_status_string(newest_domain_status),
-                to_string(newest_domain_status));
+        log()->debug("newest domain_status: {}", to_string(newest_domain_status));
 
         if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
         {
@@ -177,9 +174,8 @@ void command_notify(
                                 _dry_run);
 
                         notified_domain_status = new_notified_domain_status;
-                        log()->debug("last notified status now: {}: {}",
-                                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
-                                notified_domain_status ? to_string(*notified_domain_status) : "");
+                        log()->debug("last notified status now: {}",
+                                notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
                     }
                     catch (const NotificationFailed&)

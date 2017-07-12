@@ -46,8 +46,6 @@ bool operator==(const Domain& _lhs, const Domain& _rhs);
 bool operator!=(const Domain& _lhs, const Domain& _rhs);
 bool operator<(const Domain& _lhs, const Domain& _rhs);
 
-std::ostream& operator<<(std::ostream& os, const Domain& _domain);
-std::istream& operator>>(std::istream& is, Domain& _domain);
 std::string to_string(const Domain& _domain);
 
 } // namespace Fred

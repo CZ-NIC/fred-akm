@@ -330,7 +330,7 @@ void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_sc
     for (const auto& r : _scan_result_rows)
     {
         if (!is_insecure_with_data(r)) {
-            log()->error("SKIPPED INVALID scan_result_row:       {}", to_string(r));
+            log()->error("SKIPPED NOT INSECURE WITH DATA scan_result_row: {}", to_string(r));
             domains_with_invalid_scan_result_rows.insert(r.domain_id);
             continue;
         }

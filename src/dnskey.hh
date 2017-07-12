@@ -57,7 +57,6 @@ struct Dnskey
 bool operator==(const Dnskey& _lhs, const Dnskey& _rhs);
 bool operator!=(const Dnskey& _lhs, const Dnskey& _rhs);
 
-std::ostream& operator<<(std::ostream& os, const Dnskey& _dnskey);
 std::string to_string(const Dnskey& _dnskey);
 
 } // namespace Fred::Akm

@@ -63,10 +63,8 @@ struct DomainStatus
     std::vector<std::string> nameservers;
 };
 
-std::ostream& operator<<(std::ostream& os, const DomainStatus& _domain_status);
 std::string to_string(const DomainStatus& _domain_status);
 std::string to_string(const DomainStatus::Enum& _domain_status_enum);
-std::string to_status_string(const DomainStatus& _domain_status);
 int to_db_handle(const DomainStatus::Enum& _status);
 
 } // namespace Fred::Akm

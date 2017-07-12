@@ -19,7 +19,6 @@
 #include "src/scan_result_row.hh"
 
 #include <istream>
-#include <ostream>
 #include <string>
 #include <vector>
 
@@ -38,30 +37,6 @@ std::string quote(int value) {
 }
 
 } // namespace Fred::Akim::{anonymous}
-
-
-std::ostream& operator<<(std::ostream& os, const ScanResultRow& scan_result_row)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << quote(scan_result_row.id) << delim
-            << quote(scan_result_row.scan_iteration_id) << delim
-            << quote(scan_result_row.scan_at) << delim
-            << quote(scan_result_row.scan_at_seconds) << delim
-            << quote(scan_result_row.domain_id) << delim
-            << quote(scan_result_row.domain_name) << delim
-            << quote(scan_result_row.has_keyset) << delim
-            << quote(scan_result_row.cdnskey.status) << delim
-            << quote(scan_result_row.nameserver) << delim
-            << quote(scan_result_row.nameserver_ip) << delim
-            << quote(scan_result_row.cdnskey.flags) << delim
-            << quote(scan_result_row.cdnskey.proto) << delim
-            << quote(scan_result_row.cdnskey.alg) << delim
-            << quote(scan_result_row.cdnskey.public_key)
-            << "]";
-
-    return os;
-}
 
 // see "src/sqlite/storage.cc"
 
@@ -238,7 +213,8 @@ bool is_secure(const ScanResultRow& _scan_result_row)
 bool is_secure_with_data(const ScanResultRow& _scan_result_row)
 {
     if (_scan_result_row.has_keyset == 1 &&
-        (_scan_result_row.cdnskey.status == "secure"))
+        (_scan_result_row.cdnskey.status == "secure" ||
+         _scan_result_row.cdnskey.status == "secure-empty"))
     {
         return true;
     }
