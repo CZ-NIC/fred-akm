@@ -100,6 +100,7 @@ struct StatsSecure {
     int domains_updated_ok;
     int domains_updated_ko;
     int domains_not_for_update_same_keyset;
+    int domains_not_for_update_no_keyset;
 
     StatsSecure()
         : domains_loaded(),
@@ -117,6 +118,7 @@ struct StatsSecure {
         log()->info("    domains updated:                    {:>8}", domains_updated_ok);
         log()->info("    domains failed:                     {:>8}", domains_updated_ko);
         log()->info("  domains not for update (same keyset): {:>8}", domains_not_for_update_same_keyset);
+        log()->info("  domains not for update (no keyset):   {:>8}", domains_not_for_update_same_keyset);
         log()->info("================================================");
     }
 };
@@ -172,15 +174,12 @@ void command_update_insecure(
         boost::optional<NotifiedDomainStatus> notified_domain_status =
                 _storage.get_last_notified_domain_status(domain.first.id);
 
-        log()->debug("last notified status: {}: {}",
-                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
-                notified_domain_status ? to_string(*notified_domain_status) : "-");
+        log()->debug("last notified status: {}",
+                notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
         DomainStatus newest_domain_status = domain.second.back();
 
-        log()->debug("newest domain_status: {}: {}",
-                to_status_string(newest_domain_status),
-                to_string(newest_domain_status));
+        log()->debug("newest domain status: {}", to_string(newest_domain_status));
 
         if (notified_domain_status && (newest_domain_status.status != notified_domain_status->domain_status)) {
             log()->error("newest domain state != notified domain state; run notify first???");
@@ -319,9 +318,8 @@ void command_update_secure(
         boost::optional<NotifiedDomainStatus> notified_domain_status =
                 _storage.get_last_notified_domain_status(domain.first.id);
 
-        log()->debug("last notified status: {}: {}",
-                notified_domain_status ? to_status_string(*notified_domain_status) : "NOT FOUND",
-                notified_domain_status ? to_string(*notified_domain_status) : "-");
+        log()->debug("last notified status: {}",
+                notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
         Nsset current_nsset;
         const DomainStatus newest_domain_status(DomainStatus::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
@@ -338,9 +336,14 @@ void command_update_secure(
                             cdnskey.second.public_key));
         }
 
-        log()->debug("newest domain_status: {}: {}",
-                to_status_string(newest_domain_status),
-                to_string(newest_domain_status));
+        log()->debug("newest domain_status: {}", to_string(newest_domain_status));
+
+        if(newest_domain_status.domain_state->cdnskeys.empty())
+        {
+            log()->debug("will not update domain {}, no keyset", domain.first.fqdn);
+            stats_secure.domains_not_for_update_no_keyset++;
+            continue;
+        }
 
         if(serialize(newest_domain_status.domain_state->cdnskeys) == notified_domain_status->serialized_cdnskeys)
         {

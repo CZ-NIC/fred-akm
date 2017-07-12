@@ -21,7 +21,6 @@
 #include "src/scan_iteration.hh"
 
 #include <istream>
-#include <ostream>
 #include <string>
 
 namespace Fred {
@@ -40,35 +39,7 @@ std::string quote(int value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const ScanIteration& _scan_iteration)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << quote(_scan_iteration.id) << delim
-            << quote(_scan_iteration.start_at) << delim
-            << quote(_scan_iteration.start_at_seconds) << delim
-            << quote(_scan_iteration.end_at)
-            << "]";
-
-    return os;
-}
-
 // see "src/sqlite/storage.cc"
-std::istream& operator>>(std::istream& is, ScanIteration& _scan_iteration)
-{
-    try {
-        is
-                >> _scan_iteration.id
-                >> _scan_iteration.start_at
-                >> _scan_iteration.start_at_seconds
-                >> _scan_iteration.end_at;
-    }
-    catch (...)
-    {
-        is.setstate(std::ios::failbit);
-    }
-    return is;
-}
 
 std::string to_string(const ScanIteration& _scan_iteration)
 {

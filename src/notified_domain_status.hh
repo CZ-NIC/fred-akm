@@ -25,7 +25,6 @@
 #include "src/notification_type.hh"
 #include "src/scan_result_row.hh"
 
-#include <ostream>
 #include <string>
 #include <vector>
 
@@ -84,9 +83,7 @@ struct NotifiedDomainStatus
     int last_at_seconds;
 };
 
-std::ostream& operator<<(std::ostream& os, const NotifiedDomainStatus& _notified_domain_status);
 std::string to_string(const NotifiedDomainStatus& _notified_domain_status);
-std::string to_status_string(const NotifiedDomainStatus& _notified_domain_status);
 bool are_coherent(const DomainState& _domain_state, const NotifiedDomainStatus& _notified_domain_status);
 
 } // namespace Fred::Akm

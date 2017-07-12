@@ -18,7 +18,6 @@
 
 #include "src/nsset.hh"
 
-#include <ostream>
 #include <string>
 
 namespace Fred {

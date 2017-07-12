@@ -51,8 +51,8 @@ void notify_and_save_domain_status(
 
     const std::string template_name_str = Conversion::Enums::to_template_name(Conversion::Enums::to_notification_type(_notified_domain_status.domain_status));
 
-    log()->info("shall notify template \"{}\"", template_name_str);
-    log()->info("asking backend for emails for domain id {}", _notified_domain_status.domain.id);
+    log()->info("shall notify template \"{}\" to domain {}", template_name_str, _notified_domain_status.domain.fqdn);
+    log()->debug("asking backend for emails for domain id {}", _notified_domain_status.domain.id);
     try
     {
         std::vector<std::string> tech_contacts = { "john.doe@example.com" };
@@ -84,7 +84,7 @@ void notify_and_save_domain_status(
         }
 
         if (!_dry_run) {
-            log()->debug("sending notification to template_name \"{}\"", template_name);
+            log()->info("sending notification to template_name \"{}\"", template_name);
             _mailer_backend.enqueue(header, template_name, template_parameters);
             // TODO (exceptions thrown by enqueue? (combination of "email sent + exception throw" would spam)
             save_domain_status(_notified_domain_status, _storage, _dry_run);

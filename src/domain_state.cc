@@ -44,26 +44,6 @@ std::string quote(unsigned long long value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const DomainState& _domain_state)
-{
-    static const std::string delim = ", ";
-    os << "["
-       << quote(_domain_state.scan_at) << delim
-       << _domain_state.domain << delim;
-    for (const auto& cdnskey : _domain_state.cdnskeys)
-    {
-        os << cdnskey.second;
-    }
-    os << "]";
-    os << " ("
-       << "taken from NS: " << quote(_domain_state.nameserver) << delim
-       << "with IP: " << quote(_domain_state.nameserver_ip) << delim
-       << "at: " << quote(_domain_state.scan_at)
-       << ")";
-
-    return os;
-}
-
 // see "src/sqlite/storage.cc"
 
 std::string to_string(const DomainState& _domain_state, const bool verbose)

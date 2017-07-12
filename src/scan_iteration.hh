@@ -47,8 +47,6 @@ bool operator==(const ScanIteration& _lhs, const ScanIteration& _rhs);
 bool operator!=(const ScanIteration& _lhs, const ScanIteration& _rhs);
 bool operator<(const ScanIteration& _lhs, const ScanIteration& _rhs);
 
-std::ostream& operator<<(std::ostream& os, const ScanIteration& _scan_iteration);
-std::istream& operator>>(std::istream& is, ScanIteration& _scan_iteration);
 std::string to_string(const ScanIteration& _scan_iteration);
 
 } // namespace Fred

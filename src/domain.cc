@@ -37,18 +37,6 @@ std::string quote(int value) {
 } // namespace Fred::Akim::{anonymous}
 
 
-std::ostream& operator<<(std::ostream& os, const Domain& _domain)
-{
-    static const std::string delim = ", ";
-    os      << "["
-            << quote(_domain.id) << delim
-            << quote(_domain.fqdn) << delim
-            << quote(_domain.has_keyset)
-            << "]";
-
-    return os;
-}
-
 // see "src/sqlite/storage.cc"
 
 std::string to_string(const Domain& _domain)
