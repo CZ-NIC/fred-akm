@@ -368,7 +368,6 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
         for (const auto& kv : _tasks)
         {
             const auto& one_task = kv.second;
-            std::cout << serializer.serialize_insecure(one_task) + serializer.serialize_secure(one_task);
             send_task(serializer.serialize_insecure(one_task));
             send_task(serializer.serialize_secure(one_task));
         }
