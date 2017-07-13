@@ -446,6 +446,7 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
             total_results += result_buffer.size();
         }
         const pid_t exited_child = waitpid(child_pid, &child_status, 0);
+        log()->debug("child exit-status:{}", WEXITSTATUS(child_status));
         if (exited_child == child_pid)
         {
             const bool child_exited_successfully = WIFEXITED(child_status) && (WEXITSTATUS(child_status) == EXIT_SUCCESS);
