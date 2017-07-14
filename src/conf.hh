@@ -40,6 +40,7 @@ struct DatabaseConf : public ConfSection
 struct ScannerConf : public ConfSection
 {
     std::string tool_path;
+    bool batch_mode;
 };
 
 struct LoggingConf : public ConfSection
