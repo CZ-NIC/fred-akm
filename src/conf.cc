@@ -52,6 +52,8 @@ Conf parse_conf(std::ifstream& _file)
          "Sqlite database file name")
         ("scanner.tool_path", po::value<std::string>(&scanner_conf->tool_path)->default_value("/usr/bin/cdnskey-scanner"),
          "External CDNSKEY scanner tool")
+        ("scanner.batch_mode", po::bool_switch(&scanner_conf->batch_mode)->default_value(true),
+         "Run scanner in multiple iterations (batches)")
         ("scan_results.maximal_time_between_scan_results", po::value<unsigned long>(&scan_results_conf->maximal_time_between_scan_results)->default_value(172800),
          "Maximal time between scan results [seconds]") // 2 * 24 * 60 * 60 = 172800
         ("scan_results.minimal_scan_result_sequence_length_to_notify", po::value<unsigned long>(&scan_results_conf->minimal_scan_result_sequence_length_to_notify)->default_value(172800), // 2 * 24 * 60 * 60 = 172800

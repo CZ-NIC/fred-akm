@@ -30,7 +30,7 @@ struct DomainEqual
 };
 
 
-void command_scan(const IStorage& _storage, IScanner& _scanner)
+void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
 {
     _storage.wipe_unfinished_scan_iterations();
     auto removed_tasks = _storage.prune_finished_scan_queue();
@@ -44,19 +44,6 @@ void command_scan(const IStorage& _storage, IScanner& _scanner)
         return;
     }
 
-    typedef std::vector<std::string> Nameservers;
-    typedef std::unordered_map<Domain, Nameservers, DomainHash, DomainEqual> DomainNameserversMap;
-    DomainNameserversMap inverse_tasks;
-    for (const auto kv : tasks)
-    {
-        const auto& ns = kv.second.nameserver;
-        const auto& ns_domains = kv.second.nameserver_domains;
-        for (const auto& domain : ns_domains)
-        {
-            inverse_tasks[domain].push_back(ns);
-        }
-    }
-
     auto run_batch_scan = [&_storage, &_scanner](const NameserverDomainsCollection& _batch)
     {
         long iteration_id = _storage.start_new_scan_iteration();
@@ -68,39 +55,60 @@ void command_scan(const IStorage& _storage, IScanner& _scanner)
         log()->info("scan iteration finished (id={})", iteration_id);
     };
 
-    const auto BATCH_NS_MIN = 2000UL;
-    const auto BATCH_DS_MIN = 10000UL;
-    auto batch_ns_max = std::max(tasks.size() / 10, BATCH_NS_MIN);
-    auto batch_ds_max = std::max(inverse_tasks.size() / 50, BATCH_DS_MIN);
-    log()->debug("ns total:{} batch-max:{}", tasks.size(), batch_ns_max);
-    log()->debug("ds total:{} batch-max:{}", inverse_tasks.size(), batch_ds_max);
-
-    auto batch_domains_count = 0;
-
-    NameserverDomainsCollection batch;
-    auto it = inverse_tasks.begin();
-    while (it != inverse_tasks.end())
+    if (!batch_mode)
     {
-        const auto& domain = it->first;
-        const auto& nameservers = it->second;
-        for (const auto& ns : nameservers)
-        {
-            batch[ns].nameserver = ns;
-            batch[ns].nameserver_domains.push_back(domain);
-            batch_domains_count += 1;
-        }
-        if (batch.size() >= batch_ns_max || batch_domains_count >= batch_ds_max)
-        {
-            {
-                run_batch_scan(batch);
-            }
-
-            batch_domains_count = 0;
-            batch.clear();
-        }
-        ++it;
+        run_batch_scan(tasks);
     }
-    run_batch_scan(batch);
+    else
+    {
+        typedef std::vector<std::string> Nameservers;
+        typedef std::unordered_map<Domain, Nameservers, DomainHash, DomainEqual> DomainNameserversMap;
+        DomainNameserversMap inverse_tasks;
+        for (const auto kv : tasks)
+        {
+            const auto& ns = kv.second.nameserver;
+            const auto& ns_domains = kv.second.nameserver_domains;
+            for (const auto& domain : ns_domains)
+            {
+                inverse_tasks[domain].push_back(ns);
+            }
+        }
+
+        const auto BATCH_NS_MIN = 2000UL;
+        const auto BATCH_DS_MIN = 10000UL;
+        auto batch_ns_max = std::max(tasks.size() / 10, BATCH_NS_MIN);
+        auto batch_ds_max = std::max(inverse_tasks.size() / 50, BATCH_DS_MIN);
+        log()->debug("ns total:{} batch-max:{}", tasks.size(), batch_ns_max);
+        log()->debug("ds total:{} batch-max:{}", inverse_tasks.size(), batch_ds_max);
+
+        auto batch_domains_count = 0;
+
+        NameserverDomainsCollection batch;
+        auto it = inverse_tasks.begin();
+        while (it != inverse_tasks.end())
+        {
+            const auto& domain = it->first;
+            const auto& nameservers = it->second;
+            for (const auto& ns : nameservers)
+            {
+                batch[ns].nameserver = ns;
+                batch[ns].nameserver_domains.push_back(domain);
+                batch_domains_count += 1;
+            }
+            if (batch.size() >= batch_ns_max || batch_domains_count >= batch_ds_max)
+            {
+                {
+                    run_batch_scan(batch);
+                }
+
+                batch_domains_count = 0;
+                batch.clear();
+            }
+            ++it;
+        }
+        run_batch_scan(batch);
+    }
+
     log()->debug("all done");
 }
 

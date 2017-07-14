@@ -8,7 +8,7 @@ namespace Fred {
 namespace Akm {
 
 
-void command_scan(const IStorage& _storage, IScanner& _scanner);
+void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode);
 
 
 } //namespace Akm
