@@ -58,6 +58,7 @@ struct StatsInsecure {
     int domains_updated_ok;
     int domains_updated_ko;
     int domains_ko;
+    int domains_ko_for_update_run_notify_first;
     int domains_ko_for_update_not_all_historic_statuses_ok;
     int domains_ko_for_update_not_all_historic_statuses_coherent;
     int domains_unknown_no_data;
@@ -68,6 +69,7 @@ struct StatsInsecure {
           domains_ok(),
           domains_ok_for_update(),
           domains_ko(),
+          domains_ko_for_update_run_notify_first(),
           domains_ko_for_update_not_all_historic_statuses_ok(),
           domains_ko_for_update_not_all_historic_statuses_coherent(),
           domains_unknown_no_data()
@@ -76,7 +78,7 @@ struct StatsInsecure {
 
     void print()
     {
-        log()->info("============= STATS INSECURE ================");
+        log()->info("========== UPDATE STATS INSECURE ============");
         log()->info("domains loaded:                      {:>8}", domains_loaded);
         log()->info("domains checked:                     {:>8}", domains_checked);
         log()->info("  domains ok:                        {:>8}", domains_ok);
@@ -84,6 +86,8 @@ struct StatsInsecure {
         log()->info("      domains updated:               {:>8}", domains_updated_ok);
         log()->info("      domains failed:                {:>8}", domains_updated_ko);
         log()->info("  domains ko:                        {:>8}", domains_ko);
+        log()->info("    domains ko_for_update (run notify first):");
+        log()->info("                                     {:>8}", domains_ko_for_update_run_notify_first);
         log()->info("    domains ko_for_update (not all historic statuses ok):");
         log()->info("                                     {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
         log()->info("    domains ko_for_update (not all historic statuses coherent):");
@@ -99,8 +103,8 @@ struct StatsSecure {
     int domains_for_update;
     int domains_updated_ok;
     int domains_updated_ko;
-    int domains_not_for_update_same_keyset;
-    int domains_not_for_update_no_keyset;
+    int domains_not_for_update_same_keys;
+    int domains_not_for_update_no_keys;
 
     StatsSecure()
         : domains_loaded(),
@@ -111,15 +115,15 @@ struct StatsSecure {
 
     void print()
     {
-        log()->info("============= STATS SECURE =====================");
-        log()->info("domains loaded:                         {:>8}", domains_loaded);
-        log()->info("domains checked:                        {:>8}", domains_checked);
-        log()->info("  domains for_update:                   {:>8}", domains_for_update);
-        log()->info("    domains updated:                    {:>8}", domains_updated_ok);
-        log()->info("    domains failed:                     {:>8}", domains_updated_ko);
-        log()->info("  domains not for update (same keyset): {:>8}", domains_not_for_update_same_keyset);
-        log()->info("  domains not for update (no keyset):   {:>8}", domains_not_for_update_same_keyset);
-        log()->info("================================================");
+        log()->info("========== UPDATE STATS SECURE ===================");
+        log()->info("domains loaded:                           {:>8}", domains_loaded);
+        log()->info("domains checked:                          {:>8}", domains_checked);
+        log()->info("  domains for_update:                     {:>8}", domains_for_update);
+        log()->info("    domains updated:                      {:>8}", domains_updated_ok);
+        log()->info("    domains failed:                       {:>8}", domains_updated_ko);
+        log()->info("  domains not for update (same cdnskeys): {:>8}", domains_not_for_update_same_keys);
+        log()->info("  domains not for update (no cdnskeys):   {:>8}", domains_not_for_update_no_keys);
+        log()->info("==================================================");
     }
 };
 
@@ -187,6 +191,7 @@ void command_update_insecure(
         if (notified_domain_status && (newest_domain_status.status != notified_domain_status->domain_status)) {
             log()->error("newest domain state != notified domain state; run notify first???");
             stats_insecure.domains_ko++;
+            stats_insecure.domains_ko_for_update_run_notify_first++;
             continue;
         }
 
@@ -198,6 +203,7 @@ void command_update_insecure(
             {
                 log()->debug("non-acceptable (not ok) domain status found {}", to_string(domain_status));
                 domain_ok = false;
+                stats_insecure.domains_ko++;
                 stats_insecure.domains_ko_for_update_not_all_historic_statuses_ok++;
                 break;
             }
@@ -205,6 +211,7 @@ void command_update_insecure(
             {
                 log()->debug("non-acceptable (not coherent with the current one) domain status found {}", to_string(domain_status));
                 domain_ok = false;
+                stats_insecure.domains_ko++;
                 stats_insecure.domains_ko_for_update_not_all_historic_statuses_coherent++;
                 break;
             }
@@ -321,48 +328,50 @@ void command_update_secure(
 
         stats_secure.domains_checked++;
 
+        Nsset current_nsset;
+        const DomainStatus newest_domain_status(DomainStatus::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
+
+        log()->debug("newest domain_status: {}", to_string(newest_domain_status));
+
+        if(newest_domain_status.domain_state->cdnskeys.empty())
+        {
+            log()->debug("will not update domain {}, no cdnskeys", domain.first.fqdn);
+            stats_secure.domains_not_for_update_no_keys++;
+            continue;
+        }
+
         boost::optional<NotifiedDomainStatus> notified_domain_status =
                 _storage.get_last_notified_domain_status(domain.first.id);
 
         log()->debug("last notified status: {}",
                 notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
-        Nsset current_nsset;
-        const DomainStatus newest_domain_status(DomainStatus::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
 
-        Keyset new_keyset;
-        for (const auto& cdnskey : newest_domain_status.domain_state->cdnskeys)
+        const std::string serialized_new_keys = serialize(newest_domain_status.domain_state->cdnskeys);
+        if(serialized_new_keys == notified_domain_status->serialized_cdnskeys)
         {
-            //log()->debug("cdnskey: {}", to_string(cdnskey.second));
-            new_keyset.dnskeys.push_back(
-                    Dnskey(
-                            cdnskey.second.flags,
-                            cdnskey.second.proto,
-                            cdnskey.second.alg,
-                            cdnskey.second.public_key));
-        }
-
-        log()->debug("newest domain_status: {}", to_string(newest_domain_status));
-
-        if(newest_domain_status.domain_state->cdnskeys.empty())
-        {
-            log()->debug("will not update domain {}, no keyset", domain.first.fqdn);
-            stats_secure.domains_not_for_update_no_keyset++;
+            log()->debug("will not update domain {} with {}, keys are identical", domain.first.fqdn, serialized_new_keys);
+            stats_secure.domains_not_for_update_same_keys++;
             continue;
         }
 
-        if(serialize(newest_domain_status.domain_state->cdnskeys) == notified_domain_status->serialized_cdnskeys)
-        {
-            log()->debug("will not update domain {} with {}, keyset is the same", domain.first.fqdn, to_string(new_keyset));
-            stats_secure.domains_not_for_update_same_keyset++;
-            continue;
-        }
-
-        log()->debug("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.first.fqdn, to_string(new_keyset));
+        log()->debug("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.first.fqdn, serialized_new_keys);
         stats_secure.domains_for_update++;
 
         try {
             if (!_dry_run) {
+
+                Keyset new_keyset;
+                for (const auto& cdnskey : newest_domain_status.domain_state->cdnskeys)
+                {
+                    new_keyset.dnskeys.push_back(
+                            Dnskey(
+                                    cdnskey.second.flags,
+                                    cdnskey.second.proto,
+                                    cdnskey.second.alg,
+                                    cdnskey.second.public_key));
+                }
+
                 _akm_backend.update_domain_automatic_keyset(domain.first.id, Nsset(), new_keyset); // FIXME
                 log()->debug("UPDATE OK for secure domain {}", domain.first.fqdn);
                 stats_secure.domains_updated_ok++;
