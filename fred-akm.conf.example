@@ -19,4 +19,5 @@ notify_from_last_iteration_only = false
 [logging]
 sink = console
 sink = file ./fred-akm.log
+sink = syslog
 level = debug

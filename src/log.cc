@@ -1,9 +1,12 @@
+#include "config.h"
+
+#include "src/utils.hh"
+
 #include <spdlog/sinks/null_sink.h>
+#include <spdlog/sinks/syslog_sink.h>
 #include <spdlog/spdlog.h>
 
 #include <iostream>
-
-#include "src/utils.hh"
 
 namespace Fred {
 namespace Akm {
@@ -17,6 +20,9 @@ void setup_logging()
     std::vector<spdlog::sink_ptr> sinks = {
         std::make_shared<spdlog::sinks::stdout_sink_st>(),
         std::make_shared<spdlog::sinks::simple_file_sink_st>("fred-akm.log"),
+#ifdef SPDLOG_ENABLE_SYSLOG
+        std::make_shared<spdlog::sinks::syslog_sink>(),
+#endif
     };
     auto logger = std::make_shared<spdlog::logger>("fred-akm", std::begin(sinks), std::end(sinks));
     logger->set_level(spdlog::level::debug);
@@ -42,6 +48,19 @@ void setup_logging(const std::vector<std::string>& _sinks, const std::string& _l
             {
                 sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_st>(sink_tokens.at(1)));
             }
+#ifdef SPDLOG_ENABLE_SYSLOG
+            else if (sink_tokens.at(0) == "syslog")
+            {
+                if (sink_tokens.size() == 2)
+                {
+                    sinks.push_back(std::make_shared<spdlog::sinks::syslog_sink>(sink_tokens.at(1)));
+                }
+                else
+                {
+                    sinks.push_back(std::make_shared<spdlog::sinks::syslog_sink>());
+                }
+            }
+#endif
         }
     }
     if (sinks.size() == 0)
