@@ -32,6 +32,7 @@ struct GeneralArgs : public ArgsGroup
     std::string config_file;
     std::string command;
     bool dry_run;
+    bool fake_contact_emails;
 };
 
 struct LoadCommandArgs : public ArgsGroup

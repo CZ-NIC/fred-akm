@@ -32,8 +32,10 @@ Args parse_args(int argc, char* argv[])
              "command to execute")
             ("command_args", po::value<std::vector<std::string>>(),
              "command arguments")
-            ("dry_run",
-             "dry run");
+            ("dry-run",
+             "dry run")
+            ("fake-contact-emails",
+             "dry run mode only: do not ask backend for contact emails, use fake email address");
 
         po::positional_options_description positional;
         positional.add("command", 1).add("command_args", -1);
@@ -103,7 +105,8 @@ Args parse_args(int argc, char* argv[])
                 throw HelpExitHelper();
             }
 
-            general_args->dry_run = vm.count("dry_run") ? true : false;
+            general_args->dry_run = vm.count("dry-run") ? true : false;
+            general_args->fake_contact_emails = vm.count("fake-contact-emails") ? true : false;
 
             // parse so far unrecognized args with specific command parser
             po::store(

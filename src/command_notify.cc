@@ -100,7 +100,8 @@ void command_notify(
         unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_notify,
         bool  _notify_from_last_scan_iteration_only,
-        const bool _dry_run)
+        const bool _dry_run,
+        const bool _fake_contact_emails)
 {
     auto scan_result_rows =
             _storage.get_insecure_scan_result_rows_for_notify(
@@ -171,7 +172,8 @@ void command_notify(
                                 _storage,
                                 _akm_backend,
                                 _mailer_backend,
-                                _dry_run);
+                                _dry_run,
+                                _fake_contact_emails);
 
                         notified_domain_status = new_notified_domain_status;
                         log()->debug("last notified status now: {}",
@@ -238,7 +240,8 @@ void command_notify(
                         _storage,
                         _akm_backend,
                         _mailer_backend,
-                        _dry_run);
+                        _dry_run,
+                        _fake_contact_emails);
             }
             catch (const NotificationFailed&)
             {

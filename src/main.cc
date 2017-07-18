@@ -93,6 +93,7 @@ void dispatch_command_notify(
     const auto minimal_scan_result_sequence_length_to_notify = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_notify;
     const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
     const auto dry_run = _args.get<Fred::Akm::GeneralArgs>()->dry_run;
+    const auto fake_contact_emails = _args.get<Fred::Akm::GeneralArgs>()->fake_contact_emails;
 
     command_notify(
             db,
@@ -101,7 +102,8 @@ void dispatch_command_notify(
             maximal_time_between_scan_results,
             minimal_scan_result_sequence_length_to_notify,
             notify_from_last_iteration_only,
-            dry_run);
+            dry_run,
+            fake_contact_emails);
 }
 
 
@@ -117,6 +119,7 @@ void dispatch_command_update(
     const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
     const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
     const auto dry_run = _args.get<Fred::Akm::GeneralArgs>()->dry_run;
+    const auto fake_contact_emails = _args.get<Fred::Akm::GeneralArgs>()->fake_contact_emails;
 
     command_update(
             db,
@@ -124,7 +127,8 @@ void dispatch_command_update(
             mailer_backend,
             maximal_time_between_scan_results,
             minimal_scan_result_sequence_length_to_update,
-            dry_run);
+            dry_run,
+            fake_contact_emails);
 }
 
 
