@@ -45,6 +45,8 @@ public:
 
     boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(unsigned long long _domain_id) const;
 
+    void clean_scan_results(int _keep_seconds_back) const;
+
 private:
     sqlite3pp::database get_db() const;
 

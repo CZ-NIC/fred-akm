@@ -14,6 +14,7 @@
 #include "src/loader_impl/domain_whitelist_filter.hh"
 #include "src/log.hh"
 
+#include "src/command_clean.hh"
 #include "src/command_load.hh"
 #include "src/command_notify.hh"
 #include "src/command_scan.hh"
@@ -144,6 +145,20 @@ void dispatch_command_update(
 }
 
 
+void dispatch_command_clean(
+    const Fred::Akm::Corba::CorbaContext& _cctx,
+    const Fred::Akm::Args& _args,
+    const Fred::Akm::Conf& _conf)
+{
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
+
+    command_clean(
+            db,
+            minimal_scan_result_sequence_length_to_update);
+}
+
+
 int main(int argc, char* argv[])
 {
     try
@@ -175,6 +190,7 @@ int main(int argc, char* argv[])
             {"scan", &dispatch_command_scan},
             {"notify", &dispatch_command_notify},
             {"update", &dispatch_command_update},
+            {"clean", &dispatch_command_clean},
         };
 
         command_dispatch.at(general_args->command)(cctx, args, conf);

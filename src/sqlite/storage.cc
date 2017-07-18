@@ -802,6 +802,22 @@ void SqliteStorage::wipe_unfinished_scan_iterations() const
     xct.commit();
 }
 
+void SqliteStorage::clean_scan_results(const int _keep_seconds_back) const
+{
+    auto db = get_db();
+    sqlite3pp::transaction xct(db);
+    sqlite3pp::query query(db);
+    create_schema_scan_iteration(db);
+    create_schema_scan_result(db);
+    query.prepare(boost::str(boost::format(
+        "DELETE FROM scan_result "
+         "WHERE scan_iteration_id IN ("
+            "SELECT id FROM scan_iteration "
+             "WHERE end_at < datetime('now', '%1% seconds'))")
+                   % (_keep_seconds_back * -1)).c_str());
+    xct.commit();
+}
+
 
 } // namespace Sqlite
 } // namespace Akm

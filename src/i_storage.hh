@@ -47,6 +47,8 @@ public:
     virtual void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const = 0;
 
     virtual boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(unsigned long long _domain_id) const = 0;
+
+    virtual void clean_scan_results(const int _keep_seconds_back) const = 0;
 };
 
 
