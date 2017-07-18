@@ -63,9 +63,9 @@ Conf parse_conf(std::ifstream& _file)
         ("scan_results.notify_from_last_iteration_only", po::value<bool>(&scan_results_conf->notify_from_last_iteration_only)->default_value(false),
          "Ignore scan_result.iteration_id")
         ("logging.sink", po::value<std::vector<std::string>>(&logging_conf->sinks)->composing(),
-         "Logging sink definition, one record per sink (available value is 'console' and 'file <file_path>'")
+         "Logging sink definition, one record per sink (available value is 'console' and 'file <file_path>' and 'syslog' followed by the logging level")
         ("logging.level", po::value<std::string>(&logging_conf->level)->default_value("info"),
-         "Log level available values are trace, debug, info, warn, err, critical");
+         "Logging level available values are trace, debug, info, warning, error, critical");
 
     po::variables_map vm;
 
