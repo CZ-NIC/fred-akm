@@ -56,7 +56,7 @@ void notify_and_save_domain_status(
     log()->debug("asking backend for emails for domain id {}", _notified_domain_status.domain.id);
     try
     {
-        std::vector<std::string> tech_contacts = { "john.doe@example.com" };
+        std::vector<std::string> tech_contacts = { "fake.contact.email.akm@example.com" };
         const bool real_contact_emails = !(_dry_run && _fake_contact_emails);
         if (real_contact_emails) {
             tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_status.domain.id);
