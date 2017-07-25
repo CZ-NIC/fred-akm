@@ -1,13 +1,51 @@
+#include "config.h"
+
+#include "src/utils.hh"
+
 #include <spdlog/sinks/null_sink.h>
+#include <spdlog/sinks/syslog_sink.h>
 #include <spdlog/spdlog.h>
 
 #include <iostream>
 
-#include "src/utils.hh"
-
 namespace Fred {
 namespace Akm {
 
+namespace {
+
+spdlog::level::level_enum to_spdlog_level(const std::string& _level)
+{
+    if (_level == "trace")
+    {
+        return spdlog::level::trace;
+    }
+    else if (_level == "debug")
+    {
+        return spdlog::level::debug;
+    }
+    else if (_level == "info")
+    {
+        return spdlog::level::info;
+    }
+    else if (_level == "warn" || _level == "warning")
+    {
+        return spdlog::level::warn;
+    }
+    else if (_level == "err" || _level == "error")
+    {
+        return spdlog::level::err;
+    }
+    else if (_level == "critical")
+    {
+        return spdlog::level::critical;
+    }
+    else
+    {
+        return spdlog::level::info;
+    }
+}
+
+} // namespace Fred::Akm::{anonymous}
 
 void setup_logging()
 {
@@ -17,14 +55,17 @@ void setup_logging()
     std::vector<spdlog::sink_ptr> sinks = {
         std::make_shared<spdlog::sinks::stdout_sink_st>(),
         std::make_shared<spdlog::sinks::simple_file_sink_st>("fred-akm.log"),
+#ifdef SPDLOG_ENABLE_SYSLOG
+        std::make_shared<spdlog::sinks::syslog_sink>(),
+#endif
     };
     auto logger = std::make_shared<spdlog::logger>("fred-akm", std::begin(sinks), std::end(sinks));
-    logger->set_level(spdlog::level::debug);
+    logger->set_level(spdlog::level::trace);
     spdlog::register_logger(logger);
 }
 
 
-void setup_logging(const std::vector<std::string>& _sinks, const std::string& _level)
+void setup_logging(const std::vector<std::string>& _sinks)
 {
     std::vector<spdlog::sink_ptr> sinks;
 
@@ -34,14 +75,31 @@ void setup_logging(const std::vector<std::string>& _sinks, const std::string& _l
         split_on(sink, ' ', sink_tokens);
         if (sink_tokens.size())
         {
-            if (sink_tokens.at(0) == "console")
+            const std::string& sink_name = sink_tokens.front();
+            const std::string& sink_level = sink_tokens.back();
+            const bool sink_extra_arguments = sink_tokens.size() > 2;
+            if (sink_name == "console")
             {
-                sinks.push_back(std::make_shared<spdlog::sinks::stdout_sink_st>());
+                auto sink_console = std::make_shared<spdlog::sinks::stdout_sink_st>();
+                sink_console->set_level(to_spdlog_level(sink_level));
+                sinks.push_back(sink_console);
             }
-            else if (sink_tokens.at(0) == "file" && sink_tokens.size() == 2)
+            else if (sink_name == "file" && sink_extra_arguments)
             {
-                sinks.push_back(std::make_shared<spdlog::sinks::simple_file_sink_st>(sink_tokens.at(1)));
+                auto sink_file = std::make_shared<spdlog::sinks::simple_file_sink_st>(sink_tokens.at(1));
+                sink_file->set_level(to_spdlog_level(sink_level));
+                sinks.push_back(sink_file);
             }
+#ifdef SPDLOG_ENABLE_SYSLOG
+            else if (sink_name == "syslog")
+            {
+                auto sink_syslog = sink_extra_arguments
+                                           ? std::make_shared<spdlog::sinks::syslog_sink>(sink_tokens.at(1))
+                                           : std::make_shared<spdlog::sinks::syslog_sink>();
+                sink_syslog->set_level(to_spdlog_level(sink_level));
+                sinks.push_back(sink_syslog);
+            }
+#endif
         }
     }
     if (sinks.size() == 0)
@@ -51,34 +109,7 @@ void setup_logging(const std::vector<std::string>& _sinks, const std::string& _l
     }
 
     auto logger = std::make_shared<spdlog::logger>("fred-akm", std::begin(sinks), std::end(sinks));
-    if (_level == "trace")
-    {
-        logger->set_level(spdlog::level::trace);
-    }
-    else if (_level == "debug")
-    {
-        logger->set_level(spdlog::level::debug);
-    }
-    else if (_level == "info")
-    {
-        logger->set_level(spdlog::level::info);
-    }
-    else if (_level == "warn")
-    {
-        logger->set_level(spdlog::level::warn);
-    }
-    else if (_level == "err")
-    {
-        logger->set_level(spdlog::level::err);
-    }
-    else if (_level == "critical")
-    {
-        logger->set_level(spdlog::level::critical);
-    }
-    else
-    {
-        logger->set_level(spdlog::level::info);
-    }
+    logger->set_level(spdlog::level::trace); // default level is spdlog::level::info, setting this to maximum enables sink-specific levels to apply as expected
     spdlog::register_logger(logger);
 }
 

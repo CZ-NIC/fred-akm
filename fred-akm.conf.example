@@ -17,6 +17,6 @@ minimal_scan_result_sequence_length_to_update = 604800
 notify_from_last_iteration_only = false
 
 [logging]
-sink = console
-sink = file ./fred-akm.log
-level = debug
+sink = console info
+sink = file ./fred-akm.log debug
+sink = syslog warn

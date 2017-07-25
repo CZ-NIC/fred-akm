@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
         const auto conf = Fred::Akm::parse_conf(config_file);
 
         const auto logging_conf = conf.get<Fred::Akm::LoggingConf>();
-        Fred::Akm::setup_logging(logging_conf->sinks, logging_conf->level);
+        Fred::Akm::setup_logging(logging_conf->sinks);
 
         debug_input_params(args.get<Fred::Akm::DebugMapArgs>()->debug_map, "args");
         debug_input_params(conf.get<Fred::Akm::DebugMapConf>()->debug_map, "conf");

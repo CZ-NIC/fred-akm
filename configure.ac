@@ -44,6 +44,7 @@ AC_LANG_PUSH([C++])
 CPPFLAGS_SAVED=$CPPFLAGS
 CPPFLAGS="-std=c++11 $CPPFLAGS"
 AC_CHECK_HEADER([spdlog/spdlog.h], [], [AC_MSG_ERROR([Missing spdlog header])])
+AC_DEFINE([SPDLOG_ENABLE_SYSLOG], [], [enable logging to syslog])
 CPPFLAGS=$CPPFLAGS_SAVED
 
 AC_ARG_WITH(

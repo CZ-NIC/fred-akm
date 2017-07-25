@@ -46,7 +46,6 @@ struct ScannerConf : public ConfSection
 struct LoggingConf : public ConfSection
 {
     std::vector<std::string> sinks;
-    std::string level;
 };
 
 struct DebugMapConf : public ConfSection
