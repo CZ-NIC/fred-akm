@@ -132,7 +132,8 @@ void command_update_insecure(
         const IAkm& _akm_backend,
         unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_update,
-        const bool _dry_run)
+        const bool _dry_run,
+        const bool _fake_contact_emails)
 {
     log()->info(";== [command_update (insecure)] =========================================================================");
 
@@ -269,7 +270,8 @@ void command_update_secure(
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
         unsigned long _minimal_scan_result_sequence_length_to_update,
-        const bool _dry_run)
+        const bool _dry_run,
+        const bool _fake_contact_emails)
 {
     log()->info(";== [command_update (secure)] =========================================================================");
 
@@ -371,7 +373,8 @@ void command_update_secure(
                             _storage,
                             _akm_backend,
                             _mailer_backend,
-                            _dry_run);
+                            _dry_run,
+                            _fake_contact_emails);
                 }
                 else {
                     log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.first.fqdn);
@@ -404,23 +407,26 @@ void command_update(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
-        unsigned long _maximal_time_between_scan_results,
-        unsigned long _minimal_scan_result_sequence_length_to_update,
-        const bool _dry_run)
+        const unsigned long _maximal_time_between_scan_results,
+        const unsigned long _minimal_scan_result_sequence_length_to_update,
+        const bool _dry_run,
+        const bool _fake_contact_emails)
 {
     command_update_insecure(
             _storage,
             _akm_backend,
             _maximal_time_between_scan_results,
             _minimal_scan_result_sequence_length_to_update,
-            _dry_run);
+            _dry_run,
+            _fake_contact_emails);
 
     command_update_secure(
             _storage,
             _akm_backend,
             _mailer_backend,
             _minimal_scan_result_sequence_length_to_update,
-            _dry_run);
+            _dry_run,
+            _fake_contact_emails);
 
     stats_insecure.print();
     stats_secure.print();

@@ -48,7 +48,8 @@ void notify_and_save_domain_status(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
-        const bool _dry_run);
+        const bool _dry_run,
+        const bool _fake_contact_emails);
 
 
 } // namespace Fred::Akm

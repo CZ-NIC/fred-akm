@@ -31,7 +31,6 @@ struct GeneralArgs : public ArgsGroup
 {
     std::string config_file;
     std::string command;
-    bool dry_run;
 };
 
 struct LoadCommandArgs : public ArgsGroup
@@ -41,6 +40,18 @@ struct LoadCommandArgs : public ArgsGroup
     bool allow_dups;
     bool prune;
     std::string whitelist_file;
+};
+
+struct NotifyCommandArgs : public ArgsGroup
+{
+    bool dry_run;
+    bool fake_contact_emails;
+};
+
+struct UpdateCommandArgs : public ArgsGroup
+{
+    bool dry_run;
+    bool fake_contact_emails;
 };
 
 struct DebugMapArgs : public ArgsGroup

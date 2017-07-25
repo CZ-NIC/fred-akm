@@ -20,6 +20,8 @@ Args parse_args(int argc, char* argv[])
         Args args;
         auto general_args = std::make_shared<GeneralArgs>();
         auto command_load_args = std::make_shared<LoadCommandArgs>();
+        auto command_notify_args = std::make_shared<NotifyCommandArgs>();
+        auto command_update_args = std::make_shared<UpdateCommandArgs>();
         args.set(general_args);
 
         po::options_description global("Global options");
@@ -30,15 +32,12 @@ Args parse_args(int argc, char* argv[])
              "help message")
             ("command", po::value<std::string>(&general_args->command),
              "command to execute")
-            ("command_args", po::value<std::vector<std::string>>(),
-             "command arguments")
-            ("dry_run",
-             "dry run");
+            ("command-args", po::value<std::vector<std::string>>(),
+             "command arguments");
 
         po::positional_options_description positional;
-        positional.add("command", 1).add("command_args", -1);
+        positional.add("command", 1).add("command-args", -1);
 
-        po::options_description command_scan("Scan options");
         po::options_description command_load("Load options");
         command_load.add_options()
             ("input-file", po::value<std::string>(&command_load_args->input_file)->default_value(""),
@@ -51,14 +50,28 @@ Args parse_args(int argc, char* argv[])
              "prune domain with older id when importing same domain name")
             ("whitelist-file", po::value<std::string>(&command_load_args->whitelist_file)->default_value(""),
              "whitelist file with domain names (one per line) which can be imported to scan queue (enforces --wipe-queue)");
-        po::options_description command_update("Update options");
+
+        po::options_description command_scan("Scan options");
+
         po::options_description command_notify("Notify options");
+        command_notify.add_options()
+            ("dry-run", po::bool_switch(&command_notify_args->dry_run)->default_value(false),
+             "dry run")
+            ("fake-contact-emails", po::bool_switch(&command_notify_args->fake_contact_emails)->default_value(false),
+             "dry run mode only: do not ask backend for contact emails, use fake email address");
+
+        po::options_description command_update("Update options");
+        command_update.add_options()
+            ("dry-run", po::bool_switch(&command_update_args->dry_run)->default_value(false),
+             "dry run")
+            ("fake-contact-emails", po::bool_switch(&command_update_args->fake_contact_emails)->default_value(false),
+             "dry run mode only: do not ask backend for contact emails, use fake email address");
 
         const std::map<std::string, std::pair<po::options_description, std::shared_ptr<ArgsGroup>>> commands_mapping = {
-            {"scan", {command_scan, nullptr}},
             {"load", {command_load, command_load_args}},
-            {"update", {command_update, nullptr}},
-            {"notify", {command_notify, nullptr}}
+            {"scan", {command_scan, nullptr}},
+            {"notify", {command_notify, command_notify_args}},
+            {"update", {command_update, command_update_args}}
         };
 
         po::variables_map vm;
@@ -102,8 +115,6 @@ Args parse_args(int argc, char* argv[])
                 std::cout << command_desc << std::endl;
                 throw HelpExitHelper();
             }
-
-            general_args->dry_run = vm.count("dry_run") ? true : false;
 
             // parse so far unrecognized args with specific command parser
             po::store(
