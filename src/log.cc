@@ -60,12 +60,12 @@ void setup_logging()
 #endif
     };
     auto logger = std::make_shared<spdlog::logger>("fred-akm", std::begin(sinks), std::end(sinks));
-    logger->set_level(spdlog::level::debug);
+    logger->set_level(spdlog::level::trace);
     spdlog::register_logger(logger);
 }
 
 
-void setup_logging(const std::vector<std::string>& _sinks, const std::string& _level)
+void setup_logging(const std::vector<std::string>& _sinks)
 {
     std::vector<spdlog::sink_ptr> sinks;
 
@@ -109,7 +109,7 @@ void setup_logging(const std::vector<std::string>& _sinks, const std::string& _l
     }
 
     auto logger = std::make_shared<spdlog::logger>("fred-akm", std::begin(sinks), std::end(sinks));
-    logger->set_level(to_spdlog_level(_level));
+    logger->set_level(spdlog::level::trace); // default level is spdlog::level::info, setting this to maximum enables sink-specific levels to apply as expected
     spdlog::register_logger(logger);
 }
 
