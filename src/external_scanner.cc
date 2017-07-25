@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <unordered_set>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/join.hpp>
 
@@ -179,62 +180,82 @@ namespace {
     class ScanTaskSerializer
     {
     private:
-        unsigned long long task_count_secure;
-        unsigned long long task_count_insecure;
-
-        std::string serialize_on_keyset_value(const NameserverDomains& _task, bool _has_keyset, unsigned long long &_counter)
-        {
-            std::string output;
-
-            bool first_written = false;
-            for (const auto& domain : _task.nameserver_domains)
-            {
-                if (domain.has_keyset == _has_keyset)
-                {
-                    if (first_written)
-                    {
-                        output.append(" ");
-                    }
-                    output.append(domain.fqdn);
-                    first_written = true;
-                    _counter += 1;
-                }
-            }
-
-            return output;
-        }
+        unsigned long long insecure_domains_counter;
+        unsigned long long secure_domains_counter;
 
     public:
-        ScanTaskSerializer() : task_count_secure(0), task_count_insecure(0) { }
+        ScanTaskSerializer() : insecure_domains_counter(0), secure_domains_counter(0) { }
 
-        unsigned long long get_task_count_secure() const
+        unsigned long long get_insecure_domains_counter() const
         {
-            return task_count_secure;
+            return insecure_domains_counter;
         }
 
-        unsigned long long get_task_count_insecure() const
+        unsigned long long get_secure_domains_counter() const
         {
-            return task_count_insecure;
+            return secure_domains_counter;
         }
 
-        std::string serialize_insecure(const NameserverDomains& _task)
+        template<class Writter>
+        void serialize_insecure(const NameserverDomainsCollection& _tasks, Writter& _writter)
         {
-            std::string output_scan_insecure = serialize_on_keyset_value(_task, false, task_count_insecure);
-            if (output_scan_insecure.size() > 0)
+            bool insecure_marker_written = false;
+            for (const auto kv : _tasks)
             {
-                return "[insecure]\n" + _task.nameserver + " " + output_scan_insecure + "\n";
+                const auto& task = kv.second;
+                std::string line;
+                for (const auto& domain : task.nameserver_domains)
+                {
+                    if (domain.has_keyset == false)
+                    {
+                        if (!insecure_marker_written)
+                        {
+                            _writter("[insecure]\n");
+                            insecure_marker_written = true;
+                        }
+                        line.append(" " + domain.fqdn);
+                        insecure_domains_counter += 1;
+                    }
+                }
+                if (insecure_marker_written && !line.empty())
+                {
+                    _writter(task.nameserver + line + "\n");
+                }
             }
-            return "";
         }
 
-        std::string serialize_secure(const NameserverDomains& _task)
+        template<class Writter>
+        void serialize_secure(const NameserverDomainsCollection& _tasks, Writter& _writter)
         {
-            std::string output_scan_secure = serialize_on_keyset_value(_task, true, task_count_secure);
-            if (output_scan_secure.size() > 0)
+            std::unordered_set<std::string> written_domains;
+            bool secure_marker_written = false;
+            const auto DELIMITER = " ";
+            for (const auto kv : _tasks)
             {
-                return "[secure]\n" + output_scan_secure + "\n";
+                const auto& task = kv.second;
+                for (const auto& domain : task.nameserver_domains)
+                {
+                    if (domain.has_keyset == true && written_domains.count(domain.fqdn) == 0)
+                    {
+                        if (!secure_marker_written)
+                        {
+                            _writter("[secure]\n");
+                            _writter(domain.fqdn);
+                            secure_marker_written = true;
+                        }
+                        else
+                        {
+                            _writter(DELIMITER + domain.fqdn);
+                        }
+                        written_domains.insert(domain.fqdn);
+                        secure_domains_counter += 1;
+                    }
+                }
             }
-            return "";
+            if (secure_marker_written)
+            {
+                _writter("\n");
+            }
         }
     };
 
@@ -348,33 +369,39 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
         close(child_rd_fd);
         close(child_wr_fd);
 
-        auto send_task = [&parent_wr_fd](const std::string& _line)
+        auto write_to_scanner = [&parent_wr_fd](const std::string& _str)
         {
-            if (_line.size() > 0)
+            if (_str.size() > 0)
             {
-                const ssize_t ret = write(parent_wr_fd, _line.c_str(), _line.size());
+                const ssize_t ret = write(parent_wr_fd, _str.c_str(), _str.size());
                 if (ret == -1)
                 {
                     throw std::runtime_error("write to pipe failed");
                 }
-                else if (ret != _line.size())
+                else if (ret != _str.size())
                 {
                     throw std::runtime_error("write to pipe incomplete?");
                 }
             }
         };
 
-        ScanTaskSerializer serializer;
-        for (const auto& kv : _tasks)
+        auto write_to_stdout = [](const std::string& _str)
         {
-            const auto& one_task = kv.second;
-            send_task(serializer.serialize_insecure(one_task));
-            send_task(serializer.serialize_secure(one_task));
-        }
+            if (_str.size() > 0)
+            {
+                std::cout << _str;
+            }
+        };
+
+        ScanTaskSerializer serializer;
+        serializer.serialize_insecure(_tasks, write_to_scanner);
+        serializer.serialize_secure(_tasks, write_to_scanner);
+
         close(parent_wr_fd);
-        log()->info("total tasks sent: {} (insecure={} secure={})",
-            serializer.get_task_count_insecure() + serializer.get_task_count_secure(),
-            serializer.get_task_count_insecure(), serializer.get_task_count_secure()
+        log()->info("total domains for scan sent: {} (insecure={} secure={})",
+            serializer.get_insecure_domains_counter() + serializer.get_secure_domains_counter(),
+            serializer.get_insecure_domains_counter(),
+            serializer.get_secure_domains_counter()
         );
 
         /* TODO: to normal function */
