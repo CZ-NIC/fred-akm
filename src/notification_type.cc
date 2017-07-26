@@ -16,7 +16,7 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "notification_type.hh"
+#include "src/notification_type.hh"
 
 namespace Fred {
 namespace Akm {

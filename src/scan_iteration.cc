@@ -16,8 +16,6 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "scan_iteration.hh"
-
 #include "src/scan_iteration.hh"
 
 #include <istream>

@@ -69,7 +69,7 @@ struct Stats {
 
     void print()
     {
-        log()->info("================== STATS ====================");
+        log()->info("=============== NOTIFY STATS ================");
         log()->info("domains loaded:                      {:>8}", domains_loaded);
         log()->info("  domains checked:                   {:>8}", domains_checked);
         log()->info("    domains ok:                      {:>8}", domains_ok);
@@ -81,8 +81,8 @@ struct Stats {
         log()->info("    sent first ok notifications:     {:>8}", sent_first_ok_notifications);
         log()->info("  sent ko notifications:             {:>8}", sent_ko_notifications);
         log()->info("    sent first ko notifications:     {:>8}", sent_first_ko_notifications);
-        log()->info("not sent first ko notifications:     {:>8}", not_sent_first_ko_notifications);
         log()->info("not sent still ok notifications:     {:>8}", not_sent_still_ok_notifications);
+        log()->info("not sent first ko notifications:     {:>8}", not_sent_first_ko_notifications);
         log()->info("not sent still ko notifications:     {:>8}", not_sent_still_ko_notifications);
         log()->info("sending notification failures:       {:>8}", sending_notification_failures);
         log()->info("=============================================");
@@ -247,6 +247,10 @@ void command_notify(
             {
                 stats.sending_notification_failures++;
             }
+        }
+        if (!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
+        {
+            stats.not_sent_first_ko_notifications++;
         }
         if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
         {

@@ -8,7 +8,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include "type_instance_map.hh"
+#include "src/type_instance_map.hh"
 
 namespace Fred {
 namespace Akm {
