@@ -117,7 +117,7 @@ void dispatch_command_update(
     auto mailer_backend = Fred::Akm::Corba::Mailer(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_mailer);
     const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
     const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
-    const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
+    const auto align_to_start_of_day = _conf.get<Fred::Akm::ScanResultsConf>()->align_to_start_of_day;
     const auto dry_run = _args.get<Fred::Akm::UpdateCommandArgs>()->dry_run;
     const auto fake_contact_emails = _args.get<Fred::Akm::UpdateCommandArgs>()->fake_contact_emails;
 
@@ -127,6 +127,7 @@ void dispatch_command_update(
             mailer_backend,
             maximal_time_between_scan_results,
             minimal_scan_result_sequence_length_to_update,
+            align_to_start_of_day,
             dry_run,
             fake_contact_emails);
 }

@@ -15,6 +15,7 @@ maximal_time_between_scan_results = 172800
 minimal_scan_result_sequence_length_to_notify = 172800
 minimal_scan_result_sequence_length_to_update = 604800
 notify_from_last_iteration_only = false
+align_to_start_of_day = false
 
 [logging]
 sink = console info

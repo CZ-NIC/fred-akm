@@ -63,6 +63,7 @@ struct ScanResultsConf : public ConfSection
     unsigned long minimal_scan_result_sequence_length_to_notify;
     unsigned long minimal_scan_result_sequence_length_to_update;
     bool notify_from_last_iteration_only;
+    bool align_to_start_of_day;
 };
 
 

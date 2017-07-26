@@ -62,6 +62,8 @@ Conf parse_conf(std::ifstream& _file)
          "Minimal scan result sequence length to update [seconds]")
         ("scan_results.notify_from_last_iteration_only", po::value<bool>(&scan_results_conf->notify_from_last_iteration_only)->default_value(false),
          "Ignore scan_result.iteration_id")
+        ("scan_results.align_to_start_of_day", po::value<bool>(&scan_results_conf->align_to_start_of_day)->default_value(false),
+         "Align scan results to start of day for update. Useful if operating on daily basis.")
         ("logging.sink", po::value<std::vector<std::string>>(&logging_conf->sinks)->composing(),
          "Logging sink definition, one record per sink (available value is 'console' and 'file <file_path>' and 'syslog' followed by the logging level (available values are trace, debug, info, warning, error and critical");
 
