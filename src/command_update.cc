@@ -132,6 +132,7 @@ void command_update_insecure(
         const IAkm& _akm_backend,
         unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_update,
+        const bool _align_to_start_of_day,
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
@@ -139,7 +140,8 @@ void command_update_insecure(
 
     auto scan_result_rows =
             _storage.get_insecure_scan_result_rows_for_update(
-                    _minimal_scan_result_sequence_length_to_update);
+                    _minimal_scan_result_sequence_length_to_update,
+                    _align_to_start_of_day);
 
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
@@ -270,6 +272,7 @@ void command_update_secure(
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
         unsigned long _minimal_scan_result_sequence_length_to_update,
+        const bool _align_to_start_of_day,
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
@@ -277,7 +280,8 @@ void command_update_secure(
 
     auto scan_result_rows =
             _storage.get_secure_scan_result_rows_for_update(
-                    _minimal_scan_result_sequence_length_to_update);
+                    _minimal_scan_result_sequence_length_to_update,
+                    _align_to_start_of_day);
 
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
 
@@ -409,6 +413,7 @@ void command_update(
         const IMailer& _mailer_backend,
         const unsigned long _maximal_time_between_scan_results,
         const unsigned long _minimal_scan_result_sequence_length_to_update,
+        const bool _align_to_start_of_day,
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
@@ -417,6 +422,7 @@ void command_update(
             _akm_backend,
             _maximal_time_between_scan_results,
             _minimal_scan_result_sequence_length_to_update,
+            _align_to_start_of_day,
             _dry_run,
             _fake_contact_emails);
 
@@ -425,6 +431,7 @@ void command_update(
             _akm_backend,
             _mailer_backend,
             _minimal_scan_result_sequence_length_to_update,
+            _align_to_start_of_day,
             _dry_run,
             _fake_contact_emails);
 

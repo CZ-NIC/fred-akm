@@ -37,9 +37,9 @@ public:
 
     ScanResultRows get_insecure_scan_result_rows_for_notify(int _seconds_back, bool _notify_from_last_iteration_only) const;
 
-    ScanResultRows get_insecure_scan_result_rows_for_update(int _seconds_back) const;
+    ScanResultRows get_insecure_scan_result_rows_for_update(int _seconds_back, bool _align_to_start_of_day = false) const;
 
-    ScanResultRows get_secure_scan_result_rows_for_update(int _seconds_back) const;
+    ScanResultRows get_secure_scan_result_rows_for_update(int _seconds_back, bool _align_to_start_of_day = false) const;
 
     void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const;
 
