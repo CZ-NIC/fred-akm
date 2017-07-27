@@ -72,10 +72,10 @@ DomainStatusStack::DomainStatusStack(const DomainStateStack& _domain_state_stack
 
             const bool is_iteration_domain_state_with_deletekey = iteration_domain_state && has_deletekey(*iteration_domain_state);
 
-            const DomainStatus::Enum domain_status =
+            const DomainStatus::DomainStatusType domain_status =
                     iteration_domain_state && !is_iteration_domain_state_with_deletekey
-                            ? DomainStatus::akm_status_candidate_ok
-                            : DomainStatus::akm_status_candidate_ko;
+                            ? DomainStatus::DomainStatusType::akm_status_candidate_ok
+                            : DomainStatus::DomainStatusType::akm_status_candidate_ko;
 
             if (domains.find(domain.first) == domains.end()) {
                 domains[domain.first] = DomainStatuses();

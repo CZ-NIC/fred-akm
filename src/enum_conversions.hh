@@ -25,43 +25,43 @@
 namespace Conversion {
 namespace Enums {
 
-inline Fred::Akm::NotificationType::Enum to_notification_type(Fred::Akm::DomainStatus::Enum value)
+inline Fred::Akm::NotificationType to_notification_type(Fred::Akm::DomainStatus::DomainStatusType value)
 {
     switch (value)
     {
-        case Fred::Akm::DomainStatus::Enum::akm_status_candidate_ok:
+        case Fred::Akm::DomainStatus::DomainStatusType::akm_status_candidate_ok:
             return Fred::Akm::NotificationType::akm_notification_candidate_ok;
 
-        case Fred::Akm::DomainStatus::Enum::akm_status_candidate_ko:
+        case Fred::Akm::DomainStatus::DomainStatusType::akm_status_candidate_ko:
             return Fred::Akm::NotificationType::akm_notification_candidate_ko;
 
-        case Fred::Akm::DomainStatus::Enum::akm_status_managed_ok:
+        case Fred::Akm::DomainStatus::DomainStatusType::akm_status_managed_ok:
             return Fred::Akm::NotificationType::akm_notification_managed_ok;
     }
-    throw std::invalid_argument("value doesn't exist in Fred::Akm::DomainStatus::Enum");
+    throw std::invalid_argument("value doesn't exist in Fred::Akm::DomainStatus::DomainStatusType");
 }
 
-inline std::string to_template_name(Fred::Akm::NotificationType::Enum value)
+inline std::string to_template_name(Fred::Akm::NotificationType value)
 {
     switch (value)
     {
-        case Fred::Akm::NotificationType::Enum::akm_notification_candidate_ok:
+        case Fred::Akm::NotificationType::akm_notification_candidate_ok:
             return "akm_candidate_state_ok";
 
-        case Fred::Akm::NotificationType::Enum::akm_notification_candidate_ko:
+        case Fred::Akm::NotificationType::akm_notification_candidate_ko:
             return "akm_candidate_state_ko";
 
-        case Fred::Akm::NotificationType::Enum::akm_notification_managed_ok:
+        case Fred::Akm::NotificationType::akm_notification_managed_ok:
             return "akm_keyset_update";
     }
-    throw std::invalid_argument("value doesn't exist in Fred::Akm::NotificationType::Enum");
+    throw std::invalid_argument("value doesn't exist in Fred::Akm::NotificationType");
 }
 
 template <typename T>
-inline typename T::Enum from_db_handle(int _db_handle);
+inline T from_db_handle(int _db_handle);
 
 template <>
-inline Fred::Akm::NotificationType::Enum from_db_handle<Fred::Akm::NotificationType>(int _type)
+inline Fred::Akm::NotificationType from_db_handle<Fred::Akm::NotificationType>(int _type)
 {
     switch (_type) {
         case 0:
@@ -74,21 +74,21 @@ inline Fred::Akm::NotificationType::Enum from_db_handle<Fred::Akm::NotificationT
             return Fred::Akm::NotificationType::akm_notification_managed_ok;
             break;
     }
-    throw std::invalid_argument("cannot convert value to Fred::Akm::NotificationType::Enum");
+    throw std::invalid_argument("cannot convert value to Fred::Akm::NotificationType");
 }
 
 template <>
-inline Fred::Akm::DomainStatus::Enum from_db_handle<Fred::Akm::DomainStatus>(int _type)
+inline Fred::Akm::DomainStatus::DomainStatusType from_db_handle<Fred::Akm::DomainStatus::DomainStatusType>(int _type)
 {
     switch (_type) {
         case 0:
-            return Fred::Akm::DomainStatus::akm_status_candidate_ok;
+            return Fred::Akm::DomainStatus::DomainStatusType::akm_status_candidate_ok;
             break;
         case 1:
-            return Fred::Akm::DomainStatus::akm_status_candidate_ko;
+            return Fred::Akm::DomainStatus::DomainStatusType::akm_status_candidate_ko;
             break;
         case 2:
-            return Fred::Akm::DomainStatus::akm_status_managed_ok;
+            return Fred::Akm::DomainStatus::DomainStatusType::akm_status_managed_ok;
             break;
     }
     throw std::invalid_argument("cannot convert value to Fred::Akm::DomanStatus::Enum");

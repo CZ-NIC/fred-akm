@@ -24,22 +24,15 @@
 namespace Fred {
 namespace Akm {
 
-struct NotificationType
+enum struct NotificationType
 {
-    enum Enum
-    {
-        akm_notification_candidate_ok, ///< domain state seems ok to switch to AKM
-        akm_notification_candidate_ko, ///< domain state prevents switching to AKM
-        akm_notification_managed_ok, ///< domain state prevents switching to AKM
-    };
-
-    NotificationType()
-    {
-    }
+    akm_notification_candidate_ok, ///< domain state seems ok to switch to AKM
+    akm_notification_candidate_ko, ///< domain state prevents switching to AKM
+    akm_notification_managed_ok, ///< domain state prevents switching to AKM
 };
 
-std::string to_string(const NotificationType::Enum& _notification_type_enum);
-int to_db_handle(const NotificationType::Enum& _type);
+std::string to_string(const NotificationType& _notification_type_enum);
+int to_db_handle(const NotificationType& _type);
 
 } // namespace Fred::Akm
 } // namespace Fred

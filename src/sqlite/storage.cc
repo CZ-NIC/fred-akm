@@ -243,7 +243,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
         const bool _align_to_start_of_day)
 {
     const bool has_keyset = false;
-    const NotificationType::Enum notification_type = NotificationType::akm_notification_candidate_ok;
+    const NotificationType notification_type = NotificationType::akm_notification_candidate_ok;
 
     sqlite3pp::query query(_db);
     std::string sql =
@@ -322,7 +322,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
         const bool _align_to_start_of_day)
 {
     const bool has_keyset = true;
-    const NotificationType::Enum notification_type = NotificationType::akm_notification_managed_ok;
+    const NotificationType notification_type = NotificationType::akm_notification_managed_ok;
 
     sqlite3pp::query query(_db);
     std::string sql =
@@ -444,7 +444,7 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
             >> notified_domain_status.last_at
             >> notified_domain_status.last_at_seconds;
         notified_domain_status.domain.id = static_cast<unsigned long long>(domain_id);
-        notified_domain_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus>(domain_status);
+        notified_domain_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus::DomainStatusType>(domain_status);
         notified_domain_status.notification_type = Conversion::Enums::from_db_handle<NotificationType>(notification_type);
         return notified_domain_status;
     }

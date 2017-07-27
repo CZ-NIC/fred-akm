@@ -65,31 +65,31 @@ std::string to_string(const DomainStatus& _domain_status)
            "]";
 }
 
-std::string to_string(const DomainStatus::Enum& _domain_status_enum)
+std::string to_string(const DomainStatus::DomainStatusType& _domain_status_type)
 {
-    switch (_domain_status_enum) {
-        case DomainStatus::akm_status_candidate_ok:
+    switch (_domain_status_type) {
+        case DomainStatus::DomainStatusType::akm_status_candidate_ok:
                    return "akm_status_candidate_ok";
                    break;
-        case DomainStatus::akm_status_candidate_ko:
+        case DomainStatus::DomainStatusType::akm_status_candidate_ko:
                    return "akm_status_candidate_ko";
                    break;
-        case DomainStatus::akm_status_managed_ok:
+        case DomainStatus::DomainStatusType::akm_status_managed_ok:
                    return "akm_status_managed_ok";
                    break;
     }
 }
 
-int to_db_handle(const DomainStatus::Enum& _status)
+int to_db_handle(const DomainStatus::DomainStatusType& _domain_status_type)
 {
-    switch (_status) {
-        case DomainStatus::akm_status_candidate_ok:
+    switch (_domain_status_type) {
+        case DomainStatus::DomainStatusType::akm_status_candidate_ok:
             return 0;
             break;
-        case DomainStatus::akm_status_candidate_ko:
+        case DomainStatus::DomainStatusType::akm_status_candidate_ko:
             return 1;
             break;
-        case DomainStatus::akm_status_managed_ok:
+        case DomainStatus::DomainStatusType::akm_status_managed_ok:
             return 2;
             break;
     }

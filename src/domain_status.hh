@@ -34,7 +34,7 @@ namespace Akm {
 
 struct DomainStatus
 {
-    enum Enum
+    enum struct DomainStatusType
     {
         akm_status_candidate_ok, ///< domain state seems ok to switch to AKM
         akm_status_candidate_ko, ///< domain state prevents switching to AKM
@@ -49,7 +49,7 @@ struct DomainStatus
     {
     }
 
-    DomainStatus(DomainStatus::Enum _status, ScanIteration _scan_iteration, const boost::optional<DomainState>& _domain_state, const std::vector<std::string>& _nameservers)
+    DomainStatus(DomainStatus::DomainStatusType _status, ScanIteration _scan_iteration, const boost::optional<DomainState>& _domain_state, const std::vector<std::string>& _nameservers)
         : status(_status),
           scan_iteration(_scan_iteration),
           domain_state(_domain_state),
@@ -57,15 +57,15 @@ struct DomainStatus
     {
     }
 
-    Enum status;
+    DomainStatusType status;
     ScanIteration scan_iteration;
     boost::optional<DomainState> domain_state;
     std::vector<std::string> nameservers;
 };
 
 std::string to_string(const DomainStatus& _domain_status);
-std::string to_string(const DomainStatus::Enum& _domain_status_enum);
-int to_db_handle(const DomainStatus::Enum& _status);
+std::string to_string(const DomainStatus::DomainStatusType& _domain_status_enum);
+int to_db_handle(const DomainStatus::DomainStatusType& _status);
 
 } // namespace Fred::Akm
 } // namespace Fred

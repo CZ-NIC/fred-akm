@@ -199,7 +199,7 @@ void command_update_insecure(
         stats_insecure.domains_ok++;
         for (const auto& domain_status : boost::adaptors::reverse(domain.second))
         {
-            if (domain_status.status != DomainStatus::akm_status_candidate_ok)
+            if (domain_status.status != DomainStatus::DomainStatusType::akm_status_candidate_ok)
             {
                 log()->debug("non-acceptable (not ok) domain status found {}", to_string(domain_status));
                 domain_ok = false;
@@ -245,7 +245,7 @@ void command_update_insecure(
                     _akm_backend.update_domain_automatic_keyset(domain.first.id, current_nsset, new_keyset); // FIXME
                     log()->debug("UPDATE OK for insecure domain {}", domain.first.fqdn);
                     stats_insecure.domains_updated_ok++;
-                    newest_domain_status.status = DomainStatus::akm_status_managed_ok;
+                    newest_domain_status.status = DomainStatus::DomainStatusType::akm_status_managed_ok;
                     NotifiedDomainStatus new_notified_domain_status =
                             NotifiedDomainStatus(
                                     domain.first,
@@ -329,7 +329,7 @@ void command_update_secure(
         stats_secure.domains_checked++;
 
         Nsset current_nsset;
-        const DomainStatus newest_domain_status(DomainStatus::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
+        const DomainStatus newest_domain_status(DomainStatus::DomainStatusType::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
 
         log()->debug("newest domain_status: {}", to_string(newest_domain_status));
 

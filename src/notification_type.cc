@@ -21,9 +21,9 @@
 namespace Fred {
 namespace Akm {
 
-std::string to_string(const NotificationType::Enum& _notification_type_enum)
+std::string to_string(const NotificationType& _notification_type)
 {
-    switch (_notification_type_enum) {
+    switch (_notification_type) {
         case NotificationType::akm_notification_candidate_ok:
                        return "akm_notification_candidate_ok";
                        break;
@@ -36,9 +36,9 @@ std::string to_string(const NotificationType::Enum& _notification_type_enum)
     }
 }
 
-int to_db_handle(const NotificationType::Enum& _notification_type_enum)
+int to_db_handle(const NotificationType& _notification_type)
 {
-    switch (_notification_type_enum) {
+    switch (_notification_type) {
         case NotificationType::akm_notification_candidate_ok:
             return 0;
             break;

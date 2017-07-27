@@ -22,6 +22,7 @@
 #include "src/domain_state_stack.hh"
 #include "src/domain_status.hh"
 #include "src/domain_status_stack.hh"
+#include "src/enum_conversions.hh"
 #include "src/log.hh"
 #include "src/nameserver_domains.hh"
 #include "src/notification_type.hh"
@@ -151,13 +152,13 @@ void command_notify(
 
         log()->debug("newest domain_status: {}", to_string(newest_domain_status));
 
-        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
         {
 
             bool no_ok_notification_sent = false;
             for (const auto& domain_status : boost::adaptors::reverse(domain.second))
             {
-                if (domain_status.status != DomainStatus::akm_status_candidate_ok &&
+                if (domain_status.status != DomainStatus::DomainStatusType::akm_status_candidate_ok &&
                     domain_status.scan_iteration.start_at > notified_domain_status->last_at)
                 {
                     log()->debug("ok->...(ko)...->ok (ko@scan_iteration {})", to_string(domain_status.scan_iteration));
@@ -195,41 +196,41 @@ void command_notify(
             }
         }
 
-        if (!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+        if (!notified_domain_status && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
         {
             log()->debug("new->ok");
         }
-        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
         {
             log()->debug("ok->ko");
         }
-        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
         {
             log()->debug("ko->ok");
         }
-        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok && 
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok && 
              !are_coherent(*newest_domain_status.domain_state, *notified_domain_status))
         {
             log()->debug("ok->ok2 (different)");
         }
 
-        if ((!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ok) ||
-            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko) ||
-            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok) ||
-            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::akm_status_candidate_ok && 
+        if ((!notified_domain_status && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok) ||
+            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko) ||
+            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok) ||
+            (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok && 
              !are_coherent(*newest_domain_status.domain_state, *notified_domain_status)) )
         {
 
             stats.sent_notifications++;
-            if (newest_domain_status.status == DomainStatus::akm_status_candidate_ok) {
+            if (newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok) {
                 stats.sent_ok_notifications++;
                 stats.domains_ok++;
             }
-            else if (newest_domain_status.status == DomainStatus::akm_status_candidate_ko) {
+            else if (newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko) {
                 stats.sent_ko_notifications++;
                 stats.domains_ko++;
             }
-            if (!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ok)
+            if (!notified_domain_status && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
             {
                 stats.sent_first_ok_notifications++;
             }
@@ -249,11 +250,11 @@ void command_notify(
                 stats.sending_notification_failures++;
             }
         }
-        if (!notified_domain_status && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
+        if (!notified_domain_status && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
         {
             stats.not_sent_first_ko_notifications++;
         }
-        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::akm_status_candidate_ko)
+        if (notified_domain_status && notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko) && newest_domain_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
         {
             stats.not_sent_still_ko_notifications++;
             // log()->info("DO NOT NOTIFY...");
