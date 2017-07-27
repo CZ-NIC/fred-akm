@@ -21,6 +21,7 @@ fred_akm_SOURCES = \
 	src/conf.cc \
 	src/log.hh \
 	src/log.cc \
+	src/subprocess.hh \
 	src/corba/corba_context.hh \
 	src/corba/corba_context.cc \
 	src/corba/nameservice.hh \
