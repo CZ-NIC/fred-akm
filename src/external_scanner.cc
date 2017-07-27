@@ -13,30 +13,6 @@
 namespace Fred {
 namespace Akm {
 
-namespace {
-
-    unsigned long long compute_best_runtime_for_input(
-        const NameserverDomainsCollection& _tasks,
-        unsigned long long _queries_per_second
-    )
-    {
-        auto domains_count = 0;
-        for (const auto kv : _tasks)
-        {
-            domains_count += kv.second.nameserver_domains.size();
-        }
-
-        const auto queries_estimate = _tasks.size() + 2 * domains_count;
-        const auto runtime = queries_estimate / _queries_per_second;
-        log()->debug("runtime: {} [s] [nameservers:{} domains:{} queries-estimate:{}]",
-            runtime, _tasks.size(), domains_count, queries_estimate
-        );
-        return runtime;
-    }
-
-}
-
-
 
 ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
     :  external_tool_path_()
@@ -51,16 +27,12 @@ ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
 
 void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const
 {
-    // auto runtime = compute_best_runtime_for_input(_tasks, queries_per_second_);
-    // auto runtime_arg = boost::lexical_cast<std::string>(runtime);
-
     std::vector<const char*> subprocess_argv;
     for (const auto& path_part : external_tool_path_)
     {
         /* path_part.c_str() is owned by external_tool_path_ vector */
         subprocess_argv.push_back(path_part.c_str());
     }
-    // subprocess_argv.push_back(runtime_arg.c_str());
     subprocess_argv.push_back(nullptr);
 
     Subprocess scanner_subprocess(subprocess_argv);
