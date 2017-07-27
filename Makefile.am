@@ -66,6 +66,8 @@ fred_akm_SOURCES = \
 	src/domain_status_stack.hh \
 	src/domain_status_stack.cc \
 	src/cdnskey_scanner_impl/input_serializer.hh \
+	src/cdnskey_scanner_impl/output_parser.hh \
+	src/cdnskey_scanner_impl/output_parser.cc \
 	src/main.cc
 
 fred_akm_LDADD = \
