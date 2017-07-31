@@ -14,6 +14,8 @@ class ScanResultParser
 {
 public:
     ScanResult parse(const std::string& _line) const;
+
+    std::vector<ScanResult> parse_multi(std::string& _multi_line) const;
 };
 
 

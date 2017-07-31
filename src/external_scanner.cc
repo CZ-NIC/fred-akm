@@ -13,6 +13,59 @@
 namespace Fred {
 namespace Akm {
 
+class ScanResultBuffer
+{
+private:
+    unsigned long long total_results_;
+    std::vector<ScanResult> buffer_;
+    ExternalScannerTool::OnResultsCallback on_full_buffer_callback_;
+
+public:
+    ScanResultBuffer(
+        ExternalScannerTool::OnResultsCallback _on_full_buffer_callback,
+        const unsigned long long _max_buffer_items = 1024
+    )
+        : total_results_(0), on_full_buffer_callback_(_on_full_buffer_callback)
+    {
+        buffer_.reserve(_max_buffer_items);
+    }
+
+    unsigned long long get_max_buffer_items() const
+    {
+        return buffer_.capacity();
+    }
+
+    unsigned long long get_total_results() const
+    {
+        return total_results_;
+    }
+
+    void add(const ScanResult& _scan_result)
+    {
+        if (buffer_.size() == buffer_.capacity())
+        {
+            this->process_results();
+        }
+        buffer_.emplace_back(_scan_result);
+        total_results_ += 1;
+    }
+
+    void add(const std::vector<ScanResult>& _scan_results)
+    {
+        for (const auto& item : _scan_results)
+        {
+            this->add(item);
+        }
+    }
+
+    void process_results()
+    {
+        log()->debug("buffer[-]: buffer full - saving results (saved={} total={})", buffer_.size(), total_results_);
+        on_full_buffer_callback_(buffer_);
+        buffer_.clear();
+    }
+};
+
 
 ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
     :  external_tool_path_()
@@ -63,42 +116,14 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
         serializer.get_secure_domains_counter()
     );
 
-    /* TODO: to normal function */
-    ScanResultParser scan_result_parser;
-    auto buffer_results = [&scan_result_parser](std::string& _raw_buffer, std::vector<ScanResult>& _result_buffer)
-    {
-        const auto newline_ptr = std::find(_raw_buffer.begin(), _raw_buffer.end(), '\n');
-        if (newline_ptr != _raw_buffer.end())
-        {
-            const auto result_line = std::string(_raw_buffer.begin(), newline_ptr);
-            _raw_buffer.erase(_raw_buffer.begin(), newline_ptr + 1);
-            try
-            {
-                _result_buffer.emplace_back(scan_result_parser.parse(result_line));
-            }
-            catch (const std::exception& ex)
-            {
-                log()->error("buffer[!]: {}", result_line);
-                log()->error("buffer[!]: {}", ex.what());
-            }
-            return true;
-        }
-        return false;
-    };
-
-    long total_results = 0;
-
-    const auto RESULT_BUFFER_ITEM_SIZE = 1024;
-    std::vector<ScanResult> result_buffer;
-    result_buffer.reserve(RESULT_BUFFER_ITEM_SIZE);
-
+    ScanResultParser result_parser;
+    ScanResultBuffer result_buffer(_callback);
     Subprocess::ReadBuffer chunk;
     std::string raw_buffer;
 
-    log()->debug("result buffer size: {} item(s)", RESULT_BUFFER_ITEM_SIZE);
+    log()->debug("result buffer size: {} item(s)", result_buffer.get_max_buffer_items());
     log()->info("waiting for results...");
     int read_count = 0;
-    int child_status;
     while ((read_count = scanner_subprocess.read(chunk)) > 0)
     {
         if (read_count >= 0)
@@ -106,17 +131,13 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
             chunk[read_count] = 0;
             raw_buffer += std::string(chunk.data());
             chunk = {{}};
-            while (buffer_results(raw_buffer, result_buffer))
+            try
             {
-                if (result_buffer.size() == result_buffer.capacity())
-                {
-                    _callback(result_buffer);
-                    total_results += result_buffer.size();
-                    log()->debug("buffer[-]: buffer full - saving results (saved={} total={})",
-                        result_buffer.size(), total_results
-                    );
-                    result_buffer.clear();
-                }
+                result_buffer.add(result_parser.parse_multi(raw_buffer));
+            }
+            catch (const std::exception& ex)
+            {
+                log()->error("buffer[!]: {}", ex.what());
             }
         }
         else
@@ -124,15 +145,11 @@ void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResu
             throw std::runtime_error("IOError");
         }
     }
-    if (result_buffer.size())
-    {
-        _callback(result_buffer);
-        total_results += result_buffer.size();
-    }
+    result_buffer.process_results();
 
     const int child_exit_status = scanner_subprocess.wait();
     log()->debug("child exit-status:{}", child_exit_status);
-    log()->info("total proccessed results: {}", total_results);
+    log()->info("total proccessed results: {}", result_buffer.get_total_results());
 }
 
 

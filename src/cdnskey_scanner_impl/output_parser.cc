@@ -158,5 +158,21 @@ ScanResult ScanResultParser::parse(const std::string& _line) const
 }
 
 
+std::vector<ScanResult> ScanResultParser::parse_multi(std::string& _lines) const
+{
+    const auto NL = '\n';
+    std::vector<ScanResult> results;
+    auto newline_ptr = std::find(_lines.begin(), _lines.end(), NL);
+    while (newline_ptr != _lines.end())
+    {
+        const auto line = std::string(_lines.begin(), newline_ptr);
+        _lines.erase(_lines.begin(), newline_ptr + 1);
+        results.emplace_back(this->parse(line));
+        newline_ptr = std::find(_lines.begin(), _lines.end(), NL);
+    }
+    return results;
+}
+
+
 } // namespace Akm
 } // namespace Fred
