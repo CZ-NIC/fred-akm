@@ -4,7 +4,7 @@
 
 #include "src/utils.hh"
 #include "src/subprocess.hh"
-#include "src/external_scanner.hh"
+#include "src/cdnskey_scanner_impl/cdnskey_scanner_impl.hh"
 #include "src/cdnskey_scanner_impl/input_serializer.hh"
 #include "src/cdnskey_scanner_impl/output_parser.hh"
 #include "src/log.hh"

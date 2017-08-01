@@ -8,7 +8,7 @@
 #include "src/corba/akm.hh"
 #include "src/corba/mailer.hh"
 #include "src/sqlite/storage.hh"
-#include "src/external_scanner.hh"
+#include "src/cdnskey_scanner_impl/cdnskey_scanner_impl.hh"
 #include "src/log.hh"
 
 #include "src/command_load.hh"
