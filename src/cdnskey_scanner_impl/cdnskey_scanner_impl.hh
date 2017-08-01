@@ -16,7 +16,6 @@ public:
 
 private:
     std::vector<std::string> scanner_path_;
-    NameserverDomainsCollection tasks_;
 };
 
 
