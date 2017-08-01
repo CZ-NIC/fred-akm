@@ -18,11 +18,11 @@ class ScanResultBuffer
 private:
     unsigned long long total_results_;
     std::vector<ScanResult> buffer_;
-    ExternalScannerTool::OnResultsCallback on_full_buffer_callback_;
+    ExternalCdnskeyScannerImpl::OnResultsCallback on_full_buffer_callback_;
 
 public:
     ScanResultBuffer(
-        ExternalScannerTool::OnResultsCallback _on_full_buffer_callback,
+        ExternalCdnskeyScannerImpl::OnResultsCallback _on_full_buffer_callback,
         const unsigned long long _max_buffer_items = 1024
     )
         : total_results_(0), on_full_buffer_callback_(_on_full_buffer_callback)
@@ -67,23 +67,23 @@ public:
 };
 
 
-ExternalScannerTool::ExternalScannerTool(const std::string& _external_tool_path)
-    :  external_tool_path_()
+ExternalCdnskeyScannerImpl::ExternalCdnskeyScannerImpl(const std::string& _scanner_path)
+    :  scanner_path_()
 {
-    split_on(_external_tool_path, ' ', external_tool_path_);
-    if (external_tool_path_.size() < 2)
+    split_on(_scanner_path, ' ', scanner_path_);
+    if (scanner_path_.size() < 2)
     {
         throw std::runtime_error("no scanner tool path supplied");
     }
 }
 
 
-void ExternalScannerTool::scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const
+void ExternalCdnskeyScannerImpl::scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const
 {
     std::vector<const char*> subprocess_argv;
-    for (const auto& path_part : external_tool_path_)
+    for (const auto& path_part : scanner_path_)
     {
-        /* path_part.c_str() is owned by external_tool_path_ vector */
+        /* path_part.c_str() is owned by scanner_path_ vector */
         subprocess_argv.push_back(path_part.c_str());
     }
     subprocess_argv.push_back(nullptr);

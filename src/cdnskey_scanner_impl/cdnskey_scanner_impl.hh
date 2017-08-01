@@ -1,5 +1,5 @@
-#ifndef CDNSKEY_SCANNER_HH_26D42C56B1493D7951148C69A80A5BA9//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
-#define CDNSKEY_SCANNER_HH_26D42C56B1493D7951148C69A80A5BA9
+#ifndef EXTERNAL_CDNSKEY_SCANNER_IMPL_HH_26D42C56B1493D7951148C69A80A5BA9//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
+#define EXTERNAL_CDNSKEY_SCANNER_IMPL_HH_26D42C56B1493D7951148C69A80A5BA9
 
 #include "src/i_scanner.hh"
 
@@ -7,15 +7,15 @@ namespace Fred {
 namespace Akm {
 
 
-class ExternalScannerTool : public IScanner
+class ExternalCdnskeyScannerImpl : public IScanner
 {
 public:
-    ExternalScannerTool(const std::string& _external_tool_path);
+    ExternalCdnskeyScannerImpl(const std::string& _scanner_path);
 
     void scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const;
 
 private:
-    std::vector<std::string> external_tool_path_;
+    std::vector<std::string> scanner_path_;
     NameserverDomainsCollection tasks_;
 };
 
@@ -24,4 +24,4 @@ private:
 } //namespace Fred
 
 
-#endif//CDNSKEY_SCANNER_HH_26D42C56B1493D7951148C69A80A5BA9
+#endif//EXTERNAL_CDNSKEY_SCANNER_IMPL_HH_26D42C56B1493D7951148C69A80A5BA9

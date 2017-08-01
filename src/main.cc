@@ -76,7 +76,7 @@ void dispatch_command_scan(
     const auto& scanner_tool_path = _conf.get<Fred::Akm::ScannerConf>()->tool_path;
     const auto& scanner_batch_mode = _conf.get<Fred::Akm::ScannerConf>()->batch_mode;
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
-    Fred::Akm::ExternalScannerTool scanner(scanner_tool_path);
+    Fred::Akm::ExternalCdnskeyScannerImpl scanner(scanner_tool_path);
     command_scan(db, scanner, scanner_batch_mode);
 }
 
