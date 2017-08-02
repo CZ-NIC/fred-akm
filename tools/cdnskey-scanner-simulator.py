@@ -71,7 +71,6 @@ if __name__ == '__main__':
             line = line.strip()
             if not line or (len(line) > 0 and line[0] == '#'):
                 continue
-            print line
             result_type, tokens = line.split(' ', 1)
             if result_type in ('insecure', 'insecure-empty', 'unresolved'):
                 result_tokens = tokens.split()
