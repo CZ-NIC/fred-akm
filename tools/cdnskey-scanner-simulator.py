@@ -15,7 +15,7 @@ from enum import Enum
 # output
 # ------
 # insecure nameserver nameserver_ip domain flags proto alg public_key
-# insecure-empty nameserver nameserver_id domain
+# insecure-empty nameserver nameserver_ip domain
 # unresolved nameserver nameserver_ip domain
 # secure domain flags proto alg public_key
 # untrustworthy domain
