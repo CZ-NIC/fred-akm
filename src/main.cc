@@ -9,6 +9,8 @@
 #include "src/corba/mailer.hh"
 #include "src/sqlite/storage.hh"
 #include "src/cdnskey_scanner_impl/cdnskey_scanner_impl.hh"
+#include "src/loader_impl/file.hh"
+#include "src/loader_impl/backend.hh"
 #include "src/log.hh"
 
 #include "src/command_load.hh"
@@ -58,12 +60,12 @@ void dispatch_command_load(
     }
     if (input_file.length())
     {
-        command_load(db, input_file, whitelist_file, load_flags);
+        command_load(db, Fred::Akm::FileLoader(input_file), whitelist_file, load_flags);
     }
     else
     {
         auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
-        command_load(db, akm_backend, whitelist_file, load_flags);
+        command_load(db, Fred::Akm::BackendLoader(akm_backend), whitelist_file, load_flags);
     }
 }
 

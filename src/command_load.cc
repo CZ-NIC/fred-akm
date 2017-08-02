@@ -12,36 +12,7 @@
 namespace Fred {
 namespace Akm {
 
-
 namespace Impl {
-
-    /* TODO: better change interface of command_load to accept interface of
-     * "data loader" and encapsulate load from file to separate impl. to be
-     * more testable.
-     */
-    void command_load(
-        const IStorage& _storage,
-        const NameserverDomainsCollection& _tasks,
-        int _flags)
-    {
-        if (_flags & LoadFlags::WIPE_QUEUE)
-        {
-            _storage.wipe_scan_queue();
-        }
-        if (_flags & LoadFlags::ALLOW_DUPS)
-        {
-            _storage.append_to_scan_queue(_tasks);
-        }
-        else
-        {
-            _storage.append_to_scan_queue_if_not_exists(_tasks);
-        }
-        if (_flags & LoadFlags::PRUNE)
-        {
-            _storage.prune_scan_queue();
-        }
-    }
-
 
     NameserverDomainsCollection whitelist_filter(const NameserverDomainsCollection& _tasks, const std::string& _whitelist_filename)
     {
@@ -89,85 +60,39 @@ namespace Impl {
 }
 
 
-void command_load(const IStorage& _storage, const std::string& _filename, const std::string& _whitelist_filename, int _flags)
+void command_load(
+    const IStorage& _storage,
+    const ILoader& _loader,
+    const std::string& _whitelist_filename,
+    int _flags)
 {
-    std::ifstream file(_filename, std::ifstream::ate | std::ifstream::binary);
-    const auto size = file.tellg();
-    file.clear();
-    file.seekg(0, std::ios::beg);
-
-    log()->info("input file size: {} [b]", size);
-
     NameserverDomainsCollection data;
+    _loader.load_domains(data);
 
-    std::string line;
-    const auto KiB = 1024;
-    line.reserve(KiB);
-
-    NameserverDomains ns_domains;
-    while (std::getline(file, line))
-    {
-        std::vector<std::string> tokens;
-        tokens.reserve(4);
-        split_on(line, ' ', tokens);
-
-        if (tokens.size() == 4)
-        {
-            const auto& current_ns = tokens[0];
-            const auto domain = Domain(
-                boost::lexical_cast<unsigned long long>(tokens[1]),
-                tokens[2],
-                boost::lexical_cast<bool>(tokens[3])
-            );
-
-            auto& record = data[current_ns];
-            record.nameserver = current_ns;
-            record.nameserver_domains.push_back(domain);
-        }
-        else
-        {
-            log()->error("not enough tokens skipping (line={})", line);
-        }
-    }
-    log()->info("loaded tasks from input file ({} nameserver(s))", data.size());
     if (_whitelist_filename.length())
     {
         data = Impl::whitelist_filter(data, _whitelist_filename);
         log()->info("forcing scan queue wipe on filtered input");
         _flags |= LoadFlags::WIPE_QUEUE;
     }
-    Impl::command_load(_storage, data, _flags);
-    log()->info("imported to database");
-}
 
-
-void command_load(const IStorage& _storage, const IAkm& _backend, const std::string& _whitelist_filename, int _flags)
-{
-    auto data = _backend.get_nameservers_with_automatically_managed_domain_candidates();
-    for (const auto kv : _backend.get_nameservers_with_automatically_managed_domains())
+    if (_flags & LoadFlags::WIPE_QUEUE)
     {
-        const auto ns = kv.second.nameserver;
-        const auto ns_domains = kv.second.nameserver_domains;
-
-        if (data.find(ns) == data.end())
-        {
-            data[ns] = NameserverDomains(ns, ns_domains);
-        }
-        else
-        {
-            auto& dest = data[ns].nameserver_domains;
-            dest.reserve(dest.size() + ns_domains.size());
-            std::copy(ns_domains.begin(), ns_domains.end(), std::back_inserter(dest));
-        }
+        _storage.wipe_scan_queue();
     }
-    log()->info("loaded tasks from backend ({} nameserver(s))", data.size());
-    if (_whitelist_filename.length())
+    if (_flags & LoadFlags::ALLOW_DUPS)
     {
-        data = Impl::whitelist_filter(data, _whitelist_filename);
-        log()->info("forcing scan queue wipe on filtered input");
-        _flags |= LoadFlags::WIPE_QUEUE;
+        _storage.append_to_scan_queue(data);
     }
-    Impl::command_load(_storage, data, _flags);
+    else
+    {
+        _storage.append_to_scan_queue_if_not_exists(data);
+    }
+    if (_flags & LoadFlags::PRUNE)
+    {
+        _storage.prune_scan_queue();
+    }
+
     log()->info("imported to database");
 }
 

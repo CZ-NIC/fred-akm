@@ -4,7 +4,8 @@
 #include <string>
 
 #include "src/i_storage.hh"
-#include "src/i_akm.hh"
+#include "src/i_loader.hh"
+#include "src/i_loader_filter.hh"
 
 namespace Fred {
 namespace Akm {
@@ -23,15 +24,7 @@ struct LoadFlags
 
 void command_load(
     const IStorage& _storage,
-    const std::string& _filename,
-    const std::string& _whitelist_filename,
-    int _flags
-);
-
-
-void command_load(
-    const IStorage& _storage,
-    const IAkm& _backend,
+    const ILoader& _loader,
     const std::string& _whitelist_filename,
     int _flags
 );
