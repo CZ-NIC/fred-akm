@@ -30,6 +30,7 @@ from enum import Enum
 ScanType = Enum('ScanType', 'insecure secure')
 
 INSECURE_DB = {}
+SECURE_DB = {}
 
 def search_record_insecure(line):
     try:
@@ -46,7 +47,16 @@ def search_record_insecure(line):
 
 
 def search_record_secure(line):
-    sys.stderr.write('scan type not implemented')
+    try:
+        for domain in line.strip().split(' '):
+            try:
+                for record in SECURE_DB[domain]:
+                    sys.stdout.write(record + '\n')
+            except KeyError as e:
+                sys.stderr.write('{} not found\n'.format(e))
+    except:
+        sys.stderr.write('malformed input line ({})\n'.format(line))
+
 
 def search_not_specified(line):
     sys.stderr.write('scan type not specified in input')
@@ -68,6 +78,10 @@ if __name__ == '__main__':
                 nameserver = result_tokens[0]
                 domain = result_tokens[2]
                 INSECURE_DB.setdefault(nameserver, {}).setdefault(domain, []).append(line)
+            elif result_type in ('secure', 'secure-empty', 'unknown', 'untrustworthy'):
+                result_tokens = tokens.split()
+                domain = result_tokens[0]
+                SECURE_DB.setdefault(domain, []).append(line)
 
     # what was loaded from configuration?
     for nameserver, domains in INSECURE_DB.iteritems():
@@ -76,6 +90,11 @@ if __name__ == '__main__':
             sys.stderr.write('  ' + domain + '\n')
             for record in records:
                 sys.stderr.write(2 * '  ' + record + '\n')
+
+    for domain, records in SECURE_DB.iteritems():
+        sys.stderr.write(domain + '\n')
+        for record in records:
+            sys.stderr.write(2 * '  ' + record + '\n')
 
     scan_type = None
     for line in sys.stdin.readlines():
