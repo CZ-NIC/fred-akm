@@ -25,7 +25,7 @@ struct LoadFlags
 void command_load(
     const IStorage& _storage,
     const ILoader& _loader,
-    const std::string& _whitelist_filename,
+    std::unique_ptr<ILoaderOutputFilter> _filter, /* can be changed to filter list when needed */
     int _flags
 );
 

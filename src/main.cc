@@ -11,6 +11,7 @@
 #include "src/cdnskey_scanner_impl/cdnskey_scanner_impl.hh"
 #include "src/loader_impl/file.hh"
 #include "src/loader_impl/backend.hh"
+#include "src/loader_impl/domain_whitelist_filter.hh"
 #include "src/log.hh"
 
 #include "src/command_load.hh"
@@ -45,6 +46,7 @@ void dispatch_command_load(
     const auto load_args = _args.get<Fred::Akm::LoadCommandArgs>();
     const auto& input_file = load_args->input_file;
     const auto& whitelist_file = load_args->whitelist_file;
+
     int load_flags = 0;
     if (load_args->wipe_queue)
     {
@@ -58,14 +60,21 @@ void dispatch_command_load(
     {
         load_flags |= Fred::Akm::LoadFlags::PRUNE;
     }
+
+    std::unique_ptr<Fred::Akm::ILoaderOutputFilter> filter;
+    if (whitelist_file.length())
+    {
+        filter = std::unique_ptr<Fred::Akm::ILoaderOutputFilter>(new Fred::Akm::DomainWhitelistFilter(whitelist_file));
+    }
+
     if (input_file.length())
     {
-        command_load(db, Fred::Akm::FileLoader(input_file), whitelist_file, load_flags);
+        command_load(db, Fred::Akm::FileLoader(input_file), std::move(filter), load_flags);
     }
     else
     {
         auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
-        command_load(db, Fred::Akm::BackendLoader(akm_backend), whitelist_file, load_flags);
+        command_load(db, Fred::Akm::BackendLoader(akm_backend), std::move(filter), load_flags);
     }
 }
 

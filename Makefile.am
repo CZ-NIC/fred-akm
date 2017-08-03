@@ -13,6 +13,7 @@ fred_akm_SOURCES = \
 	src/i_storage.hh \
 	src/i_scanner.hh \
 	src/i_loader.hh \
+	src/i_loader_filter.hh \
 	src/type_instance_map.hh \
 	src/utils.hh \
 	src/utils.cc \
@@ -38,6 +39,8 @@ fred_akm_SOURCES = \
 	src/loader_impl/file.cc \
 	src/loader_impl/backend.hh \
 	src/loader_impl/backend.cc \
+	src/loader_impl/domain_whitelist_filter.hh \
+	src/loader_impl/domain_whitelist_filter.cc \
 	src/command_load.hh \
 	src/command_load.cc \
 	src/command_scan.hh \
