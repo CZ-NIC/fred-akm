@@ -28,11 +28,13 @@ namespace Akm {
 
 namespace {
 
-std::string quote(const std::string& str) {
+std::string quote(const std::string& str)
+{
     return "\"" + str + "\"";
 }
 
-std::string quote(int value) {
+std::string quote(int value)
+{
     return std::to_string(value);
 }
 
@@ -67,7 +69,8 @@ std::string to_string(const DomainStatus& _domain_status)
 
 std::string to_string(const DomainStatus::DomainStatusType& _domain_status_type)
 {
-    switch (_domain_status_type) {
+    switch (_domain_status_type)
+    {
         case DomainStatus::DomainStatusType::akm_status_candidate_ok:
                    return "akm_status_candidate_ok";
                    break;
@@ -82,7 +85,8 @@ std::string to_string(const DomainStatus::DomainStatusType& _domain_status_type)
 
 int to_db_handle(const DomainStatus::DomainStatusType& _domain_status_type)
 {
-    switch (_domain_status_type) {
+    switch (_domain_status_type)
+    {
         case DomainStatus::DomainStatusType::akm_status_candidate_ok:
             return 0;
             break;

@@ -33,7 +33,8 @@ void save_domain_status(
         const IStorage& _storage,
         const bool _dry_run)
 {
-    if (!_dry_run) {
+    if (!_dry_run)
+    {
         log()->debug("saving domain_status_notification of state \"{}\"", to_string(_notified_domain_status));
         _storage.set_notified_domain_status(_notified_domain_status);
     }
@@ -58,7 +59,8 @@ void notify_and_save_domain_status(
     {
         std::vector<std::string> tech_contacts = { "fake.contact.email.akm@example.com" };
         const bool real_contact_emails = !(_dry_run && _fake_contact_emails);
-        if (real_contact_emails) {
+        if (real_contact_emails)
+        {
             tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_status.domain.id);
         }
 
@@ -76,7 +78,8 @@ void notify_and_save_domain_status(
         template_parameters["days_to_left"] = "7"; // TODO hardwired, get from config (notify_update_within_x_days)
         std::vector<std::string> keys;
         boost::split(keys, _notified_domain_status.serialized_cdnskeys, boost::is_any_of("|"));
-        for (int i = 0; i < keys.size(); ++i) {
+        for (int i = 0; i < keys.size(); ++i)
+        {
             template_parameters["keys." + std::to_string(i)] = keys[i];
         }
 
@@ -85,7 +88,8 @@ void notify_and_save_domain_status(
             log()->debug("template_parameter[\"{}\"] = \"{}\"", template_parameter.first, template_parameter.second);
         }
 
-        if (!_dry_run) {
+        if (!_dry_run)
+        {
             log()->info("sending notification to template_name \"{}\"", template_name);
             _mailer_backend.enqueue(header, template_name, template_parameters);
             // TODO (exceptions thrown by enqueue? (combination of "email sent + exception throw" would spam)

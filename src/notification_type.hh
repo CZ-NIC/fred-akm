@@ -26,8 +26,8 @@ namespace Akm {
 
 enum struct NotificationType
 {
-    akm_notification_candidate_ok, ///< domain state seems ok to switch to AKM
     akm_notification_candidate_ko, ///< domain state prevents switching to AKM
+    akm_notification_candidate_ok, ///< domain state seems ok to switch to AKM
     akm_notification_managed_ok, ///< domain state prevents switching to AKM
 };
 

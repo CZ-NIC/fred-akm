@@ -28,11 +28,11 @@ namespace Akm {
 
 struct DomainStatusStack {
     typedef std::vector<DomainStatus> DomainStatuses;
-    typedef std::map<Domain, DomainStatuses> Domains;
+    typedef std::map<Domain, DomainStatuses> DomainsWithStatuses;
 
     DomainStatusStack(const DomainStateStack& _domain_state_stack, unsigned long _maximal_time_between_scan_results);
 
-    Domains domains;
+    DomainsWithStatuses domains_with_statuses;
 };
 
 void print(const DomainStatusStack& _domain_status_stack);

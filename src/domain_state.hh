@@ -72,7 +72,8 @@ struct DomainState
           nameserver(_nameserver),
           nameserver_ip(_nameserver_ip)
     {
-        if (_cdnskey.public_key.length()) {
+        if (_cdnskey.public_key.length())
+        {
             cdnskeys[to_string(_cdnskey)] = _cdnskey;
         }
     }
@@ -87,8 +88,10 @@ struct DomainState
     {
     }
 
-    void add(const Cdnskey& _cdnskey) {
-        if (_cdnskey.public_key.length()) {
+    void add(const Cdnskey& _cdnskey)
+    {
+        if (_cdnskey.public_key.length())
+        {
             cdnskeys[to_string(_cdnskey)] = _cdnskey;
         }
     }

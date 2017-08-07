@@ -23,31 +23,27 @@ namespace Akm {
 
 std::string to_string(const NotificationType& _notification_type)
 {
-    switch (_notification_type) {
+    switch (_notification_type)
+    {
         case NotificationType::akm_notification_candidate_ok:
                        return "akm_notification_candidate_ok";
-                       break;
         case NotificationType::akm_notification_candidate_ko:
                        return "akm_notification_candidate_ko";
-                       break;
         case NotificationType::akm_notification_managed_ok:
                        return "akm_notification_managed_ok";
-                       break;
     }
 }
 
 int to_db_handle(const NotificationType& _notification_type)
 {
-    switch (_notification_type) {
+    switch (_notification_type)
+    {
         case NotificationType::akm_notification_candidate_ok:
             return 0;
-            break;
         case NotificationType::akm_notification_candidate_ko:
             return 1;
-            break;
         case NotificationType::akm_notification_managed_ok:
             return 2;
-            break;
     }
 }
 

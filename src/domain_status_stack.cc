@@ -33,7 +33,8 @@ namespace {
     void indented_print(const int _indent, const std::string& _message, const std::string& _prefix = "")
     {
         std::string result = _prefix;
-        for (int i = 0; i < _indent; ++i) {
+        for (int i = 0; i < _indent; ++i)
+        {
             result += "    ";
         }
         result += _message;
@@ -55,11 +56,14 @@ DomainStatusStack::DomainStatusStack(const DomainStateStack& _domain_state_stack
     indented_print(4, "key check", ";");
     indented_print(4, "timediff sequence check", ";");
     indented_print(2, "DOMAIN STATUS for this iteration", ";");
-    for (const auto& scan_iteration : _domain_state_stack.scan_iterations) {
+    for (const auto& scan_iteration : _domain_state_stack.scan_iterations)
+    {
         indented_print(0, to_string(scan_iteration.first));
-        for (const auto& domain : scan_iteration.second) {
+        for (const auto& domain : scan_iteration.second)
+        {
             indented_print(1, to_string(domain.first));
-            if (scan_iteration.second.empty()) {
+            if (scan_iteration.second.empty())
+            {
                 indented_print(2, "no scan_iterations for domain " + domain.first.fqdn);
                 continue;
             }
@@ -77,12 +81,13 @@ DomainStatusStack::DomainStatusStack(const DomainStateStack& _domain_state_stack
                             ? DomainStatus::DomainStatusType::akm_status_candidate_ok
                             : DomainStatus::DomainStatusType::akm_status_candidate_ko;
 
-            if (domains.find(domain.first) == domains.end()) {
-                domains[domain.first] = DomainStatuses();
+            if (domains_with_statuses.find(domain.first) == domains_with_statuses.end())
+            {
+                domains_with_statuses[domain.first] = DomainStatuses();
             }
             std::vector<std::string> nameservers;
             boost::copy(domain.second | boost::adaptors::map_keys, std::back_inserter(nameservers));
-            domains[domain.first].push_back(DomainStatus(domain_status, scan_iteration.first, iteration_domain_state, nameservers));
+            domains_with_statuses[domain.first].push_back(DomainStatus(domain_status, scan_iteration.first, iteration_domain_state, nameservers));
         }
     }
 }
@@ -92,9 +97,11 @@ void print(const DomainStatusStack& _domain_status_stack)
     indented_print(0, ";== [DomainStatusStack] ==========");
     indented_print(0, "[domain]", ";");
     indented_print(1, "[list of domain statuses (chronologically, one from each scan_iteration where (if) the domain was scanned)]", ";");
-    for (const auto& domain : _domain_status_stack.domains) {
+    for (const auto& domain : _domain_status_stack.domains_with_statuses)
+    {
         indented_print(0, domain.first.fqdn);
-        for (const auto& domain_status : domain.second) {
+        for (const auto& domain_status : domain.second)
+        {
             indented_print(1, to_string(domain_status));
         }
     }

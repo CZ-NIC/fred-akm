@@ -33,11 +33,13 @@ namespace Akm {
 
 namespace {
 
-std::string quote(const std::string& str) {
+std::string quote(const std::string& str)
+{
     return "\"" + str + "\"";
 }
 
-std::string quote(unsigned long long value) {
+std::string quote(unsigned long long value)
+{
     return std::to_string(value);
 }
 
@@ -58,7 +60,8 @@ std::string to_string(const DomainState& _domain_state, const bool verbose)
         retval += delim + to_string(cdnskey.second);
     }
     retval += "]";
-    if (verbose) {
+    if (verbose)
+    {
         retval += std::string(" (") +
                   "taken from NS: " + quote(_domain_state.nameserver) + delim +
                   "with IP: " + quote(_domain_state.nameserver_ip) + delim +
@@ -83,22 +86,26 @@ bool operator!=(const DomainState& _lhs, const DomainState& _rhs)
     return !(_lhs == _rhs);
 }
 
-bool has_deletekey(const DomainState& _domain_state) {
+bool has_deletekey(const DomainState& _domain_state)
+{
     return std::find_if(
                    _domain_state.cdnskeys.begin(),
                    _domain_state.cdnskeys.end(),
-                   [](std::pair<std::string, Cdnskey> cdnskeys_item) {
-                     return is_deletekey(cdnskeys_item.second);
+                   [](std::pair<std::string, Cdnskey> cdnskeys_item)
+                   {
+                       return is_deletekey(cdnskeys_item.second);
                    })
            != _domain_state.cdnskeys.end();
 }
 
 bool are_coherent(const DomainState& _first, const DomainState& _second)
 {
-    if (_first.domain != _second.domain) {
+    if (_first.domain != _second.domain)
+    {
         return false;
     }
-    if (_first.cdnskeys != _second.cdnskeys) {
+    if (_first.cdnskeys != _second.cdnskeys)
+    {
         return false;
     }
     return true;

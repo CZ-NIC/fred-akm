@@ -25,11 +25,13 @@ namespace Akm {
 
 namespace {
 
-std::string quote(const std::string& str) {
+std::string quote(const std::string& str)
+{
     return "\"" + str + "\"";
 }
 
-std::string quote(int value) {
+std::string quote(int value)
+{
     return std::to_string(value);
 }
 
@@ -43,7 +45,8 @@ std::string to_string(const Nsset& _nsset)
     for (const auto& nameserver : _nsset.nameservers)
     {
         retval += quote(nameserver);
-        if (&nameserver != &_nsset.nameservers.back()) {
+        if (&nameserver != &_nsset.nameservers.back())
+        {
             retval += delim;
         }
     }
