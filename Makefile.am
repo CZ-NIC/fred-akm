@@ -21,18 +21,22 @@ fred_akm_SOURCES = \
 	src/conf.cc \
 	src/log.hh \
 	src/log.cc \
+	src/subprocess.hh \
 	src/corba/corba_context.hh \
 	src/corba/corba_context.cc \
 	src/corba/nameservice.hh \
 	src/corba/nameservice.cc \
 	src/sqlite/storage.hh \
 	src/sqlite/storage.cc \
+	src/cdnskey_scanner_impl/input_serializer.hh \
+	src/cdnskey_scanner_impl/output_parser.hh \
+	src/cdnskey_scanner_impl/output_parser.cc \
+	src/cdnskey_scanner_impl/cdnskey_scanner_impl.hh \
+	src/cdnskey_scanner_impl/cdnskey_scanner_impl.cc \
 	src/command_load.hh \
 	src/command_load.cc \
 	src/command_scan.hh \
 	src/command_scan.cc \
-	src/external_scanner.hh \
-	src/external_scanner.cc \
 	src/command_notify.hh \
 	src/command_notify.cc \
 	src/command_update.hh \
