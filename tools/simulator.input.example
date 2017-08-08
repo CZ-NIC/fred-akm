@@ -1,0 +1,9 @@
+[insecure]
+ns1.foo.cz d1.cz
+ns2.foo.cz d1.cz
+ns3.bar.baz.foo.com d2.cz
+ns2.bar.baz.foo.com d2.cz
+ns1.bar.cz d3.cz d4.cz
+ns2.bar.cz d3.cz d4.cz
+[secure]
+d5.cz d6.cz d7.cz d8.cz d9.cz d10.cz
