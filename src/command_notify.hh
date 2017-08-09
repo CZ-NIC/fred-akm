@@ -36,6 +36,7 @@ void command_notify(
         unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_notify,
         bool _notify_from_last_iteration_only,
+        bool _align_to_start_of_day,
         bool _dry_run,
         bool _fake_contact_emails);
 

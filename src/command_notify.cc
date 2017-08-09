@@ -97,9 +97,10 @@ void command_notify(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
-        unsigned long _maximal_time_between_scan_results,
-        unsigned long _minimal_scan_result_sequence_length_to_notify,
-        bool  _notify_from_last_scan_iteration_only,
+        const unsigned long _maximal_time_between_scan_results,
+        const unsigned long _minimal_scan_result_sequence_length_to_notify,
+        const bool  _notify_from_last_scan_iteration_only,
+        const bool _align_to_start_of_day,
         const bool _dry_run,
         const bool _fake_contact_emails)
 {

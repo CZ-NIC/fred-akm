@@ -164,14 +164,17 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const Nameserv
     }
 }
 
-ScanResultRows get_insecure_scan_result_rows_for_notify(sqlite3pp::database& _db, const int _seconds_back, const bool _notify_from_last_iteration_only)
+ScanResultRows get_insecure_scan_result_rows_for_notify(
+        sqlite3pp::database& _db, const int _seconds_back,
+        const bool _notify_from_last_iteration_only,
+        const bool _align_to_start_of_day)
 {
     sqlite3pp::query query(_db);
     query.prepare(boost::str(boost::format(
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
                "COALESCE(scan_result.scan_at, ''), "
-               "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
+               "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
                "scan_result.domain_id, "
                "COALESCE(scan_result.domain_name, ''), "
                "scan_result.has_keyset, "
@@ -187,7 +190,7 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(sqlite3pp::database& _db
          "WHERE scan_result.scan_iteration_id IN "
              "(SELECT scan_iteration_id "
                 "FROM scan_result "
-               "WHERE scan_at BETWEEN datetime('now', '%1% seconds') AND datetime('now') "
+               "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
            "AND scan_result.has_keyset = 0 "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
@@ -234,7 +237,10 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(sqlite3pp::database& _db
     return scan_result;
 }
 
-ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db, const int _seconds_back, const bool _align_to_start_of_day)
+ScanResultRows get_insecure_scan_result_rows_for_update(
+        sqlite3pp::database& _db,
+        const int _seconds_back,
+        const bool _align_to_start_of_day)
 {
     const bool has_keyset = false;
     const NotificationType::Enum notification_type = NotificationType::akm_notification_candidate_ok;
@@ -244,7 +250,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
                "COALESCE(scan_result.scan_at, ''), "
-               "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
+               "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
                "scan_result.domain_id, "
                "COALESCE(scan_result.domain_name, ''), "
                "scan_result.has_keyset, "
@@ -260,7 +266,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
          "WHERE scan_iteration_id IN "
              "(SELECT scan_iteration_id "
                 "FROM scan_result "
-               "WHERE scan_at >= datetime(datetime('now'), '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
+               "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
            "AND scan_result.has_keyset = :has_keyset "
            "AND domain_status_notification.notification_type = :notification_type "
@@ -310,7 +316,10 @@ ScanResultRows get_insecure_scan_result_rows_for_update(sqlite3pp::database& _db
     return scan_result;
 }
 
-ScanResultRows get_secure_scan_result_rows_for_update(sqlite3pp::database& _db, const int _seconds_back, const bool _align_to_start_of_day)
+ScanResultRows get_secure_scan_result_rows_for_update(
+        sqlite3pp::database& _db,
+        const int _seconds_back,
+        const bool _align_to_start_of_day)
 {
     const bool has_keyset = true;
     const NotificationType::Enum notification_type = NotificationType::akm_notification_managed_ok;
@@ -320,7 +329,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(sqlite3pp::database& _db, 
         "SELECT scan_result.id, "
                "scan_result.scan_iteration_id, "
                "COALESCE(scan_result.scan_at, ''), "
-               "strftime('%%s', datetime(scan_at)) as scan_at_seconds, "
+               "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
                "scan_result.domain_id, "
                "COALESCE(scan_result.domain_name, ''), "
                "scan_result.has_keyset, "
@@ -411,7 +420,7 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
                "domain_status, "
                "notification_type, "
                "last_at, "
-               "strftime('%s', datetime(last_at)) as last_at_seconds "
+               "strftime('%s', datetime(last_at)) AS last_at_seconds "
           "FROM domain_status_notification "
          "WHERE domain_id = ?");
 
@@ -491,7 +500,8 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCo
 
 ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(
         const int _seconds_back,
-        const bool _notify_from_last_iteration_only) const
+        const bool _notify_from_last_iteration_only,
+        const bool _align_to_start_of_day) const
 {
     sqlite3pp::database db(filename_.c_str());
     sqlite3pp::transaction xct(db);
@@ -499,7 +509,8 @@ ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(
     return Impl::get_insecure_scan_result_rows_for_notify(
             db,
             _seconds_back,
-            _notify_from_last_iteration_only);
+            _notify_from_last_iteration_only,
+            _align_to_start_of_day);
 }
 
 ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_update(
@@ -802,7 +813,9 @@ void SqliteStorage::wipe_unfinished_scan_iterations() const
     xct.commit();
 }
 
-void SqliteStorage::clean_scan_results(const int _keep_seconds_back) const
+void SqliteStorage::clean_scan_results(
+        const int _keep_seconds_back,
+        const bool _align_to_start_of_day) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -813,7 +826,7 @@ void SqliteStorage::clean_scan_results(const int _keep_seconds_back) const
         "DELETE FROM scan_result "
          "WHERE scan_iteration_id IN ("
             "SELECT id FROM scan_iteration "
-             "WHERE end_at < datetime('now', '%1% seconds'))")
+             "WHERE end_at < datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "')")
                    % (_keep_seconds_back * -1)).c_str());
     xct.commit();
 }

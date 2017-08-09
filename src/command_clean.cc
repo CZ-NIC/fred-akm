@@ -23,9 +23,12 @@ namespace Akm {
 
 void command_clean(
         const IStorage& _storage,
-        unsigned long _minimal_scan_result_sequence_length_to_update)
+        unsigned long _minimal_scan_result_sequence_length_to_update,
+        const bool _align_to_start_of_day)
 {
-    _storage.clean_scan_results(_minimal_scan_result_sequence_length_to_update);
+    _storage.clean_scan_results(
+            _minimal_scan_result_sequence_length_to_update,
+            _align_to_start_of_day);
 }
 
 } // namespace Fred::Akm
