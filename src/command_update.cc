@@ -251,6 +251,21 @@ void command_update_insecure(
                     save_domain_status(new_notified_domain_status, _storage, _dry_run);
                 }
             }
+            // TODO stats
+            //catch (const Fred::Akm::ObjectNotFound& e)
+            //{
+            //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            //    stats_insecure.domains_updated_ko_object_not_found++;
+            //    log()->debug(e.what());
+            //    continue;
+            //}
+            catch (const Fred::Akm::AkmException& e)
+            {
+                log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                stats_insecure.domains_updated_ko++;
+                log()->debug(e.what());
+                continue;
+            }
             catch (const std::runtime_error& e)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
@@ -304,7 +319,7 @@ void command_update_secure(
 
     //DomainStatusStack domain_status_stack(domain_state_stack, _minimal_scan_result_sequence_length_to_update);
     //print(domain_status_stack);
-    std::map<Domain, DomainState> domains;
+    std::map<Domain, DomainState> domains_with_statuses;
     for (const auto& scan_iteration : boost::adaptors::reverse(domain_state_stack.scan_iterations))
     {
         for (const auto& domain : scan_iteration.second)
@@ -316,7 +331,7 @@ void command_update_secure(
                     for (const auto& domain_state : nameserver_ip.second) // TODO is just one state per domain/iteration, loop/vector not needed
                     {
                         //log()->debug(to_string(domain_state));
-                        domains[domain_state.domain] = domain_state;
+                        domains_with_statuses[domain_state.domain] = domain_state;
                     }
                 }
             }
@@ -325,26 +340,29 @@ void command_update_secure(
 
     log()->debug(";== command_update (secure) data ready");
 
-    for (const auto& domain : domains)
+    for (const auto& domain_with_status : domains_with_statuses)
     {
+        const auto& domain = domain_with_status.first;
+        const auto& domain_statuses = domain_with_status.second;
+
         stats_secure.domains_checked++;
 
-        log()->debug("domain {}", to_string(domain.first));
+        log()->debug("domain {}", to_string(domain));
 
         Nsset current_nsset;
-        const DomainStatus domain_newest_status(DomainStatus::DomainStatusType::akm_status_managed_ok, ScanIteration(), domain.second, current_nsset.nameservers);
+        const DomainStatus domain_newest_status(DomainStatus::DomainStatusType::akm_status_managed_ok, ScanIteration(), domain_statuses, current_nsset.nameservers);
 
         log()->debug("newest domain_status: {}", to_string(domain_newest_status));
 
         if(domain_newest_status.domain_state->cdnskeys.empty())
         {
-            log()->debug("will not update domain {}, no cdnskeys", domain.first.fqdn);
+            log()->debug("will not update domain {}, no cdnskeys", domain.fqdn);
             stats_secure.domains_ko_for_update_no_keys++;
             continue;
         }
 
         boost::optional<NotifiedDomainStatus> notified_domain_status =
-                _storage.get_last_notified_domain_status(domain.first.id);
+                _storage.get_last_notified_domain_status(domain.id);
 
         log()->debug("last notified status: {}",
                 notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND (AKM administratively set?)");
@@ -353,12 +371,12 @@ void command_update_secure(
         const std::string serialized_new_keys = serialize(domain_newest_status.domain_state->cdnskeys);
         if (notified_domain_status && (notified_domain_status->serialized_cdnskeys == serialized_new_keys)) // FIXME not set
         {
-            log()->debug("will not update domain {} with {}, keys are identical", domain.first.fqdn, serialized_new_keys);
+            log()->debug("will not update domain {} with {}, keys are identical", domain.fqdn, serialized_new_keys);
             stats_secure.domains_ko_for_update_same_keys++;
             continue;
         }
 
-        log()->info("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.first.fqdn, serialized_new_keys);
+        log()->info("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.fqdn, serialized_new_keys);
         stats_secure.domains_ok_for_update++;
 
         try
@@ -376,12 +394,12 @@ void command_update_secure(
                                     cdnskey.second.public_key));
                 }
 
-                _akm_backend.update_domain_automatic_keyset(domain.first.id, Nsset(), new_keyset); // FIXME
-                log()->debug("UPDATE OK for secure domain {}", domain.first.fqdn);
+                _akm_backend.update_domain_automatic_keyset(domain.id, Nsset(), new_keyset); // FIXME
+                log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
                 stats_secure.domains_updated_ok++;
                 NotifiedDomainStatus new_notified_domain_status =
                         NotifiedDomainStatus(
-                                domain.first,
+                                domain,
                                 domain_newest_status);
                 if (!has_deletekey(*domain_newest_status.domain_state))
                 {
@@ -396,21 +414,36 @@ void command_update_secure(
                 }
                 else
                 {
-                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.first.fqdn);
+                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.fqdn);
                     save_domain_status(new_notified_domain_status, _storage, _dry_run);
                 }
             }
         }
+        // TODO stats
+        //catch (const Fred::Akm::ObjectNotFound& e)
+        //{
+        //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+        //    stats_insecure.domains_updated_ko_object_not_found++;
+        //    log()->debug(e.what());
+        //    continue;
+        //}
+        catch (const Fred::Akm::AkmException& e)
+        {
+            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            stats_insecure.domains_updated_ko++;
+            log()->debug(e.what());
+            continue;
+        }
         catch (const std::runtime_error& e)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.first.fqdn);
+            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
             stats_secure.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (...)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.first.fqdn);
+            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
             stats_secure.domains_updated_ko++;
             throw;
         }

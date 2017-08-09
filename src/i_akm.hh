@@ -1,15 +1,69 @@
 #ifndef I_AKM_HH_EF26886C00D8568723C7861B5F04FF1F//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
 #define I_AKM_HH_EF26886C00D8568723C7861B5F04FF1F
 
-#include <string>
-#include <map>
-
 #include "src/keyset.hh"
 #include "src/nameserver_domains.hh"
 #include "src/nsset.hh"
 
+#include <exception>
+#include <map>
+#include <string>
+
 namespace Fred {
 namespace Akm {
+
+struct AkmException : virtual std::exception
+{
+};
+
+struct ObjectNotFound : AkmException
+{
+};
+
+
+struct NssetInvalid : AkmException
+{
+};
+
+
+struct KeysetInvalid : AkmException
+{
+};
+
+
+struct NssetDiffers : AkmException
+{
+};
+
+
+struct DomainHasOtherKeyset : AkmException
+{
+};
+
+
+struct DomainStatePolicyError : AkmException
+{
+};
+
+
+struct KeysetStatePolicyError : AkmException
+{
+};
+
+
+struct SystemRegistratorNotFound : AkmException
+{
+};
+
+
+struct ConfigurationError : AkmException
+{
+};
+
+
+struct InternalServerError : AkmException
+{
+};
 
 
 class IAkm

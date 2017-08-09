@@ -6,6 +6,86 @@ namespace Akm {
 namespace Corba {
 
 
+struct ObjectNotFound : AkmException
+{
+    const char* what() const throw () {
+        return "object not found";
+    }
+};
+
+
+struct NssetInvalid : AkmException
+{
+    const char* what() const throw () {
+        return "nsset invalid ";
+    }
+};
+
+
+struct KeysetInvalid : AkmException
+{
+    const char* what() const throw () {
+        return "keyset invalid ";
+    }
+};
+
+
+struct NssetDiffers : AkmException
+{
+    const char* what() const throw () {
+        return "nsset differs ";
+    }
+};
+
+
+struct DomainHasOtherKeyset : AkmException
+{
+    const char* what() const throw () {
+        return "domain hasother keyset ";
+    }
+};
+
+
+struct DomainStatePolicyError : AkmException
+{
+    const char* what() const throw () {
+        return "domain state policy error ";
+    }
+};
+
+
+struct KeysetStatePolicyError : AkmException
+{
+    const char* what() const throw () {
+        return "keyset state policy error ";
+    }
+};
+
+
+struct SystemRegistratorNotFound : AkmException
+{
+    const char* what() const throw () {
+        return "system registrator not found ";
+    }
+};
+
+
+struct ConfigurationError : AkmException
+{
+    const char* what() const throw () {
+        return "configuration error ";
+    }
+};
+
+
+struct InternalServerError : AkmException
+{
+    const char* what() const throw () {
+        return "internal server error ";
+    }
+};
+
+
 Akm::Akm(const Nameservice& _ns, const std::string& _ns_path_akm)
     : ns_(_ns), ns_path_akm_(_ns_path_akm)
 {
@@ -158,6 +238,50 @@ void Akm::update_domain_automatic_keyset(unsigned long long _domain_id, Nsset _c
 
         akm->update_domain_automatic_keyset(_domain_id, current_nsset, new_keyset);
 
+    }
+    catch (const Registry::AutomaticKeysetManagement::OBJECT_NOT_FOUND&)
+    {
+        throw ObjectNotFound();
+    }
+    catch (const Registry::AutomaticKeysetManagement::NSSET_INVALID&)
+    {
+        throw NssetInvalid();
+    }
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_INVALID&)
+    {
+        throw KeysetInvalid();
+    }
+    catch (const Registry::AutomaticKeysetManagement::NSSET_DIFFERS&)
+    {
+        throw NssetDiffers();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_HAS_OTHER_KEYSET&)
+    {
+        throw DomainHasOtherKeyset();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_STATE_POLICY_ERROR&)
+    {
+        throw DomainStatePolicyError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_STATE_POLICY_ERROR&)
+    {
+        throw KeysetStatePolicyError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::SYSTEM_REGISTRATOR_NOT_FOUND&)
+    {
+        throw SystemRegistratorNotFound();
+    }
+    catch (const Registry::AutomaticKeysetManagement::CONFIGURATION_ERROR&)
+    {
+        throw ConfigurationError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR&)
+    {
+        throw InternalServerError();
+    }
+    catch (const CORBA::UserException& e) // unhandled user exception
+    {
+        throw std::runtime_error(e._name());
     }
     catch (const CORBA::SystemException& e)
     {
