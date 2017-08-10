@@ -11,23 +11,33 @@ BackendLoader::BackendLoader(const IAkm& _akm_backend) : akm_backend_(_akm_backe
 
 void BackendLoader::load_domains(NameserverDomainsCollection& _collection) const
 {
-    auto data = akm_backend_.get_nameservers_with_automatically_managed_domain_candidates();
-    for (const auto kv : akm_backend_.get_nameservers_with_automatically_managed_domains())
+    auto merge_collections = [](NameserverDomainsCollection& _dst, const NameserverDomainsCollection& _src)
     {
-        const auto ns = kv.second.nameserver;
-        const auto ns_domains = kv.second.nameserver_domains;
+        for (const auto kv : _src)
+        {
+            const auto ns = kv.second.nameserver;
+            const auto ns_domains = kv.second.nameserver_domains;
 
-        if (data.find(ns) == data.end())
-        {
-            data[ns] = NameserverDomains(ns, ns_domains);
+            if (_dst.find(ns) == _dst.end())
+            {
+                _dst[ns] = NameserverDomains(ns, ns_domains);
+            }
+            else
+            {
+                auto& ns_domains_dst = _dst[ns].nameserver_domains;
+                _dst.reserve(_dst.size() + ns_domains.size());
+                std::remove_copy_if(ns_domains.begin(), ns_domains.end(), std::back_inserter(ns_domains_dst),
+                        [&ns_domains_dst](const Domain& _check) {
+                            return std::find(ns_domains_dst.begin(), ns_domains_dst.end(), _check) != ns_domains_dst.end();
+                        }
+                );
+            }
         }
-        else
-        {
-            auto& dest = _collection[ns].nameserver_domains;
-            dest.reserve(dest.size() + ns_domains.size());
-            std::copy(ns_domains.begin(), ns_domains.end(), std::back_inserter(dest));
-        }
-    }
+    };
+
+    merge_collections(_collection, akm_backend_.get_nameservers_with_automatically_managed_domain_candidates());
+    merge_collections(_collection, akm_backend_.get_nameservers_with_automatically_managed_domains());
+
     log()->info("loaded tasks from backend ({} nameserver(s))", _collection.size());
 }
 
