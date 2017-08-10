@@ -168,42 +168,42 @@ struct UnknownDomainStatusChange : std::exception
 };
 
 DomainStatusChange get_domain_status_change(
-        const boost::optional<NotifiedDomainStatus>& notified_domain_status,
-        const DomainStatus& domain_newest_status)
+        const boost::optional<NotifiedDomainStatus>& _notified_domain_status,
+        const DomainStatus& _domain_newest_status)
 {
-    if (!notified_domain_status)
+    if (!_notified_domain_status)
     {
-        if (domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
+        if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
         {
             return DomainStatusChange::new_ok;
         }
-        else if (domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
+        else if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
         {
             return DomainStatusChange::new_ko;
         }
     }
     else {
-        if (notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok))
+        if (_notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok))
         {
-            if (domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
+            if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
             {
-                return are_coherent(*domain_newest_status.domain_state, *notified_domain_status)
+                return are_coherent(*_domain_newest_status.domain_state, *_notified_domain_status)
                         ? DomainStatusChange::ok_ok
                         : DomainStatusChange::ok_ok2;
             }
-            else if (domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
+            else if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
             {
                 return DomainStatusChange::ok_ko;
             }
         }
-        else if ((notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko)) ||
-                (notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_managed_ok))) // fallen angel
+        else if ((_notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko)) ||
+                (_notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_managed_ok))) // fallen angel
         {
-            if (domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
+            if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
             {
                 return DomainStatusChange::ko_ok;
             }
-            else if (domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
+            else if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
             {
                 return DomainStatusChange::ko_ko;
             }
@@ -213,13 +213,13 @@ DomainStatusChange get_domain_status_change(
 }
 
 boost::optional<DomainStatus> lookup_intermediate_domain_status_to_notify(
-        const std::pair<const Domain, DomainStatusStack::DomainStatuses>& domain, const NotifiedDomainStatus& notified_domain_status)
+        const std::pair<const Domain, DomainStatusStack::DomainStatuses>& domain, const NotifiedDomainStatus& _notified_domain_status)
 {
 
     for (const auto& domain_status : boost::adaptors::reverse(domain.second))
     {
         if (domain_status.status != DomainStatus::DomainStatusType::akm_status_candidate_ok &&
-                domain_status.scan_iteration.start_at > notified_domain_status.last_at)
+                domain_status.scan_iteration.start_at > _notified_domain_status.last_at)
         {
             log()->debug("ok->...(ko)...->ok (ko_found@scan_iteration {})", to_string(domain_status.scan_iteration));
             return domain_status;
@@ -266,6 +266,9 @@ void command_notify(
     DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results);
     print(domain_status_stack);
 
+    int current_unix_time = _storage.get_current_unix_time();
+    log()->debug("current unix time taken from db: {}", current_unix_time);
+
     log()->debug(";== [command_notify] =========================================================================");
 
     stats.domains_loaded = domain_status_stack.domains_with_statuses.size();
@@ -293,9 +296,16 @@ void command_notify(
                     notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
             DomainStatus domain_newest_status = domain_statuses.back();
+            if (current_unix_time - domain_newest_status.domain_state->scan_at_seconds > _maximal_time_between_scan_results)
+            {
+                log()->debug("newest domain state too old (no recent scan)");
+                domain_newest_status.status = DomainStatus::DomainStatusType::akm_status_candidate_ko;
+            }
             log()->debug("newest domain_status: {}", to_string(domain_newest_status));
 
-            DomainStatusChange domain_status_change = get_domain_status_change(notified_domain_status, domain_newest_status);
+
+            DomainStatusChange domain_status_change =
+                    get_domain_status_change(notified_domain_status, domain_newest_status);
             log()->debug(to_string(domain_status_change));
 
             if (domain_status_change == DomainStatusChange::ok_ok) // oh, special case
