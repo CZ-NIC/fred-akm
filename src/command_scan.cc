@@ -48,8 +48,8 @@ void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
     {
         long iteration_id = _storage.start_new_scan_iteration();
         log()->info("started new scan iteration (id={})", iteration_id);
-        _scanner.scan(_batch, [&_storage, &iteration_id](const std::vector<ScanResult>& _results)
-            { _storage.save_scan_results(_results, iteration_id); }
+        _scanner.scan(_batch, [&_storage, &_batch, &iteration_id](const std::vector<ScanResult>& _results)
+            { _storage.save_scan_results(_results, _batch, iteration_id); }
         );
         _storage.end_scan_iteration(iteration_id);
         log()->info("scan iteration finished (id={})", iteration_id);
