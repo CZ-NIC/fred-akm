@@ -26,6 +26,9 @@
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
+#include <map>
+#include <vector>
+
 namespace Fred {
 namespace Akm {
 
@@ -43,7 +46,10 @@ namespace {
 } // namespace Fred::Akm::{anonymous}
 
 
-DomainStatusStack::DomainStatusStack(const DomainStateStack& _domain_state_stack, unsigned long _maximal_time_between_scan_results)
+DomainStatusStack::DomainStatusStack(
+        const DomainStateStack& _domain_state_stack,
+        unsigned long _maximal_time_between_scan_results,
+        const int current_unix_time)
 {
     indented_print(0, ";== [DomainStatusStack: Recognizing domain statuses per iteration] =============");
     indented_print(0, "[iteration]", ";");
@@ -59,20 +65,27 @@ DomainStatusStack::DomainStatusStack(const DomainStateStack& _domain_state_stack
     for (const auto& scan_iteration : _domain_state_stack.scan_iterations)
     {
         indented_print(0, to_string(scan_iteration.first));
-        for (const auto& domain : scan_iteration.second)
+        for (const auto& domain_with_nameservers : scan_iteration.second)
         {
-            indented_print(1, to_string(domain.first));
+            const auto& domain = domain_with_nameservers.first;
+            const auto& domain_nameservers = domain_with_nameservers.second;
+
+            indented_print(1, to_string(domain));
             if (scan_iteration.second.empty())
             {
-                indented_print(2, "no scan_iterations for domain " + domain.first.fqdn);
+                indented_print(2, "no scan_iterations for domain " + domain.fqdn);
                 continue;
             }
+
+            const bool is_last_scan_iteration = (&scan_iteration == &*_domain_state_stack.scan_iterations.rbegin());
+            const auto check_against_current_unix_time = is_last_scan_iteration ? boost::optional<int>(current_unix_time) : boost::optional<int>();
             boost::optional<DomainState> iteration_domain_state =
                     get_domain_state_if_domain_nameservers_are_coherent(
-                            domain.first,
-                            domain.second,
+                            domain,
+                            domain_nameservers,
                             _maximal_time_between_scan_results,
-                            0);
+                            0,
+                            check_against_current_unix_time);
 
             const bool is_iteration_domain_state_with_deletekey = iteration_domain_state && has_deletekey(*iteration_domain_state);
 
@@ -81,13 +94,13 @@ DomainStatusStack::DomainStatusStack(const DomainStateStack& _domain_state_stack
                             ? DomainStatus::DomainStatusType::akm_status_candidate_ok
                             : DomainStatus::DomainStatusType::akm_status_candidate_ko;
 
-            if (domains_with_statuses.find(domain.first) == domains_with_statuses.end())
+            if (domains_with_statuses.find(domain) == domains_with_statuses.end())
             {
-                domains_with_statuses[domain.first] = DomainStatuses();
+                domains_with_statuses[domain] = DomainStatuses();
             }
             std::vector<std::string> nameservers;
-            boost::copy(domain.second | boost::adaptors::map_keys, std::back_inserter(nameservers));
-            domains_with_statuses[domain.first].push_back(DomainStatus(domain_status, scan_iteration.first, iteration_domain_state, nameservers));
+            boost::copy(domain_nameservers | boost::adaptors::map_keys, std::back_inserter(nameservers));
+            domains_with_statuses[domain].push_back(DomainStatus(domain_status, scan_iteration.first, iteration_domain_state, nameservers));
         }
     }
 }

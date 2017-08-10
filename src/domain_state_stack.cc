@@ -101,7 +101,8 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         const int _scan_result_row_timediff_max,
-        const int _scan_result_row_sequence_timediff_min)
+        const int _scan_result_row_sequence_timediff_min,
+        const boost::optional<int> _current_unix_time)
 {
     bool domain_ok = true;
     bool scan_result_row_timediff_max_ok = true;
@@ -151,6 +152,13 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
                     {
                         indented_print(indent + 3, "KEY CHECK KO (no keys ~ insecure-empty)");
                         key_check_ok = false;
+                        break;
+                    }
+
+                    if (_current_unix_time && (*_current_unix_time - last_domain_state->scan_at_seconds > _scan_result_row_timediff_max))
+                    {
+                        indented_print(indent + 3, "TIMEDIFF CHECK KO (too old)");
+                        scan_result_row_timediff_max_ok = false;
                         break;
                     }
 
