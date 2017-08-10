@@ -77,6 +77,8 @@ fred_akm_SOURCES = \
 	src/domain_state_stack.cc \
 	src/domain_status_stack.hh \
 	src/domain_status_stack.cc \
+	src/command_clean.hh \
+	src/command_clean.cc \
 	src/main.cc
 
 fred_akm_LDADD = \

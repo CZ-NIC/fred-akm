@@ -71,7 +71,8 @@ Args parse_args(int argc, char* argv[])
             {"load", {command_load, command_load_args}},
             {"scan", {command_scan, nullptr}},
             {"notify", {command_notify, command_notify_args}},
-            {"update", {command_update, command_update_args}}
+            {"update", {command_update, command_update_args}},
+            {"clean", {command_update, nullptr}},
         };
 
         po::variables_map vm;

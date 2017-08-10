@@ -16,32 +16,20 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COMMAND_NOTIFY_HH_A70C82D62A6C46BE8E74D2A8E9669821
-#define COMMAND_NOTIFY_HH_A70C82D62A6C46BE8E74D2A8E9669821
-
-#include <string>
-
-#include "src/i_akm.hh"
-#include "src/i_mailer.hh"
-#include "src/i_storage.hh"
+#include "command_clean.hh"
 
 namespace Fred {
 namespace Akm {
 
-
-void command_notify(
+void command_clean(
         const IStorage& _storage,
-        const IAkm& _akm_backend,
-        const IMailer& _mailer_backend,
-        unsigned long _maximal_time_between_scan_results,
-        unsigned long _minimal_scan_result_sequence_length_to_notify,
-        bool _notify_from_last_iteration_only,
-        bool _align_to_start_of_day,
-        bool _dry_run,
-        bool _fake_contact_emails);
+        unsigned long _minimal_scan_result_sequence_length_to_update,
+        const bool _align_to_start_of_day)
+{
+    _storage.clean_scan_results(
+            _minimal_scan_result_sequence_length_to_update,
+            _align_to_start_of_day);
+}
 
-
-} //namespace Fred::Akm
-} //namespace Fred
-
-#endif
+} // namespace Fred::Akm
+} // namespace Fred

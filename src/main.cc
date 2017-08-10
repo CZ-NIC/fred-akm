@@ -14,6 +14,7 @@
 #include "src/loader_impl/domain_whitelist_filter.hh"
 #include "src/log.hh"
 
+#include "src/command_clean.hh"
 #include "src/command_load.hh"
 #include "src/command_notify.hh"
 #include "src/command_scan.hh"
@@ -103,6 +104,7 @@ void dispatch_command_notify(
     const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
     const auto minimal_scan_result_sequence_length_to_notify = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_notify;
     const auto notify_from_last_iteration_only = _conf.get<Fred::Akm::ScanResultsConf>()->notify_from_last_iteration_only;
+    const auto align_to_start_of_day = _conf.get<Fred::Akm::ScanResultsConf>()->align_to_start_of_day;
     const auto dry_run = _args.get<Fred::Akm::NotifyCommandArgs>()->dry_run;
     const auto fake_contact_emails = _args.get<Fred::Akm::NotifyCommandArgs>()->fake_contact_emails;
 
@@ -113,6 +115,7 @@ void dispatch_command_notify(
             maximal_time_between_scan_results,
             minimal_scan_result_sequence_length_to_notify,
             notify_from_last_iteration_only,
+            align_to_start_of_day,
             dry_run,
             fake_contact_emails);
 }
@@ -141,6 +144,22 @@ void dispatch_command_update(
             align_to_start_of_day,
             dry_run,
             fake_contact_emails);
+}
+
+
+void dispatch_command_clean(
+    const Fred::Akm::Corba::CorbaContext& _cctx,
+    const Fred::Akm::Args& _args,
+    const Fred::Akm::Conf& _conf)
+{
+    Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
+    const auto align_to_start_of_day = _conf.get<Fred::Akm::ScanResultsConf>()->align_to_start_of_day;
+
+    command_clean(
+            db,
+            minimal_scan_result_sequence_length_to_update,
+            align_to_start_of_day);
 }
 
 
@@ -175,6 +194,7 @@ int main(int argc, char* argv[])
             {"scan", &dispatch_command_scan},
             {"notify", &dispatch_command_notify},
             {"update", &dispatch_command_update},
+            {"clean", &dispatch_command_clean},
         };
 
         command_dispatch.at(general_args->command)(cctx, args, conf);
