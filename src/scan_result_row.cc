@@ -28,11 +28,13 @@ namespace Akm {
 
 namespace {
 
-std::string quote(const std::string& str) {
+std::string quote(const std::string& str)
+{
     return "\"" + str + "\"";
 }
 
-std::string quote(int value) {
+std::string quote(int value)
+{
     return std::to_string(value);
 }
 
@@ -223,19 +225,24 @@ bool is_secure_with_data(const ScanResultRow& _scan_result_row)
 
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state)
 {
-    if (_scan_result_row.domain_id != _domain_state.domain.id) {
+    if (_scan_result_row.domain_id != _domain_state.domain.id)
+    {
         return false;
     }
-    if (_scan_result_row.domain_name != _domain_state.domain.fqdn) {
+    if (_scan_result_row.domain_name != _domain_state.domain.fqdn)
+    {
         return false;
     }
-    if (_scan_result_row.has_keyset != _domain_state.domain.has_keyset) {
+    if (_scan_result_row.has_keyset != _domain_state.domain.has_keyset)
+    {
         return false;
     }
-    if (_scan_result_row.nameserver != _domain_state.nameserver) {
+    if (_scan_result_row.nameserver != _domain_state.nameserver)
+    {
         return false;
     }
-    if (_scan_result_row.nameserver_ip != _domain_state.nameserver_ip) {
+    if (_scan_result_row.nameserver_ip != _domain_state.nameserver_ip)
+    {
         return false;
     }
     return true;

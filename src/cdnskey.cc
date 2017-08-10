@@ -31,11 +31,13 @@ namespace Akm {
 
 namespace {
 
-std::string quote(const std::string& str) {
+std::string quote(const std::string& str)
+{
     return "\"" + str + "\"";
 }
 
-std::string quote(int value) {
+std::string quote(int value)
+{
     return std::to_string(value);
 }
 
@@ -82,7 +84,8 @@ std::string serialize(const std::map<std::string, Cdnskey>& _cdnskeys)
                     _cdnskeys.begin(),
                     _cdnskeys.end(),
                     std::string(),
-                    [delim](const std::string& s, const std::pair<const std::string, const Cdnskey&>& p) {
+                    [delim](const std::string& s, const std::pair<const std::string, const Cdnskey&>& p)
+                    {
                         return s + (s.empty() ? std::string() : delim) + to_string(p.second);
                     });
     return result;

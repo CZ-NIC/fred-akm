@@ -59,6 +59,8 @@ public:
     virtual void clean_scan_results(
             const int _keep_seconds_back,
             bool _align_to_start_of_day = false) const = 0;
+
+    virtual int get_current_unix_time() const = 0;
 };
 
 

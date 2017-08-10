@@ -48,8 +48,8 @@ struct NotifiedDomainStatus
     NotifiedDomainStatus(
         const Domain& _domain,
         const std::string& _serialized_cdnskeys, // serialized _cdnskeys
-        DomainStatus::Enum _domain_status,
-        NotificationType::Enum _notification_type,
+        DomainStatus::DomainStatusType _domain_status,
+        NotificationType _notification_type,
         std::string _last_at,
         int _last_at_seconds)
         : domain(_domain),
@@ -77,8 +77,8 @@ struct NotifiedDomainStatus
 
     Domain domain;
     std::string serialized_cdnskeys; // serialized cdnskeys
-    DomainStatus::Enum domain_status;
-    NotificationType::Enum notification_type;
+    DomainStatus::DomainStatusType domain_status;
+    NotificationType notification_type;
     std::string last_at;
     int last_at_seconds;
 };

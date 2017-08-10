@@ -199,14 +199,13 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                    % (_seconds_back * -1)
                    % (_notify_from_last_iteration_only ? "AND scan_iteration_id = (SELECT MAX(scan_iteration_id) FROM scan_result) " : "")).c_str());
 
-    //query.bind(1, _seconds_back * -1); // TODO
-
     // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
 
     ScanResultRows scan_result;
 
     boost::optional<ScanResultRow> last_scan_result_row;
-    for (auto row : query) {
+    for (auto row : query)
+    {
         ScanResultRow scan_result_row;
         try {
             row.getter()
@@ -225,6 +224,7 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                     >> scan_result_row.cdnskey.alg
                     >> scan_result_row.cdnskey.public_key;
             scan_result.emplace_back(scan_result_row);
+            //log()->debug(to_string(scan_result_row));
         }
         catch (...)
         {
@@ -243,7 +243,8 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
         const bool _align_to_start_of_day)
 {
     const bool has_keyset = false;
-    const NotificationType::Enum notification_type = NotificationType::akm_notification_candidate_ok;
+    const NotificationType notification_type = NotificationType::akm_notification_candidate_ok;
+    const NotificationType notification_type_fallen_angel = NotificationType::akm_notification_managed_ok;
 
     sqlite3pp::query query(_db);
     std::string sql =
@@ -269,7 +270,8 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
            "AND scan_result.has_keyset = :has_keyset "
-           "AND domain_status_notification.notification_type = :notification_type "
+           "AND (domain_status_notification.notification_type = :notification_type "
+           "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
            "AND domain_status_notification.last_at < datetime('now', '%2% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
          "ORDER BY id DESC";
 
@@ -279,13 +281,15 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
 
     query.bind(":has_keyset", has_keyset);
     query.bind(":notification_type", to_db_handle(notification_type));
+    query.bind(":notification_type_fallen_angel", to_db_handle(notification_type_fallen_angel));
 
     // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
 
     ScanResultRows scan_result;
 
     boost::optional<ScanResultRow> last_scan_result_row;
-    for (auto row : query) {
+    for (auto row : query)
+    {
         ScanResultRow scan_result_row;
         try {
             row.getter()
@@ -304,6 +308,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                     >> scan_result_row.cdnskey.alg
                     >> scan_result_row.cdnskey.public_key;
             scan_result.emplace_back(scan_result_row);
+            //log()->debug(to_string(scan_result_row));
         }
         catch (...)
         {
@@ -322,7 +327,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
         const bool _align_to_start_of_day)
 {
     const bool has_keyset = true;
-    const NotificationType::Enum notification_type = NotificationType::akm_notification_managed_ok;
+    const NotificationType notification_type = NotificationType::akm_notification_managed_ok;
 
     sqlite3pp::query query(_db);
     std::string sql =
@@ -340,15 +345,15 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                "scan_result.cdnskey_alg, "
                "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
-          "JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
+          "LEFT JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
          "WHERE scan_iteration_id IN "
              "(SELECT scan_iteration_id "
                 "FROM scan_result "
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
            "AND scan_result.has_keyset = :has_keyset "
-           "AND domain_status_notification.notification_type = :notification_type "
-           "AND scan_result.scan_at > domain_status_notification.last_at "
+           "AND (domain_status_notification.notification_type = :notification_type OR domain_status_notification.notification_type IS NULL) "
+           "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
          "ORDER BY id DESC";
 
     query.prepare(boost::str(boost::format(sql)
@@ -362,7 +367,8 @@ ScanResultRows get_secure_scan_result_rows_for_update(
     ScanResultRows scan_result;
 
     boost::optional<ScanResultRow> last_scan_result_row;
-    for (auto row : query) {
+    for (auto row : query)
+    {
         ScanResultRow scan_result_row;
         try {
             row.getter()
@@ -429,7 +435,8 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
     // how to check that the query is empty?
     // query.begin() == query.end() has some side-effect, if used, following (*query.begin()).getter() does not work
     // solution for now:
-    for (auto row : query) {
+    for (auto row : query)
+    {
         NotifiedDomainStatus notified_domain_status;
         long long domain_id;
         int domain_status;
@@ -444,7 +451,7 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
             >> notified_domain_status.last_at
             >> notified_domain_status.last_at_seconds;
         notified_domain_status.domain.id = static_cast<unsigned long long>(domain_id);
-        notified_domain_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus>(domain_status);
+        notified_domain_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus::DomainStatusType>(domain_status);
         notified_domain_status.notification_type = Conversion::Enums::from_db_handle<NotificationType>(notification_type);
         return notified_domain_status;
     }
@@ -795,6 +802,7 @@ long long SqliteStorage::prune_finished_scan_queue() const
     return db.changes();
 }
 
+
 void SqliteStorage::wipe_unfinished_scan_iterations() const
 {
     auto db = get_db();
@@ -812,6 +820,7 @@ void SqliteStorage::wipe_unfinished_scan_iterations() const
 
     xct.commit();
 }
+
 
 void SqliteStorage::clean_scan_results(
         const int _keep_seconds_back,
@@ -831,6 +840,29 @@ void SqliteStorage::clean_scan_results(
     xct.commit();
 }
 
+
+int SqliteStorage::get_current_unix_time() const
+{
+    auto db = get_db();
+    sqlite3pp::query query(db);
+    query.prepare(
+        "SELECT strftime('%s', datetime('now')) AS current_unix_time"
+    );
+    int current_unix_time;
+    for (auto row : query)
+    {
+        try {
+            row.getter() >> current_unix_time;
+            return current_unix_time;
+        }
+        catch (...)
+        {
+            break;
+        }
+    }
+    log()->error("FAILED to get current unix time from the database");
+    throw std::runtime_error("FAILED to get current unix time from the database");
+}
 
 } // namespace Sqlite
 } // namespace Akm
