@@ -58,7 +58,8 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         int _scan_result_row_timediff_max,
-        int _scan_result_row_sequence_timediff_min);
+        int _scan_result_row_sequence_timediff_min,
+        boost::optional<int> _current_unix_time);
 
 void print(const DomainStateStack& _domain_state_stack);
 

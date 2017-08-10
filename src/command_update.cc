@@ -162,11 +162,11 @@ void command_update_insecure(
         stats_insecure.domains_loaded += scan_iteration.second.size();
     }
 
-    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results);
-    print(domain_status_stack);
-
-    int current_unix_time = _storage.get_current_unix_time();
+    const int current_unix_time = _storage.get_current_unix_time();
     log()->debug("current unix time taken from db: {}", current_unix_time);
+
+    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results, current_unix_time);
+    print(domain_status_stack);
 
     log()->debug(";== command_update (insecure) data ready");
     stats_insecure.domains_loaded = domain_status_stack.domains_with_statuses.size();
@@ -192,13 +192,6 @@ void command_update_insecure(
 
         DomainStatus domain_newest_status = domain_statuses.back();
         log()->debug("newest domain status: {}", to_string(domain_newest_status));
-
-        if (current_unix_time - domain_newest_status.domain_state->scan_at_seconds > _maximal_time_between_scan_results)
-        {
-            log()->error("WILL NOT UPDATE domain {}: newest domain state too old (no recent scan)", domain.fqdn);
-            stats_insecure.domains_ko_for_update_no_recent_scan++;
-            continue;
-        }
 
         if (notified_domain_status && (domain_newest_status.status != notified_domain_status->domain_status))
         {

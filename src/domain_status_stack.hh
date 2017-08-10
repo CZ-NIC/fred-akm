@@ -30,7 +30,10 @@ struct DomainStatusStack {
     typedef std::vector<DomainStatus> DomainStatuses;
     typedef std::map<Domain, DomainStatuses> DomainsWithStatuses;
 
-    DomainStatusStack(const DomainStateStack& _domain_state_stack, unsigned long _maximal_time_between_scan_results);
+    DomainStatusStack(
+            const DomainStateStack& _domain_state_stack,
+            unsigned long _maximal_time_between_scan_results,
+            int _current_unix_time);
 
     DomainsWithStatuses domains_with_statuses;
 };

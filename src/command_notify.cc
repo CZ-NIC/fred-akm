@@ -263,11 +263,11 @@ void command_notify(
         stats.domains_loaded += scan_iteration.second.size();
     }
 
-    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results);
-    print(domain_status_stack);
-
-    int current_unix_time = _storage.get_current_unix_time();
+    const int current_unix_time = _storage.get_current_unix_time();
     log()->debug("current unix time taken from db: {}", current_unix_time);
+
+    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results, current_unix_time);
+    print(domain_status_stack);
 
     log()->debug(";== [command_notify] =========================================================================");
 
@@ -296,11 +296,6 @@ void command_notify(
                     notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
 
             DomainStatus domain_newest_status = domain_statuses.back();
-            if (current_unix_time - domain_newest_status.domain_state->scan_at_seconds > _maximal_time_between_scan_results)
-            {
-                log()->debug("newest domain state too old (no recent scan)");
-                domain_newest_status.status = DomainStatus::DomainStatusType::akm_status_candidate_ko;
-            }
             log()->debug("newest domain_status: {}", to_string(domain_newest_status));
 
 
