@@ -245,6 +245,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
     const bool has_keyset = false;
     const NotificationType notification_type = NotificationType::akm_notification_candidate_ok;
     const NotificationType notification_type_fallen_angel = NotificationType::akm_notification_managed_ok;
+
     sqlite3pp::query query(_db);
     std::string sql =
         "SELECT scan_result.id, "
@@ -801,6 +802,7 @@ long long SqliteStorage::prune_finished_scan_queue() const
     return db.changes();
 }
 
+
 void SqliteStorage::wipe_unfinished_scan_iterations() const
 {
     auto db = get_db();
@@ -818,6 +820,7 @@ void SqliteStorage::wipe_unfinished_scan_iterations() const
 
     xct.commit();
 }
+
 
 void SqliteStorage::clean_scan_results(
         const int _keep_seconds_back,
@@ -837,6 +840,29 @@ void SqliteStorage::clean_scan_results(
     xct.commit();
 }
 
+
+int SqliteStorage::get_current_unix_time() const
+{
+    auto db = get_db();
+    sqlite3pp::query query(db);
+    query.prepare(
+        "SELECT strftime('%s', datetime('now')) AS current_unix_time"
+    );
+    int current_unix_time;
+    for (auto row : query)
+    {
+        try {
+            row.getter() >> current_unix_time;
+            return current_unix_time;
+        }
+        catch (...)
+        {
+            break;
+        }
+    }
+    log()->error("FAILED to get current unix time from the database");
+    throw std::runtime_error("FAILED to get current unix time from the database");
+}
 
 } // namespace Sqlite
 } // namespace Akm

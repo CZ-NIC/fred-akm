@@ -57,6 +57,7 @@ struct StatsInsecure {
     int domains_updated_ok;
     int domains_updated_ko;
     int domains_ko_for_update_run_notify_first;
+    int domains_ko_for_update_no_recent_scan;
     int domains_ko_for_update_not_all_historic_statuses_ok;
     int domains_ko_for_update_not_all_historic_statuses_coherent;
     int domains_unknown_no_data;
@@ -81,9 +82,11 @@ struct StatsInsecure {
         log()->info(" │   ├─ updated:                         {:>8}", domains_updated_ok);
         log()->info(" │   └─ failed:                          {:>8}", domains_updated_ko);
         log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_run_notify_first +
+                                                                      domains_ko_for_update_no_recent_scan +
                                                                       domains_ko_for_update_not_all_historic_statuses_ok +
                                                                       domains_ko_for_update_not_all_historic_statuses_coherent);
         log()->info("     ├─ run notify first:                {:>8}", domains_ko_for_update_run_notify_first);
+        log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
         log()->info("     ├─ not all hist. statuses ok:       {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
         log()->info("     ├─ not all hist. statuses coherent: {:>8}", domains_ko_for_update_not_all_historic_statuses_coherent);
         log()->info("     └─ no data:                         {:>8}", domains_unknown_no_data);
@@ -162,6 +165,9 @@ void command_update_insecure(
     DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results);
     print(domain_status_stack);
 
+    int current_unix_time = _storage.get_current_unix_time();
+    log()->debug("current unix time taken from db: {}", current_unix_time);
+
     log()->debug(";== command_update (insecure) data ready");
     stats_insecure.domains_loaded = domain_status_stack.domains_with_statuses.size();
     for (const auto& domain_with_statuses : domain_status_stack.domains_with_statuses)
@@ -186,6 +192,13 @@ void command_update_insecure(
 
         DomainStatus domain_newest_status = domain_statuses.back();
         log()->debug("newest domain status: {}", to_string(domain_newest_status));
+
+        if (current_unix_time - domain_newest_status.domain_state->scan_at_seconds > _maximal_time_between_scan_results)
+        {
+            log()->error("WILL NOT UPDATE domain {}: newest domain state too old (no recent scan)", domain.fqdn);
+            stats_insecure.domains_ko_for_update_no_recent_scan++;
+            continue;
+        }
 
         if (notified_domain_status && (domain_newest_status.status != notified_domain_status->domain_status))
         {
