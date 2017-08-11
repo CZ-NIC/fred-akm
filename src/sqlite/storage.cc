@@ -114,17 +114,18 @@ void drop_schema(sqlite3pp::database& _db)
 namespace Impl {
 
 
-void append_to_scan_queue(sqlite3pp::database& _db, const NameserverDomainsCollection& _data)
+void append_to_scan_queue(sqlite3pp::database& _db, const DomainScanTaskCollection& _data)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
         "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
         " VALUES (?, ?, ?, ?)"
     );
-    for (const auto& kv : _data)
+
+    for (const auto& domain_scan_task : _data)
     {
-        const auto& nameserver = kv.second.nameserver;
-        for (const auto& domain : kv.second.nameserver_domains)
+        const Domain& domain = domain_scan_task.domain;
+        for (const auto& nameserver : domain_scan_task.nameservers)
         {
             insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
             insert.step();
@@ -134,7 +135,7 @@ void append_to_scan_queue(sqlite3pp::database& _db, const NameserverDomainsColle
 }
 
 
-void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const NameserverDomainsCollection& _data)
+void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const DomainScanTaskCollection& _data)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
@@ -146,10 +147,10 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const Nameserv
         "SELECT 1 FROM scan_queue WHERE"
         " nameserver = :nameserver AND domain_id = :domain_id AND domain_name = :domain_name"
     );
-    for (const auto& kv : _data)
+    for (const auto& domain_scan_task : _data)
     {
-        const auto& nameserver = kv.second.nameserver;
-        for (const auto& domain : kv.second.nameserver_domains)
+        const Domain& domain = domain_scan_task.domain;
+        for (const auto& nameserver : domain_scan_task.nameservers)
         {
             check.bind(":nameserver", nameserver, sqlite3pp::nocopy);
             check.bind(":domain_id", static_cast<long long>(domain.id));
@@ -164,6 +165,7 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const Nameserv
         }
     }
 }
+
 
 ScanResultRows get_insecure_scan_result_rows_for_notify(
         sqlite3pp::database& _db, const int _seconds_back,
@@ -487,7 +489,7 @@ SqliteStorage::SqliteStorage(const std::string& _filename)
 }
 
 
-void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _data) const
+void SqliteStorage::append_to_scan_queue(const DomainScanTaskCollection& _data) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -497,7 +499,7 @@ void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _dat
 }
 
 
-void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const
+void SqliteStorage::append_to_scan_queue_if_not_exists(const DomainScanTaskCollection& _data) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -505,6 +507,7 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCo
     Impl::append_to_scan_queue_if_not_exists(db, _data);
     xct.commit();
 }
+
 
 ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(
         const int _seconds_back,

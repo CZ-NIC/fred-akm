@@ -8,27 +8,6 @@
 namespace Fred {
 namespace Akm {
 
-struct DomainHash
-{
-    size_t operator()(const Domain& _domain) const
-    {
-        return std::hash<std::string>()(_domain.fqdn)
-            ^ std::hash<unsigned long long>()(_domain.id)
-            ^ std::hash<bool>()(_domain.has_keyset);
-    }
-};
-
-
-struct DomainEqual
-{
-    bool operator()(const Domain& _left, const Domain& _right) const
-    {
-        return _left.id == _right.id
-            && _left.fqdn == _right.fqdn
-            && _left.has_keyset == _right.has_keyset;
-    }
-};
-
 
 void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
 {

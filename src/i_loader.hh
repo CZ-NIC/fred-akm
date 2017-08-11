@@ -2,6 +2,7 @@
 #define I_LOADER_HH_F9A17F4C1EBB4F9A00228541A3198598
 
 #include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 
 namespace Fred {
 namespace Akm {
@@ -10,7 +11,7 @@ namespace Akm {
 class ILoader
 {
 public:
-    virtual void load_domains(NameserverDomainsCollection& _nameserver_domains) const = 0;
+    virtual void load_domains(DomainScanTaskCollection& _scan_tasks) const = 0;
 };
 
 

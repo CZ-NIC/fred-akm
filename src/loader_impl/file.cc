@@ -15,7 +15,8 @@ FileLoader::FileLoader(std::string _filename) : filename_(std::move(_filename))
 {
 }
 
-void FileLoader::load_domains(NameserverDomainsCollection& _collection) const
+
+void FileLoader::load_domains(DomainScanTaskCollection& _collection) const
 {
     std::ifstream file(filename_, std::ifstream::ate | std::ifstream::binary);
     const auto size = file.tellg();
@@ -28,7 +29,7 @@ void FileLoader::load_domains(NameserverDomainsCollection& _collection) const
     const auto KiB = 1024;
     line.reserve(KiB);
 
-    NameserverDomains ns_domains;
+    DomainScanTaskCollection collection;
     while (std::getline(file, line))
     {
         std::vector<std::string> tokens;
@@ -44,16 +45,16 @@ void FileLoader::load_domains(NameserverDomainsCollection& _collection) const
                 boost::lexical_cast<bool>(tokens[3])
             );
 
-            auto& record = _collection[current_ns];
-            record.nameserver = current_ns;
-            record.nameserver_domains.push_back(domain);
+            collection.insert_or_update(domain, current_ns);
         }
         else
         {
             log()->error("not enough tokens skipping (line={})", line);
         }
     }
-    log()->info("loaded tasks from input file ({} nameserver(s))", _collection.size());
+
+    _collection.merge(collection);
+    log()->info("loaded tasks from input file ({} domain(s))", _collection.size());
 }
 
 

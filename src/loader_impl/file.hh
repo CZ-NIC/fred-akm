@@ -13,7 +13,7 @@ class FileLoader : public ILoader
 public:
     FileLoader(std::string _filename);
 
-    void load_domains(NameserverDomainsCollection&) const;
+    void load_domains(DomainScanTaskCollection&) const;
 
 private:
     std::string filename_;

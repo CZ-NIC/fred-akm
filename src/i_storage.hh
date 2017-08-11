@@ -3,6 +3,7 @@
 
 #include "src/i_scanner.hh"
 #include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 #include "src/scan_result_row.hh"
 #include "src/notified_domain_status.hh"
 
@@ -18,9 +19,9 @@ namespace Akm {
 class IStorage
 {
 public:
-    virtual void append_to_scan_queue(const NameserverDomainsCollection& _data) const = 0;
+    virtual void append_to_scan_queue(const DomainScanTaskCollection& _data) const = 0;
 
-    virtual void append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const = 0;
+    virtual void append_to_scan_queue_if_not_exists(const DomainScanTaskCollection& _data) const = 0;
 
     virtual void wipe_scan_queue() const = 0;
 

@@ -14,7 +14,7 @@ class ILoaderOutputFilter
 {
 public:
     virtual ~ILoaderOutputFilter() = default;
-    virtual void apply(NameserverDomainsCollection& _collection) const = 0;
+    virtual void apply(DomainScanTaskCollection& _collection) const = 0;
 };
 
 

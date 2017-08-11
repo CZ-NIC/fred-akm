@@ -13,7 +13,7 @@ class BackendLoader : public ILoader
 public:
     BackendLoader(const IAkm& _akm_backend);
 
-    void load_domains(NameserverDomainsCollection&) const;
+    void load_domains(DomainScanTaskCollection& _scan_tasks) const;
 
 private:
     const IAkm& akm_backend_; 
