@@ -78,7 +78,7 @@ ExternalCdnskeyScannerImpl::ExternalCdnskeyScannerImpl(const std::string& _scann
 }
 
 
-void ExternalCdnskeyScannerImpl::scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const
+void ExternalCdnskeyScannerImpl::scan(const DomainScanTaskCollection& _tasks, OnResultsCallback _callback) const
 {
     std::vector<const char*> subprocess_argv;
     for (const auto& path_part : scanner_path_)
@@ -105,8 +105,7 @@ void ExternalCdnskeyScannerImpl::scan(const NameserverDomainsCollection& _tasks,
     };
 
     ScanTaskSerializer serializer;
-    serializer.serialize_insecure(_tasks, scanner_writter);
-    serializer.serialize_secure(_tasks, scanner_writter);
+    serializer.serialize(_tasks, scanner_writter);
 
     scanner_subprocess.write_eof();
 

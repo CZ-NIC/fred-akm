@@ -12,7 +12,7 @@ class ExternalCdnskeyScannerImpl : public IScanner
 public:
     ExternalCdnskeyScannerImpl(const std::string& _scanner_path);
 
-    void scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const;
+    void scan(const DomainScanTaskCollection& _tasks, OnResultsCallback _callback) const;
 
 private:
     std::vector<std::string> scanner_path_;

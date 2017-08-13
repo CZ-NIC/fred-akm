@@ -12,6 +12,7 @@ DomainScanTaskCollection::DomainScanTaskCollection()
 void DomainScanTaskCollection::insert_or_replace(const DomainScanTask& _task)
 {
     task_by_domain_name_[_task.domain.fqdn] = _task;
+    nameservers_.insert(_task.nameservers.begin(), _task.nameservers.end());
 }
 
 
@@ -28,6 +29,7 @@ void DomainScanTaskCollection::insert_or_update(const DomainScanTask& _task)
         if (task_found.domain == _task.domain)
         {
             task_found.nameservers.insert(_task.nameservers.begin(), _task.nameservers.end());
+            nameservers_.insert(_task.nameservers.begin(), _task.nameservers.end());
         }
         else
         {
@@ -73,6 +75,31 @@ auto DomainScanTaskCollection::end() const -> decltype(Detail::make_map_value_it
 auto DomainScanTaskCollection::size() const -> decltype(task_by_domain_name_.size())
 {
     return task_by_domain_name_.size();
+}
+
+
+std::size_t DomainScanTaskCollection::domain_size() const
+{
+    return size();
+}
+
+
+std::size_t DomainScanTaskCollection::nameserver_size() const
+{
+    return nameservers_.size();
+}
+
+
+void DomainScanTaskCollection::clear()
+{
+    task_by_domain_name_.clear();
+    nameservers_.clear();
+}
+
+
+const DomainScanTask& DomainScanTaskCollection::find(const std::string& _domain_name) const
+{
+    return task_by_domain_name_.at(_domain_name);
 }
 
 

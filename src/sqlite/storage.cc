@@ -595,7 +595,7 @@ void SqliteStorage::prune_scan_queue() const
 }
 
 
-NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
+DomainScanTaskCollection SqliteStorage::get_scan_queue_tasks() const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -605,7 +605,7 @@ NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
         " FROM scan_queue ORDER BY nameserver, domain_name ASC"
     );
 
-    NameserverDomainsCollection tasks;
+    DomainScanTaskCollection scan_tasks;
     for (auto row : tasks_query)
     {
         std::string nameserver;
@@ -614,16 +614,14 @@ NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
         row.getter() >> nameserver >> domain_id >> domain.fqdn >> domain.has_keyset;
         domain.id = static_cast<unsigned long long>(domain_id);
 
-        auto& record = tasks[nameserver];
-        record.nameserver = nameserver;
-        record.nameserver_domains.emplace_back(domain);
+        scan_tasks.insert_or_update(domain, nameserver);
     }
 
-    return tasks;
+    return scan_tasks;
 }
 
 
-void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, const NameserverDomainsCollection& _tasks, long long _iteration_id) const
+void SqliteStorage::save_scan_results(const ScanResults& _results, const DomainScanTaskCollection& _tasks, long long _iteration_id) const
 {
     if (_iteration_id <= 0)
     {
@@ -631,17 +629,6 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, c
     }
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-
-    std::unordered_map<std::string, Domain> domain_by_fqdn;
-    std::unordered_map<std::pair<std::string, std::string>, Domain, boost::hash<std::pair<std::string, std::string>>> domain_by_fqdn_nameserver_pair;
-    for (const auto kv : _tasks)
-    {
-        for (const auto& domain : kv.second.nameserver_domains)
-        {
-            domain_by_fqdn[domain.fqdn] = domain;
-            domain_by_fqdn_nameserver_pair[std::make_pair(domain.fqdn, kv.second.nameserver)] = domain;
-        }
-    }
 
     sqlite3pp::command i_result(db);
     i_result.prepare(
@@ -652,21 +639,25 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, c
         " :cdnskey_flags, :cdnskey_proto, :cdnskey_alg, :cdnskey_public_key)"
     );
 
+    const NameserverToDomainScanTaskAdapter tasks_by_nameserver(_tasks);
+
     for (const auto& result : _results)
     {
-        std::vector<Domain> result_for_domains;
+        std::vector<const Domain*> result_for_domains;
 
         if (result.nameserver)
         {
             if (result.domain_name.length())
             {
-                result_for_domains.push_back(domain_by_fqdn_nameserver_pair.at(std::make_pair(result.domain_name, *(result.nameserver))));
+                const auto& domain = _tasks.find(result.domain_name).domain;
+                result_for_domains.push_back(&domain);
             }
             else
             {
-                for (const auto& domain : _tasks.at(*(result.nameserver)).nameserver_domains)
+                for (const auto task : tasks_by_nameserver.find_all(*result.nameserver))
                 {
-                    result_for_domains.push_back(domain);
+                    const auto& domain = task->domain;
+                    result_for_domains.push_back(&domain);
                 }
             }
         }
@@ -674,7 +665,9 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, c
         {
             if (result.domain_name.length())
             {
-                result_for_domains.push_back(domain_by_fqdn.at(result.domain_name));
+                const auto& domain = _tasks.find(result.domain_name).domain;
+                // XXX: for all nameservers?
+                result_for_domains.push_back(&domain);
             }
         }
 
@@ -682,11 +675,11 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, c
         {
 
             i_result.bind(":scan_iteration_id", _iteration_id);
-            i_result.bind(":has_keyset", domain.has_keyset);
+            i_result.bind(":has_keyset", domain->has_keyset);
             i_result.bind(":cdnskey_status", result.cdnskey_status, sqlite3pp::nocopy);
-            if (domain.id != 0)
+            if (domain->id != 0)
             {
-                i_result.bind(":domain_id", static_cast<long long>(domain.id));
+                i_result.bind(":domain_id", static_cast<long long>(domain->id));
             }
             else
             {
@@ -698,9 +691,9 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, c
             }
             else
             {
-                if (domain.fqdn.length())
+                if (domain->fqdn.length())
                 {
-                    i_result.bind(":domain_name", domain.fqdn, sqlite3pp::nocopy);
+                    i_result.bind(":domain_name", domain->fqdn, sqlite3pp::nocopy);
                 }
                 else
                 {
