@@ -30,20 +30,36 @@ from enum import Enum
 ScanType = Enum('ScanType', 'insecure secure')
 
 INSECURE_DB = {}
+INSECURE_UNRESOLVED_NS = {}
 SECURE_DB = {}
+
+
+def scanner_output(line):
+    sys.stdout.write(line + '\n')
+
+
+def debug_output(line):
+    sys.stderr.write('DEBUG> ' + line + '\n')
+
+
+def error_output(line):
+    sys.stderr.write('ERR> ' + line + '\n')
+
 
 def search_record_insecure(line):
     try:
         nameserver, domains = line.strip().split(' ', 1)
+        if nameserver in INSECURE_UNRESOLVED_NS:
+            return
         for domain in domains.split():
             try:
                 for record in INSECURE_DB[nameserver][domain]:
-                    sys.stdout.write(record + '\n')
+                    scanner_output(record)
             except KeyError as e:
                 # or unresolved record to stdout?
-                sys.stderr.write('{} not found\n'.format(e))
+                error_output('{} not found'.format(e))
     except:
-        sys.stderr.write('malformed input line ({})\n'.format(line))
+        error_output('malformed input line ({})'.format(line))
 
 
 def search_record_secure(line):
@@ -51,11 +67,11 @@ def search_record_secure(line):
         for domain in line.strip().split(' '):
             try:
                 for record in SECURE_DB[domain]:
-                    sys.stdout.write(record + '\n')
+                    scanner_output(record)
             except KeyError as e:
-                sys.stderr.write('{} not found\n'.format(e))
+                error_output('{} not found'.format(e))
     except:
-        sys.stderr.write('malformed input line ({})\n'.format(line))
+        error_output('malformed input line ({})'.format(line))
 
 
 def search_not_specified(line):
@@ -77,6 +93,10 @@ if __name__ == '__main__':
                 nameserver = result_tokens[0]
                 domain = result_tokens[2]
                 INSECURE_DB.setdefault(nameserver, {}).setdefault(domain, []).append(line)
+            if result_type == 'unresolved-ip':
+                result_tokens = tokens.split()
+                nameserver = result_tokens[0]
+                INSECURE_UNRESOLVED_NS[nameserver] = line
             elif result_type in ('secure', 'secure-empty', 'unknown', 'untrustworthy'):
                 result_tokens = tokens.split()
                 domain = result_tokens[0]
@@ -84,16 +104,25 @@ if __name__ == '__main__':
 
     # what was loaded from configuration?
     for nameserver, domains in INSECURE_DB.iteritems():
-        sys.stderr.write(nameserver + '\n')
+        debug_output(nameserver)
         for domain, records in domains.iteritems():
-            sys.stderr.write('  ' + domain + '\n')
+            debug_output('  ' + domain)
             for record in records:
-                sys.stderr.write(2 * '  ' + record + '\n')
+                debug_output(2 * '  ' + record)
+
+    for nameserver, record in INSECURE_UNRESOLVED_NS.iteritems():
+        debug_output(nameserver)
+        debug_output('  ' + record)
 
     for domain, records in SECURE_DB.iteritems():
-        sys.stderr.write(domain + '\n')
+        debug_output(domain)
         for record in records:
-            sys.stderr.write(2 * '  ' + record + '\n')
+            debug_output(2 * '  ' + record)
+
+    # put unresolved-ip records to output before reading input
+    # need just one unresolved-ip result per nameserver to simulate cdnskey-scanner behaviour
+    for nameserver, record in INSECURE_UNRESOLVED_NS.iteritems():
+        scanner_output(record)
 
     scan_type = None
     for line in sys.stdin.readlines():
