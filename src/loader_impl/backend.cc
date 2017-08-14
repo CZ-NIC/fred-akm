@@ -14,6 +14,7 @@ void BackendLoader::load_domains(DomainScanTaskCollection& _collection) const
 {
     _collection.merge(akm_backend_.get_nameservers_with_insecure_automatically_managed_domain_candidates());
     _collection.merge(akm_backend_.get_nameservers_with_automatically_managed_domains());
+    _collection.merge(akm_backend_.get_nameservers_with_secure_automatically_managed_domain_candidates());
 
     log()->info("loaded tasks from backend ({} nameserver(s))", _collection.size());
 }
