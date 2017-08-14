@@ -6,3 +6,6 @@ ns1.bar.cz 3 d3.cz 0
 ns2.bar.cz 3 d3.cz 0
 ns1.bar.cz 4 d4.cz 0
 ns2.bar.cz 4 d4.cz 0
+ns.bad.cz 5 d50.cz 0
+ns.bad.cz 6 d51.cz 0
+ns.bad.cz 7 d52.cz 0

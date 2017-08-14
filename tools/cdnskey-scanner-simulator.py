@@ -30,11 +30,14 @@ from enum import Enum
 ScanType = Enum('ScanType', 'insecure secure')
 
 INSECURE_DB = {}
+INSECURE_UNRESOLVED_NS = {}
 SECURE_DB = {}
 
 def search_record_insecure(line):
     try:
         nameserver, domains = line.strip().split(' ', 1)
+        if nameserver in INSECURE_UNRESOLVED_NS:
+            return
         for domain in domains.split():
             try:
                 for record in INSECURE_DB[nameserver][domain]:
@@ -77,6 +80,10 @@ if __name__ == '__main__':
                 nameserver = result_tokens[0]
                 domain = result_tokens[2]
                 INSECURE_DB.setdefault(nameserver, {}).setdefault(domain, []).append(line)
+            if result_type == 'unresolved-ip':
+                result_tokens = tokens.split()
+                nameserver = result_tokens[0]
+                INSECURE_UNRESOLVED_NS[nameserver] = line
             elif result_type in ('secure', 'secure-empty', 'unknown', 'untrustworthy'):
                 result_tokens = tokens.split()
                 domain = result_tokens[0]
@@ -90,10 +97,19 @@ if __name__ == '__main__':
             for record in records:
                 sys.stderr.write(2 * '  ' + record + '\n')
 
+    for nameserver, record in INSECURE_UNRESOLVED_NS.iteritems():
+        sys.stderr.write(nameserver + '\n')
+        sys.stderr.write('  ' + record + '\n')
+
     for domain, records in SECURE_DB.iteritems():
         sys.stderr.write(domain + '\n')
         for record in records:
             sys.stderr.write(2 * '  ' + record + '\n')
+
+    # put unresolved-ip records to output before reading input
+    # need just one unresolved-ip result per nameserver to simulate cdnskey-scanner behaviour
+    for nameserver, record in INSECURE_UNRESOLVED_NS.iteritems():
+        sys.stdout.write(record + '\n')
 
     scan_type = None
     for line in sys.stdin.readlines():

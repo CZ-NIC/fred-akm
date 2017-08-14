@@ -10,6 +10,8 @@ insecure-empty ns2.bar.cz 2.2.2.3 d3.cz
 # unresolved nameserver nameserver_ip domain
 unresolved ns1.bar.cz 2.2.2.2 d4.cz
 unresolved ns2.bar.cz 2.2.2.3 d4.cz
+# unresolved-ip nameserver
+unresolved-ip ns.bad.cz
 # secure domain flags proto alg public_key
 secure d5.cz 257 3 9 d5_cz_key1
 secure d5.cz 257 3 9 d5_cz_key2
