@@ -98,7 +98,7 @@ namespace {
 
 DomainScanTaskCollection unwrap_NameserverDomains(
     Registry::AutomaticKeysetManagement::NameserverDomainsSeq_var c_all_nameserver_domains,
-    bool _has_keyset
+    Fred::Akm::ScanType _scan_type
 )
 {
     DomainScanTaskCollection collection;
@@ -110,7 +110,7 @@ DomainScanTaskCollection unwrap_NameserverDomains(
         for (unsigned long long j = 0; j < c_all_nameserver_domains[i].nameserver_domains.length(); ++j)
         {
             const auto& c_domain = c_all_nameserver_domains[i].nameserver_domains[j];
-            collection.insert_or_update(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), _has_keyset), nameserver);
+            collection.insert_or_update(Fred::Akm::Domain(c_domain.id, std::string(c_domain.fqdn), _scan_type), nameserver);
         }
     }
 
@@ -173,7 +173,7 @@ DomainScanTaskCollection Akm::get_nameservers_with_automatically_managed_domain_
         AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
         AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_automatically_managed_domain_candidates();
 
-        return unwrap_NameserverDomains(c_all_nameserver_domains, false);
+        return unwrap_NameserverDomains(c_all_nameserver_domains, ScanType::insecure);
     }
     catch (const CORBA::SystemException& e)
     {
@@ -194,7 +194,7 @@ DomainScanTaskCollection Akm::get_nameservers_with_automatically_managed_domains
         AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
         AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_automatically_managed_domains();
 
-        return unwrap_NameserverDomains(c_all_nameserver_domains, true);
+        return unwrap_NameserverDomains(c_all_nameserver_domains, ScanType::secure_auto);
     }
     catch (const CORBA::SystemException& e)
     {

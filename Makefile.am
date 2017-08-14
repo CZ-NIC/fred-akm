@@ -15,6 +15,9 @@ fred_akm_SOURCES = \
 	src/i_loader.hh \
 	src/i_loader_filter.hh \
 	src/type_instance_map.hh \
+	src/from_string.hh \
+	src/scan_type.hh \
+	src/scan_type.cc \
 	src/utils.hh \
 	src/utils.cc \
 	src/args.hh \

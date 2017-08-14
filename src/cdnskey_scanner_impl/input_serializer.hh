@@ -40,7 +40,7 @@ public:
             for (const auto task : _tasks.find_all(nameserver))
             {
                 const auto& domain = task->domain;
-                if (domain.has_keyset == false)
+                if (domain.scan_type == ScanType::insecure)
                 {
                     if (!insecure_marker_written)
                     {
@@ -70,7 +70,7 @@ public:
             for (const auto task : _tasks.find_all(nameserver))
             {
                 const auto& domain = task->domain;
-                if (domain.has_keyset == true && written_domains.count(domain.fqdn) == 0)
+                if (domain.scan_type == ScanType::secure_auto && written_domains.count(domain.fqdn) == 0)
                 {
                     if (!secure_marker_written)
                     {

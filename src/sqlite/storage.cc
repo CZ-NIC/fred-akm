@@ -1,4 +1,5 @@
 #include "src/sqlite/storage.hh"
+#include "src/sqlite/scan_type_conversion.hh"
 #include "src/log.hh"
 
 #include "src/domain_state.hh"
@@ -37,17 +38,26 @@ void create_schema_scan_iteration(sqlite3pp::database& _db)
 void create_schema_scan_queue(sqlite3pp::database& _db)
 {
     _db.execute(
+        "CREATE TABLE IF NOT EXISTS enum_scan_type ("
+        " id INTEGER PRIMARY KEY NOT NULL,"
+        " handle TEXT NOT NULL)"
+    );
+    _db.execute("CREATE UNIQUE INDEX enum_scan_type_uniq_idx ON enum_scan_type(handle)");
+    _db.execute("INSERT OR REPLACE INTO enum_scan_type (id, handle) VALUES (1, 'insecure')");
+    _db.execute("INSERT OR REPLACE INTO enum_scan_type (id, handle) VALUES (2, 'secure-auto')");
+
+    _db.execute(
         "CREATE TABLE IF NOT EXISTS scan_queue ("
             " id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
             " import_at TEXT NOT NULL DEFAULT (datetime('now')),"
             " nameserver TEXT NOT NULL,"
             " domain_id INTEGER NOT NULL CHECK(domain_id > 0),"
             " domain_name TEXT NOT NULL CHECK(COALESCE(domain_name, '') != ''),"
-            " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)))"
+            " scan_type_id INTEGER NOT NULL REFERENCES enum_scan_type(id))"
     );
-
     _db.execute("CREATE INDEX scan_queue_ns_domain_idx ON scan_queue(nameserver, domain_id, domain_name)");
     _db.execute("CREATE INDEX scan_queue_domain_name_idx ON scan_queue(domain_name)");
+    _db.execute("CREATE INDEX scan_queue_scan_type_id_idx ON scan_queue(scan_type_id)");
 }
 
 
@@ -60,7 +70,7 @@ void create_schema_scan_result(sqlite3pp::database& _db)
             " scan_at TEXT NOT NULL DEFAULT (datetime('now')),"
             " domain_id INTEGER CHECK(domain_id > 0),"
             " domain_name TEXT,"
-            " has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)),"
+            " scan_type_id INTEGER NOT NULL REFERENCES enum_scan_type(id),"
             " cdnskey_status TEXT NOT NULL CHECK(cdnskey_status IN ('insecure','insecure-empty','unresolved','secure','secure-empty','untrustworthy','unknown','unresolved-ip')),"
             " nameserver TEXT,"
             " nameserver_ip TEXT,"
@@ -70,6 +80,7 @@ void create_schema_scan_result(sqlite3pp::database& _db)
             " cdnskey_public_key TEXT,"
             " FOREIGN KEY (scan_iteration_id) REFERENCES scan_iteration(id))"
     );
+    _db.execute("CREATE INDEX scan_result_scan_type_id_idx ON scan_result(scan_type_id)");
 }
 
 
@@ -79,12 +90,13 @@ void create_schema_domain_status_notification(sqlite3pp::database& _db)
         "CREATE TABLE IF NOT EXISTS domain_status_notification ( "
             "domain_id INTEGER PRIMARY KEY NOT NULL CHECK(domain_id > 0), "
             "domain_name TEXT NOT NULL CHECK(COALESCE(domain_name, '') != ''), "
-            "has_keyset BOOLEAN NOT NULL CHECK(has_keyset IN (0, 1)), "
+            "scan_type_id INTEGER NOT NULL REFERENCES enum_scan_type(id),"
             "cdnskeys TEXT, "
             "domain_status INTEGER NOT NULL, "
             "notification_type INTEGER NOT NULL, "
             "last_at TEXT NOT NULL DEFAULT (datetime('now')))"
     );
+    _db.execute("CREATE INDEX domain_status_notification_scan_type_id_idx ON domain_status_notification(scan_type_id)");
 }
 
 
@@ -118,8 +130,8 @@ void append_to_scan_queue(sqlite3pp::database& _db, const DomainScanTaskCollecti
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
-        "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
-        " VALUES (?, ?, ?, ?)"
+        "INSERT INTO scan_queue (nameserver, domain_id, domain_name, scan_type_id)"
+        " VALUES (?, ?, ?, (SELECT id FROM enum_scan_type WHERE handle = ?))"
     );
 
     for (const auto& domain_scan_task : _data)
@@ -127,7 +139,7 @@ void append_to_scan_queue(sqlite3pp::database& _db, const DomainScanTaskCollecti
         const Domain& domain = domain_scan_task.domain;
         for (const auto& nameserver : domain_scan_task.nameservers)
         {
-            insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
+            insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << to_db_handle(domain.scan_type);
             insert.step();
             insert.reset();
         }
@@ -139,8 +151,8 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const DomainSc
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
-        "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
-        " VALUES (?, ?, ?, ?)"
+        "INSERT INTO scan_queue (nameserver, domain_id, domain_name, scan_type_id)"
+        " VALUES (:nameserver, :domain_id, :domain_name, (SELECT id FROM enum_scan_type WHERE handle = :scan_type))"
     );
     sqlite3pp::query check(_db);
     check.prepare(
@@ -157,7 +169,10 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const DomainSc
             check.bind(":domain_name", domain.fqdn, sqlite3pp::nocopy);
             if (check.begin() == check.end())
             {
-                insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
+                insert.bind(":nameserver", nameserver, sqlite3pp::nocopy);
+                insert.bind(":domain_id", static_cast<long long>(domain.id));
+                insert.bind(":domain_name", domain.fqdn, sqlite3pp::nocopy);
+                insert.bind(":scan_type", to_db_handle(domain.scan_type), sqlite3pp::nocopy);
                 insert.step();
                 insert.reset();
             }
@@ -180,7 +195,7 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
                "scan_result.domain_id, "
                "COALESCE(scan_result.domain_name, ''), "
-               "scan_result.has_keyset, "
+               "enum_scan_type.handle AS scan_type, "
                "COALESCE(scan_result.cdnskey_status, ''), "
                "COALESCE(scan_result.nameserver, ''), "
                "COALESCE(scan_result.nameserver_ip, ''), "
@@ -189,13 +204,14 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                "scan_result.cdnskey_alg, "
                "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
+          "JOIN enum_scan_type ON enum_scan_type.id = scan_result.scan_type_id "
           "LEFT JOIN domain_status_notification ON scan_result.domain_id = domain_status_notification.domain_id "
          "WHERE scan_result.scan_iteration_id IN "
              "(SELECT scan_iteration_id "
                 "FROM scan_result "
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND scan_result.has_keyset = 0 "
+           "AND enum_scan_type.handle = 'insecure' "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
            "%2%"
          "ORDER BY id DESC")
@@ -209,6 +225,7 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
     boost::optional<ScanResultRow> last_scan_result_row;
     for (auto row : query)
     {
+        std::string scan_type_handle;
         ScanResultRow scan_result_row;
         try {
             row.getter()
@@ -218,7 +235,7 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                     >> scan_result_row.scan_at_seconds
                     >> scan_result_row.domain_id
                     >> scan_result_row.domain_name
-                    >> scan_result_row.has_keyset
+                    >> scan_type_handle
                     >> scan_result_row.cdnskey.status
                     >> scan_result_row.nameserver
                     >> scan_result_row.nameserver_ip
@@ -226,6 +243,8 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                     >> scan_result_row.cdnskey.proto
                     >> scan_result_row.cdnskey.alg
                     >> scan_result_row.cdnskey.public_key;
+
+            scan_result_row.scan_type = from_db_handle<ScanType>(scan_type_handle);
             scan_result.emplace_back(scan_result_row);
             //log()->debug(to_string(scan_result_row));
         }
@@ -245,7 +264,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
         const int _seconds_back,
         const bool _align_to_start_of_day)
 {
-    const bool has_keyset = false;
+    const ScanType scan_type = ScanType::insecure;
     const NotificationType notification_type = NotificationType::akm_notification_candidate_ok;
     const NotificationType notification_type_fallen_angel = NotificationType::akm_notification_managed_ok;
 
@@ -257,7 +276,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
                "scan_result.domain_id, "
                "COALESCE(scan_result.domain_name, ''), "
-               "scan_result.has_keyset, "
+               "enum_scan_type.handle AS scan_type, "
                "COALESCE(scan_result.cdnskey_status, ''), "
                "COALESCE(scan_result.nameserver, ''), "
                "COALESCE(scan_result.nameserver_ip, ''), "
@@ -266,13 +285,14 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                "scan_result.cdnskey_alg, "
                "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
+          "JOIN enum_scan_type ON enum_scan_type.id = scan_result.scan_type_id "
           "JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
          "WHERE scan_iteration_id IN "
              "(SELECT scan_iteration_id "
                 "FROM scan_result "
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND scan_result.has_keyset = :has_keyset "
+           "AND enum_scan_type.handle = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type "
            "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
            "AND domain_status_notification.last_at < datetime('now', '%2% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
@@ -282,7 +302,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                    % (_seconds_back * -1)
                    % (_seconds_back * -1)).c_str());
 
-    query.bind(":has_keyset", has_keyset);
+    query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
     query.bind(":notification_type", to_db_handle(notification_type));
     query.bind(":notification_type_fallen_angel", to_db_handle(notification_type_fallen_angel));
 
@@ -293,6 +313,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
     boost::optional<ScanResultRow> last_scan_result_row;
     for (auto row : query)
     {
+        std::string scan_type_handle;
         ScanResultRow scan_result_row;
         try {
             row.getter()
@@ -302,7 +323,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                     >> scan_result_row.scan_at_seconds
                     >> scan_result_row.domain_id
                     >> scan_result_row.domain_name
-                    >> scan_result_row.has_keyset
+                    >> scan_type_handle
                     >> scan_result_row.cdnskey.status
                     >> scan_result_row.nameserver
                     >> scan_result_row.nameserver_ip
@@ -310,6 +331,8 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                     >> scan_result_row.cdnskey.proto
                     >> scan_result_row.cdnskey.alg
                     >> scan_result_row.cdnskey.public_key;
+
+            scan_result_row.scan_type = from_db_handle<ScanType>(scan_type_handle);
             scan_result.emplace_back(scan_result_row);
             //log()->debug(to_string(scan_result_row));
         }
@@ -330,6 +353,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
         const bool _align_to_start_of_day)
 {
     const bool has_keyset = true;
+    const ScanType scan_type = ScanType::secure_auto;
     const NotificationType notification_type = NotificationType::akm_notification_managed_ok;
 
     sqlite3pp::query query(_db);
@@ -340,7 +364,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
                "scan_result.domain_id, "
                "COALESCE(scan_result.domain_name, ''), "
-               "scan_result.has_keyset, "
+               "enum_scan_type.handle AS scan_type, "
                "COALESCE(scan_result.cdnskey_status, ''), "
                "COALESCE(scan_result.nameserver, ''), "
                "scan_result.cdnskey_flags, "
@@ -348,6 +372,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                "scan_result.cdnskey_alg, "
                "COALESCE(scan_result.cdnskey_public_key, '') "
           "FROM scan_result "
+          "JOIN enum_scan_type ON enum_scan_type.id = scan_result.scan_type_id "
           "LEFT JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
          "WHERE scan_iteration_id IN "
              "(SELECT scan_iteration_id "
@@ -355,6 +380,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
            "AND scan_result.has_keyset = :has_keyset "
+           "AND scan_result.scan_type = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type OR domain_status_notification.notification_type IS NULL) "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
          "ORDER BY id DESC";
@@ -362,7 +388,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
     query.prepare(boost::str(boost::format(sql)
                    % (_seconds_back * -1)).c_str());
 
-    query.bind(":has_keyset", has_keyset);
+    query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
     query.bind(":notification_type", to_db_handle(notification_type));
 
     // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
@@ -372,6 +398,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
     boost::optional<ScanResultRow> last_scan_result_row;
     for (auto row : query)
     {
+        std::string scan_type_handle;
         ScanResultRow scan_result_row;
         try {
             row.getter()
@@ -381,13 +408,15 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                     >> scan_result_row.scan_at_seconds
                     >> scan_result_row.domain_id
                     >> scan_result_row.domain_name
-                    >> scan_result_row.has_keyset
+                    >> scan_type_handle
                     >> scan_result_row.cdnskey.status
                     >> scan_result_row.nameserver
                     >> scan_result_row.cdnskey.flags
                     >> scan_result_row.cdnskey.proto
                     >> scan_result_row.cdnskey.alg
                     >> scan_result_row.cdnskey.public_key;
+
+            scan_result_row.scan_type = from_db_handle<ScanType>(scan_type_handle);
             scan_result.emplace_back(scan_result_row);
         }
         catch (...)
@@ -405,12 +434,13 @@ void set_notified_domain_status(sqlite3pp::database& _db, const NotifiedDomainSt
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
-        "INSERT OR REPLACE INTO domain_status_notification (domain_id, domain_name, has_keyset, cdnskeys, domain_status, notification_type, last_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)");
+        "INSERT OR REPLACE INTO domain_status_notification"
+            " (domain_id, domain_name, scan_type_id, cdnskeys, domain_status, notification_type, last_at)"
+            " VALUES (?, ?, (SELECT id FROM enum_scan_type WHERE handle = ?), ?, ?, ?, ?)");
     insert.binder()
             << static_cast<long long>(_notified_domain_status.domain.id)
             << _notified_domain_status.domain.fqdn
-            << _notified_domain_status.domain.has_keyset
+            << to_db_handle(_notified_domain_status.domain.scan_type)
             << _notified_domain_status.serialized_cdnskeys
             << to_db_handle(_notified_domain_status.domain_status)
             << to_db_handle(_notified_domain_status.notification_type)
@@ -424,13 +454,14 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
     query.prepare(
         "SELECT domain_id, "
                "domain_name, "
-               "has_keyset, "
+               "enum_scan_type.handle AS scan_type, "
                "cdnskeys, "
                "domain_status, "
                "notification_type, "
                "last_at, "
                "strftime('%s', datetime(last_at)) AS last_at_seconds "
           "FROM domain_status_notification "
+          "JOIN enum_scan_type ON enum_scan_type.id = domain_status_notification.scan_type_id "
          "WHERE domain_id = ?");
 
     query.bind(1, static_cast<long long>(_domain_id));
@@ -444,16 +475,18 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
         long long domain_id;
         int domain_status;
         int notification_type;
+        std::string scan_type_handle;
         row.getter()
             >> domain_id
             >> notified_domain_status.domain.fqdn
-            >> notified_domain_status.domain.has_keyset
+            >> scan_type_handle
             >> notified_domain_status.serialized_cdnskeys
             >> domain_status
             >> notification_type
             >> notified_domain_status.last_at
             >> notified_domain_status.last_at_seconds;
         notified_domain_status.domain.id = static_cast<unsigned long long>(domain_id);
+        notified_domain_status.domain.scan_type = from_db_handle<ScanType>(scan_type_handle);
         notified_domain_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus::DomainStatusType>(domain_status);
         notified_domain_status.notification_type = Conversion::Enums::from_db_handle<NotificationType>(notification_type);
         return notified_domain_status;
@@ -601,8 +634,10 @@ DomainScanTaskCollection SqliteStorage::get_scan_queue_tasks() const
     sqlite3pp::transaction xct(db);
     sqlite3pp::query tasks_query(
         db,
-        "SELECT nameserver, domain_id, domain_name, has_keyset"
-        " FROM scan_queue ORDER BY nameserver, domain_name ASC"
+        "SELECT nameserver, domain_id, domain_name, enum_scan_type.handle AS scan_type"
+        " FROM scan_queue"
+        " JOIN enum_scan_type ON enum_scan_type.id = scan_queue.scan_type_id"
+        " ORDER BY nameserver, domain_name ASC"
     );
 
     DomainScanTaskCollection scan_tasks;
@@ -611,8 +646,10 @@ DomainScanTaskCollection SqliteStorage::get_scan_queue_tasks() const
         std::string nameserver;
         Domain domain;
         long long domain_id;
-        row.getter() >> nameserver >> domain_id >> domain.fqdn >> domain.has_keyset;
+        std::string scan_type_handle;
+        row.getter() >> nameserver >> domain_id >> domain.fqdn >> scan_type_handle;
         domain.id = static_cast<unsigned long long>(domain_id);
+        domain.scan_type = from_db_handle<ScanType>(scan_type_handle);
 
         scan_tasks.insert_or_update(domain, nameserver);
     }
@@ -633,10 +670,13 @@ void SqliteStorage::save_scan_results(const ScanResults& _results, const DomainS
     sqlite3pp::command i_result(db);
     i_result.prepare(
         "INSERT INTO scan_result"
-        " (scan_iteration_id, domain_id, domain_name, has_keyset, cdnskey_status,"
+        " (scan_iteration_id, domain_id, domain_name, scan_type_id, cdnskey_status,"
         " nameserver, nameserver_ip, cdnskey_flags, cdnskey_proto, cdnskey_alg, cdnskey_public_key)"
-        " VALUES (:scan_iteration_id, :domain_id, :domain_name, :has_keyset, :cdnskey_status, :nameserver, :nameserver_ip,"
-        " :cdnskey_flags, :cdnskey_proto, :cdnskey_alg, :cdnskey_public_key)"
+        " VALUES"
+            " (:scan_iteration_id, :domain_id, :domain_name,"
+            " (SELECT id FROM enum_scan_type WHERE handle = :scan_type),"
+            " :cdnskey_status, :nameserver, :nameserver_ip,"
+            " :cdnskey_flags, :cdnskey_proto, :cdnskey_alg, :cdnskey_public_key)"
     );
 
     const NameserverToDomainScanTaskAdapter tasks_by_nameserver(_tasks);
@@ -675,7 +715,7 @@ void SqliteStorage::save_scan_results(const ScanResults& _results, const DomainS
         {
 
             i_result.bind(":scan_iteration_id", _iteration_id);
-            i_result.bind(":has_keyset", domain->has_keyset);
+            i_result.bind(":scan_type", to_db_handle(domain->scan_type), sqlite3pp::nocopy);
             i_result.bind(":cdnskey_status", result.cdnskey_status, sqlite3pp::nocopy);
             if (domain->id != 0)
             {

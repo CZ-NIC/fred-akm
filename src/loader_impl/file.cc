@@ -42,7 +42,7 @@ void FileLoader::load_domains(DomainScanTaskCollection& _collection) const
             const auto domain = Domain(
                 boost::lexical_cast<unsigned long long>(tokens[1]),
                 tokens[2],
-                boost::lexical_cast<bool>(tokens[3])
+                from_string<ScanType>(tokens[3])
             );
 
             collection.insert_or_update(domain, current_ns);
