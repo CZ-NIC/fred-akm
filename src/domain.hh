@@ -19,6 +19,8 @@
 #ifndef DOMAIN_HH_9DD89238F84C428B978A55200B409D98
 #define DOMAIN_HH_9DD89238F84C428B978A55200B409D98
 
+#include "src/scan_type.hh"
+
 #include <string>
 
 namespace Fred {
@@ -28,18 +30,18 @@ namespace Akm {
 struct Domain
 {
     Domain()
-        : id(), fqdn(), has_keyset()
+        : id(), fqdn(), scan_type()
     {
     }
 
-    Domain(unsigned long long _id, const std::string& _fqdn, bool _has_keyset)
-        : id(_id), fqdn(_fqdn), has_keyset(_has_keyset)
+    Domain(unsigned long long _id, const std::string& _fqdn, ScanType _scan_type)
+        : id(_id), fqdn(_fqdn), scan_type(_scan_type)
     {
     }
 
     unsigned long long id;
     std::string fqdn;
-    bool has_keyset;
+    ScanType scan_type;
 };
 
 bool operator==(const Domain& _lhs, const Domain& _rhs);
@@ -55,7 +57,7 @@ struct DomainHash
     {
         return std::hash<std::string>()(_domain.fqdn)
             ^ std::hash<unsigned long long>()(_domain.id)
-            ^ std::hash<bool>()(_domain.has_keyset);
+            ^ std::hash<std::string>()(to_string(_domain.scan_type));
     }
 };
 
@@ -66,7 +68,7 @@ struct DomainEqual
     {
         return _left.id == _right.id
             && _left.fqdn == _right.fqdn
-            && _left.has_keyset == _right.has_keyset;
+            && _left.scan_type == _right.scan_type;
     }
 };
 

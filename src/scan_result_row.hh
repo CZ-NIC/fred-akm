@@ -21,6 +21,7 @@
 
 #include "src/cdnskey.hh"
 #include "src/domain_state.hh"
+#include "src/scan_type.hh"
 
 #include <ostream>
 #include <string>
@@ -38,7 +39,7 @@ struct ScanResultRow
           scan_at_seconds(),
           domain_id(),
           domain_name(),
-          has_keyset(),
+          scan_type(),
           nameserver(),
           nameserver_ip(),
           cdnskey()
@@ -52,7 +53,7 @@ struct ScanResultRow
             int _scan_at_seconds,
             int _domain_id,
             const std::string& _domain_name,
-            bool _has_keyset,
+            ScanType _scan_type,
             const std::string& _nameserver,
             const std::string& _nameserver_ip,
             const Cdnskey& _cdnskey)
@@ -62,7 +63,7 @@ struct ScanResultRow
           scan_at_seconds(_scan_at_seconds),
           domain_id(_domain_id),
           domain_name(_domain_name),
-          has_keyset(_has_keyset),
+          scan_type(_scan_type),
           nameserver(_nameserver),
           nameserver_ip(_nameserver_ip),
           cdnskey(_cdnskey)
@@ -76,7 +77,7 @@ struct ScanResultRow
           scan_at_seconds(_scan_result_row.scan_at_seconds),
           domain_id(_scan_result_row.domain_id),
           domain_name(_scan_result_row.domain_name),
-          has_keyset(_scan_result_row.has_keyset),
+          scan_type(_scan_result_row.scan_type),
           nameserver(_scan_result_row.nameserver),
           nameserver_ip(_scan_result_row.nameserver_ip),
           cdnskey(_scan_result_row.cdnskey)
@@ -89,7 +90,7 @@ struct ScanResultRow
     int scan_at_seconds;
     long long domain_id;
     std::string domain_name;
-    bool has_keyset;
+    ScanType scan_type;
     std::string nameserver;
     std::string nameserver_ip;
     Cdnskey cdnskey;

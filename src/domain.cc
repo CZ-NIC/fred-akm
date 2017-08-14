@@ -45,7 +45,7 @@ std::string to_string(const Domain& _domain)
     return std::string("[") +
            quote(_domain.id) + delim +
            quote(_domain.fqdn) + delim +
-           quote(_domain.has_keyset) +
+           quote(to_string(_domain.scan_type)) +
            "]";
 }
 
@@ -54,7 +54,7 @@ bool operator==(const Domain& _lhs, const Domain& _rhs)
     return
         _lhs.id == _rhs.id &&
         _lhs.fqdn == _rhs.fqdn &&
-        _lhs.has_keyset == _rhs.has_keyset;
+        _lhs.scan_type == _rhs.scan_type;
 }
 
 

@@ -50,7 +50,7 @@ std::string to_string(const ScanResultRow& scan_result_row)
             quote(scan_result_row.scan_iteration_id) + delim +
             quote(scan_result_row.scan_at) + delim +
             quote(scan_result_row.scan_at_seconds) + delim +
-            quote(scan_result_row.has_keyset) + delim +
+            quote(to_string(scan_result_row.scan_type)) + delim +
             quote(scan_result_row.cdnskey.status) + delim +
             quote(scan_result_row.domain_id) + delim +
             quote(scan_result_row.domain_name) + delim +
@@ -177,7 +177,7 @@ bool is_valid(const ScanResultRow& _scan_result_row)
 
 bool is_insecure(const ScanResultRow& _scan_result_row)
 {
-    if (_scan_result_row.has_keyset == 0 &&
+    if (_scan_result_row.scan_type == ScanType::insecure &&
         (_scan_result_row.cdnskey.status == "insecure" ||
          _scan_result_row.cdnskey.status == "insecure-empty" ||
          _scan_result_row.cdnskey.status == "unresolved" ||
@@ -190,7 +190,7 @@ bool is_insecure(const ScanResultRow& _scan_result_row)
 
 bool is_insecure_with_data(const ScanResultRow& _scan_result_row)
 {
-    if (_scan_result_row.has_keyset == 0 &&
+    if (_scan_result_row.scan_type == ScanType::insecure &&
         (_scan_result_row.cdnskey.status == "insecure" ||
          _scan_result_row.cdnskey.status == "insecure-empty"))
     {
@@ -201,7 +201,7 @@ bool is_insecure_with_data(const ScanResultRow& _scan_result_row)
 
 bool is_secure(const ScanResultRow& _scan_result_row)
 {
-    if (_scan_result_row.has_keyset == 1 &&
+    if (_scan_result_row.scan_type == ScanType::secure_auto &&
         (_scan_result_row.cdnskey.status == "secure" ||
          _scan_result_row.cdnskey.status == "secure-empty" ||
          _scan_result_row.cdnskey.status == "untrustworthy" ||
@@ -214,7 +214,7 @@ bool is_secure(const ScanResultRow& _scan_result_row)
 
 bool is_secure_with_data(const ScanResultRow& _scan_result_row)
 {
-    if (_scan_result_row.has_keyset == 1 &&
+    if (_scan_result_row.scan_type == ScanType::secure_auto &&
         (_scan_result_row.cdnskey.status == "secure" ||
          _scan_result_row.cdnskey.status == "secure-empty"))
     {
@@ -233,7 +233,7 @@ bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const Dom
     {
         return false;
     }
-    if (_scan_result_row.has_keyset != _domain_state.domain.has_keyset)
+    if (_scan_result_row.scan_type != _domain_state.domain.scan_type)
     {
         return false;
     }

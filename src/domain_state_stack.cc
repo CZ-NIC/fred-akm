@@ -59,7 +59,7 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
             last_domain_state = DomainState(
                             r.scan_at,
                             r.scan_at_seconds,
-                            Domain(r.domain_id, r.domain_name, r.has_keyset),
+                            Domain(r.domain_id, r.domain_name, r.scan_type),
                             r.nameserver,
                             r.nameserver_ip,
                             r.cdnskey);
@@ -75,7 +75,7 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
                 last_domain_state = DomainState(
                         r.scan_at,
                         r.scan_at_seconds,
-                        Domain(r.domain_id, r.domain_name, r.has_keyset),
+                        Domain(r.domain_id, r.domain_name, r.scan_type),
                         r.nameserver,
                         r.nameserver_ip,
                         r.cdnskey);
