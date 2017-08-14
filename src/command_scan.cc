@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <functional>
 
-#include "src/nameserver_domains.hh"
 #include "src/scan_task.hh"
 #include "src/log.hh"
 #include "src/command_scan.hh"

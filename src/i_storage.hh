@@ -2,7 +2,6 @@
 #define I_STORAGE_HH_1B55415E3EB327260D5DA07399BAA5FB
 
 #include "src/i_scanner.hh"
-#include "src/nameserver_domains.hh"
 #include "src/scan_task.hh"
 #include "src/scan_result_row.hh"
 #include "src/notified_domain_status.hh"

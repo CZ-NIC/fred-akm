@@ -1,7 +1,6 @@
 #ifndef INPUT_SERIALIZER_HH_F4E5BB7519898756BDB5624932F3E8C6//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
 #define INPUT_SERIALIZER_HH_F4E5BB7519898756BDB5624932F3E8C6
 
-#include "src/nameserver_domains.hh"
 #include "src/scan_task.hh"
 
 #include <string>

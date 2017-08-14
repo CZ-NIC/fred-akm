@@ -2,7 +2,6 @@
 #define I_AKM_HH_EF26886C00D8568723C7861B5F04FF1F
 
 #include "src/keyset.hh"
-#include "src/nameserver_domains.hh"
 #include "src/scan_task.hh"
 #include "src/nsset.hh"
 
