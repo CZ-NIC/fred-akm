@@ -12,31 +12,53 @@
 namespace Fred {
 namespace Akm {
 
+
 struct AkmException : virtual std::exception
 {
 };
+
 
 struct ObjectNotFound : AkmException
 {
 };
 
 
-struct NssetInvalid : AkmException
+struct NssetIsInvalid : AkmException
 {
 };
 
 
-struct KeysetInvalid : AkmException
+struct KeysetIsInvalid : AkmException
 {
 };
 
 
-struct NssetDiffers : AkmException
+struct NssetIsEmpty : AkmException
 {
 };
 
 
-struct DomainHasOtherKeyset : AkmException
+struct NssetIsDifferent : AkmException
+{
+};
+
+
+struct DomainNssetIsEmpty : AkmException
+{
+};
+
+
+struct DomainHasKeyset : AkmException
+{
+};
+
+
+struct DomainDoesNotHaveKeyset : AkmException
+{
+};
+
+
+struct DomainAlreadyHasAutomaticallyManagedKeyset : AkmException
 {
 };
 
@@ -47,11 +69,6 @@ struct DomainStatePolicyError : AkmException
 
 
 struct KeysetStatePolicyError : AkmException
-{
-};
-
-
-struct SystemRegistratorNotFound : AkmException
 {
 };
 
@@ -69,13 +86,26 @@ struct InternalServerError : AkmException
 class IAkm
 {
 public:
-    virtual DomainScanTaskCollection get_nameservers_with_automatically_managed_domain_candidates() const = 0;
+    virtual DomainScanTaskCollection get_nameservers_with_insecure_automatically_managed_domain_candidates() const = 0;
 
     virtual DomainScanTaskCollection get_nameservers_with_automatically_managed_domains() const = 0;
 
-    virtual std::vector<std::string> get_nsset_notification_emails_by_domain_id(unsigned long long domain_id) const = 0;
+    virtual DomainScanTaskCollection get_nameservers_with_secure_automatically_managed_domain_candidates() const = 0;
 
-    virtual void update_domain_automatic_keyset(unsigned long long domain_id, Nsset current_nsset, Keyset new_keyset) const = 0;
+    virtual std::vector<std::string> get_email_addresses_by_domain_id(unsigned long long domain_id) const = 0;
+
+    virtual void turn_on_automatic_keyset_management_on_insecure_domain(
+        unsigned long long domain_id,
+        Nsset current_nsset,
+        Keyset new_keyset) const = 0;
+
+    virtual void turn_on_automatic_keyset_management_on_secure_domain(
+        unsigned long long domain_id,
+        Keyset new_keyset) const = 0;
+
+    virtual void update_automatically_managed_keyset_of_domain(
+        unsigned long long domain_id,
+        Keyset new_keyset) const = 0;
 };
 
 
