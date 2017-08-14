@@ -11,6 +11,7 @@
 #include <boost/format.hpp>
 #include <boost/format/free_funcs.hpp>
 #include <boost/optional.hpp>
+#include <boost/functional/hash.hpp>
 
 #include <iostream>
 #include <stdexcept>
@@ -113,17 +114,18 @@ void drop_schema(sqlite3pp::database& _db)
 namespace Impl {
 
 
-void append_to_scan_queue(sqlite3pp::database& _db, const NameserverDomainsCollection& _data)
+void append_to_scan_queue(sqlite3pp::database& _db, const DomainScanTaskCollection& _data)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
         "INSERT INTO scan_queue (nameserver, domain_id, domain_name, has_keyset)"
         " VALUES (?, ?, ?, ?)"
     );
-    for (const auto& kv : _data)
+
+    for (const auto& domain_scan_task : _data)
     {
-        const auto& nameserver = kv.second.nameserver;
-        for (const auto& domain : kv.second.nameserver_domains)
+        const Domain& domain = domain_scan_task.domain;
+        for (const auto& nameserver : domain_scan_task.nameservers)
         {
             insert.binder() << nameserver << static_cast<long long>(domain.id) << domain.fqdn << domain.has_keyset;
             insert.step();
@@ -133,7 +135,7 @@ void append_to_scan_queue(sqlite3pp::database& _db, const NameserverDomainsColle
 }
 
 
-void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const NameserverDomainsCollection& _data)
+void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const DomainScanTaskCollection& _data)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
@@ -145,10 +147,10 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const Nameserv
         "SELECT 1 FROM scan_queue WHERE"
         " nameserver = :nameserver AND domain_id = :domain_id AND domain_name = :domain_name"
     );
-    for (const auto& kv : _data)
+    for (const auto& domain_scan_task : _data)
     {
-        const auto& nameserver = kv.second.nameserver;
-        for (const auto& domain : kv.second.nameserver_domains)
+        const Domain& domain = domain_scan_task.domain;
+        for (const auto& nameserver : domain_scan_task.nameservers)
         {
             check.bind(":nameserver", nameserver, sqlite3pp::nocopy);
             check.bind(":domain_id", static_cast<long long>(domain.id));
@@ -163,6 +165,7 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const Nameserv
         }
     }
 }
+
 
 ScanResultRows get_insecure_scan_result_rows_for_notify(
         sqlite3pp::database& _db, const int _seconds_back,
@@ -486,7 +489,7 @@ SqliteStorage::SqliteStorage(const std::string& _filename)
 }
 
 
-void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _data) const
+void SqliteStorage::append_to_scan_queue(const DomainScanTaskCollection& _data) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -496,7 +499,7 @@ void SqliteStorage::append_to_scan_queue(const NameserverDomainsCollection& _dat
 }
 
 
-void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const
+void SqliteStorage::append_to_scan_queue_if_not_exists(const DomainScanTaskCollection& _data) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -504,6 +507,7 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const NameserverDomainsCo
     Impl::append_to_scan_queue_if_not_exists(db, _data);
     xct.commit();
 }
+
 
 ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(
         const int _seconds_back,
@@ -591,7 +595,7 @@ void SqliteStorage::prune_scan_queue() const
 }
 
 
-NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
+DomainScanTaskCollection SqliteStorage::get_scan_queue_tasks() const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -601,7 +605,7 @@ NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
         " FROM scan_queue ORDER BY nameserver, domain_name ASC"
     );
 
-    NameserverDomainsCollection tasks;
+    DomainScanTaskCollection scan_tasks;
     for (auto row : tasks_query)
     {
         std::string nameserver;
@@ -610,16 +614,14 @@ NameserverDomainsCollection SqliteStorage::get_scan_queue_tasks() const
         row.getter() >> nameserver >> domain_id >> domain.fqdn >> domain.has_keyset;
         domain.id = static_cast<unsigned long long>(domain_id);
 
-        auto& record = tasks[nameserver];
-        record.nameserver = nameserver;
-        record.nameserver_domains.emplace_back(domain);
+        scan_tasks.insert_or_update(domain, nameserver);
     }
 
-    return tasks;
+    return scan_tasks;
 }
 
 
-void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, long long _iteration_id) const
+void SqliteStorage::save_scan_results(const ScanResults& _results, const DomainScanTaskCollection& _tasks, long long _iteration_id) const
 {
     if (_iteration_id <= 0)
     {
@@ -637,114 +639,118 @@ void SqliteStorage::save_scan_results(const std::vector<ScanResult>& _results, l
         " :cdnskey_flags, :cdnskey_proto, :cdnskey_alg, :cdnskey_public_key)"
     );
 
+    const NameserverToDomainScanTaskAdapter tasks_by_nameserver(_tasks);
+
     for (const auto& result : _results)
     {
-        long long task_domain_id = 0;
-        bool task_has_keyset = false;
+        std::vector<const Domain*> result_for_domains;
 
-        sqlite3pp::query s_queue(db,
-            "SELECT id, domain_id, has_keyset FROM scan_queue WHERE domain_name = :domain_name"
-            " AND nameserver = coalesce(:nameserver, nameserver) ORDER BY domain_id DESC"
-        );
-        s_queue.bind(":domain_name", result.domain_name, sqlite3pp::nocopy);
         if (result.nameserver)
         {
-            s_queue.bind(":nameserver", *result.nameserver, sqlite3pp::nocopy);
+            if (result.domain_name.length())
+            {
+                const auto& domain = _tasks.find(result.domain_name).domain;
+                result_for_domains.push_back(&domain);
+            }
+            else
+            {
+                for (const auto task : tasks_by_nameserver.find_all(*result.nameserver))
+                {
+                    const auto& domain = task->domain;
+                    result_for_domains.push_back(&domain);
+                }
+            }
         }
         else
         {
-            s_queue.bind(":nameserver", sqlite3pp::null_type());
-        }
-
-        for (auto row : s_queue)
-        {
-            long long scan_queue_id = 0;
-            long long domain_id = 0;
-            row.getter() >> scan_queue_id >> domain_id >> task_has_keyset;
-            if (task_domain_id == 0)
+            if (result.domain_name.length())
             {
-                task_domain_id = domain_id;
-            }
-            /* extra check if there are different domain_id in queue (need to handle?) */
-            else if (task_domain_id != domain_id)
-            {
-                log()->error(
-                    "different domain id found for same domain name in scan queue ({} != {}",
-                    task_domain_id, domain_id
-                );
-                break;
+                const auto& domain = _tasks.find(result.domain_name).domain;
+                // XXX: for all nameservers?
+                result_for_domains.push_back(&domain);
             }
         }
 
-        i_result.bind(":scan_iteration_id", _iteration_id);
-        i_result.bind(":has_keyset", task_has_keyset);
-        i_result.bind(":cdnskey_status", result.cdnskey_status, sqlite3pp::nocopy);
-        if (task_domain_id != 0)
+        for (const auto& domain : result_for_domains)
         {
-            i_result.bind(":domain_id", task_domain_id);
+
+            i_result.bind(":scan_iteration_id", _iteration_id);
+            i_result.bind(":has_keyset", domain->has_keyset);
+            i_result.bind(":cdnskey_status", result.cdnskey_status, sqlite3pp::nocopy);
+            if (domain->id != 0)
+            {
+                i_result.bind(":domain_id", static_cast<long long>(domain->id));
+            }
+            else
+            {
+                i_result.bind(":domain_id", sqlite3pp::null_type());
+            }
+            if (result.domain_name.length())
+            {
+                i_result.bind(":domain_name", result.domain_name, sqlite3pp::nocopy);
+            }
+            else
+            {
+                if (domain->fqdn.length())
+                {
+                    i_result.bind(":domain_name", domain->fqdn, sqlite3pp::nocopy);
+                }
+                else
+                {
+                    i_result.bind(":domain_name", sqlite3pp::null_type());
+                }
+            }
+            if (result.nameserver)
+            {
+                i_result.bind(":nameserver", *(result.nameserver), sqlite3pp::nocopy);
+            }
+            else
+            {
+                i_result.bind(":nameserver", sqlite3pp::null_type());
+            }
+            if (result.nameserver_ip)
+            {
+                i_result.bind(":nameserver_ip", *(result.nameserver_ip), sqlite3pp::nocopy);
+            }
+            else
+            {
+                i_result.bind(":nameserver_ip", sqlite3pp::null_type());
+            }
+            if (result.cdnskey_flags)
+            {
+                i_result.bind(":cdnskey_flags", *result.cdnskey_flags);
+            }
+            else
+            {
+                i_result.bind(":cdnskey_flags", sqlite3pp::null_type());
+            }
+            if (result.cdnskey_proto)
+            {
+                i_result.bind(":cdnskey_proto", *result.cdnskey_proto);
+            }
+            else
+            {
+                i_result.bind(":cdnskey_proto", sqlite3pp::null_type());
+            }
+            if (result.cdnskey_alg)
+            {
+                i_result.bind(":cdnskey_alg", *result.cdnskey_alg);
+            }
+            else
+            {
+                i_result.bind(":cdnskey_alg", sqlite3pp::null_type());
+            }
+            if (result.cdnskey_public_key)
+            {
+                i_result.bind(":cdnskey_public_key", *result.cdnskey_public_key, sqlite3pp::nocopy);
+            }
+            else
+            {
+                i_result.bind(":cdnskey_public_key", sqlite3pp::null_type());
+            }
+            i_result.step();
+            i_result.reset();
         }
-        else
-        {
-            i_result.bind(":domain_id", sqlite3pp::null_type());
-        }
-        if (result.domain_name.length())
-        {
-            i_result.bind(":domain_name", result.domain_name, sqlite3pp::nocopy);
-        }
-        else
-        {
-            i_result.bind(":domain_name", sqlite3pp::null_type());
-        }
-        if (result.nameserver)
-        {
-            i_result.bind(":nameserver", *(result.nameserver), sqlite3pp::nocopy);
-        }
-        else
-        {
-            i_result.bind(":nameserver", sqlite3pp::null_type());
-        }
-        if (result.nameserver_ip)
-        {
-            i_result.bind(":nameserver_ip", *(result.nameserver_ip), sqlite3pp::nocopy);
-        }
-        else
-        {
-            i_result.bind(":nameserver_ip", sqlite3pp::null_type());
-        }
-        if (result.cdnskey_flags)
-        {
-            i_result.bind(":cdnskey_flags", *result.cdnskey_flags);
-        }
-        else
-        {
-            i_result.bind(":cdnskey_flags", sqlite3pp::null_type());
-        }
-        if (result.cdnskey_proto)
-        {
-            i_result.bind(":cdnskey_proto", *result.cdnskey_proto);
-        }
-        else
-        {
-            i_result.bind(":cdnskey_proto", sqlite3pp::null_type());
-        }
-        if (result.cdnskey_alg)
-        {
-            i_result.bind(":cdnskey_alg", *result.cdnskey_alg);
-        }
-        else
-        {
-            i_result.bind(":cdnskey_alg", sqlite3pp::null_type());
-        }
-        if (result.cdnskey_public_key)
-        {
-            i_result.bind(":cdnskey_public_key", *result.cdnskey_public_key, sqlite3pp::nocopy);
-        }
-        else
-        {
-            i_result.bind(":cdnskey_public_key", sqlite3pp::null_type());
-        }
-        i_result.step();
-        i_result.reset();
     }
     xct.commit();
 }

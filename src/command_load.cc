@@ -14,12 +14,12 @@ void command_load(
     std::unique_ptr<ILoaderOutputFilter> _filter,
     int _flags)
 {
-    NameserverDomainsCollection data;
-    _loader.load_domains(data);
+    DomainScanTaskCollection scan_tasks;
+    _loader.load_domains(scan_tasks);
 
     if (_filter)
     {
-        _filter->apply(data);
+        _filter->apply(scan_tasks);
         _flags |= LoadFlags::WIPE_QUEUE;
         log()->info("forcing scan queue wipe on filtered input");
     }
@@ -30,11 +30,11 @@ void command_load(
     }
     if (_flags & LoadFlags::ALLOW_DUPS)
     {
-        _storage.append_to_scan_queue(data);
+        _storage.append_to_scan_queue(scan_tasks);
     }
     else
     {
-        _storage.append_to_scan_queue_if_not_exists(data);
+        _storage.append_to_scan_queue_if_not_exists(scan_tasks);
     }
     if (_flags & LoadFlags::PRUNE)
     {

@@ -33,26 +33,19 @@ DomainWhitelistFilter::DomainWhitelistFilter(std::string _filename)
 }
 
 
-void DomainWhitelistFilter::apply(NameserverDomainsCollection& _collection) const
+void DomainWhitelistFilter::apply(DomainScanTaskCollection& _collection) const
 {
-    NameserverDomainsCollection filtered;
-    for (const auto kv : _collection)
+    DomainScanTaskCollection filtered_collection;
+    for (const auto& domain_scan_task : _collection)
     {
-        const auto& ns = kv.second.nameserver;
-        const auto& ns_domains = kv.second.nameserver_domains;
-        for (const auto& domain : ns_domains)
+        if (std::find(domain_whitelist_.begin(), domain_whitelist_.end(), domain_scan_task.domain.fqdn) != domain_whitelist_.end())
         {
-            if (std::find(domain_whitelist_.begin(), domain_whitelist_.end(), domain.fqdn) != domain_whitelist_.end())
-            {
-                auto& added = filtered[ns];
-                added.nameserver = ns;
-                added.nameserver_domains.push_back(domain);
-                log()->debug("add domain {} to filtered result", domain.fqdn);
-            }
+            filtered_collection.insert_or_replace(domain_scan_task);
+            log()->debug("add domain {} to filtered result", domain_scan_task.domain.fqdn);
         }
     }
-    log()->info("tasks filtered ({} nameserver(s))", filtered.size());
-    _collection.swap(filtered);
+    log()->info("tasks filtered ({} domain(s))", filtered_collection.size());
+    _collection.swap(filtered_collection);
 }
 
 

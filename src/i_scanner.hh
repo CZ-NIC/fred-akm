@@ -5,7 +5,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 
 namespace Fred {
 namespace Akm {
@@ -42,7 +42,7 @@ class IScanner
 public:
     typedef std::function<void(const std::vector<ScanResult>& _results)> OnResultsCallback;
 
-    virtual void scan(const NameserverDomainsCollection& _tasks, OnResultsCallback _callback) const = 0;
+    virtual void scan(const DomainScanTaskCollection& _tasks, OnResultsCallback _callback) const = 0;
 };
 
 

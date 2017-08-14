@@ -15,7 +15,7 @@ class DomainWhitelistFilter : public ILoaderOutputFilter
 public:
     DomainWhitelistFilter(std::string _filename);
 
-    void apply(NameserverDomainsCollection& _collection) const;
+    void apply(DomainScanTaskCollection& _collection) const;
 
 private:
     std::unordered_set<std::string> domain_whitelist_;

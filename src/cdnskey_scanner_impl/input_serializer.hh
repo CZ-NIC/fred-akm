@@ -1,7 +1,7 @@
 #ifndef INPUT_SERIALIZER_HH_F4E5BB7519898756BDB5624932F3E8C6//date "+%s" | md5sum | cut -f1 -d" " | tr "[a-f]" "[A-F]" | tr -d "\n"
 #define INPUT_SERIALIZER_HH_F4E5BB7519898756BDB5624932F3E8C6
 
-#include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 
 #include <string>
 #include <unordered_set>
@@ -30,15 +30,16 @@ public:
     }
 
     template<class Writter>
-    void serialize_insecure(const NameserverDomainsCollection& _tasks, Writter& _writter)
+    void serialize_insecure(const NameserverToDomainScanTaskAdapter& _tasks, Writter& _writter)
     {
         bool insecure_marker_written = false;
-        for (const auto kv : _tasks)
+        for (const auto& kv : _tasks)
         {
-            const auto& task = kv.second;
+            const auto& nameserver = kv.first;
             std::string line;
-            for (const auto& domain : task.nameserver_domains)
+            for (const auto task : _tasks.find_all(nameserver))
             {
+                const auto& domain = task->domain;
                 if (domain.has_keyset == false)
                 {
                     if (!insecure_marker_written)
@@ -52,22 +53,23 @@ public:
             }
             if (insecure_marker_written && !line.empty())
             {
-                _writter(task.nameserver + line + "\n");
+                _writter(nameserver + line + "\n");
             }
         }
     }
 
     template<class Writter>
-    void serialize_secure(const NameserverDomainsCollection& _tasks, Writter& _writter)
+    void serialize_secure(const NameserverToDomainScanTaskAdapter& _tasks, Writter& _writter)
     {
         std::unordered_set<std::string> written_domains;
         bool secure_marker_written = false;
         const auto DELIMITER = " ";
-        for (const auto kv : _tasks)
+        for (const auto& kv : _tasks)
         {
-            const auto& task = kv.second;
-            for (const auto& domain : task.nameserver_domains)
+            const auto& nameserver = kv.first;
+            for (const auto task : _tasks.find_all(nameserver))
             {
+                const auto& domain = task->domain;
                 if (domain.has_keyset == true && written_domains.count(domain.fqdn) == 0)
                 {
                     if (!secure_marker_written)
@@ -89,6 +91,20 @@ public:
         {
             _writter("\n");
         }
+    }
+
+    template<class Writter>
+    void serialize(const NameserverToDomainScanTaskAdapter& _tasks, Writter& _writter)
+    {
+        serialize_insecure(_tasks, _writter);
+        serialize_secure(_tasks, _writter);
+    }
+
+    template<class Writter>
+    void serialize(const DomainScanTaskCollection& _tasks, Writter& _writter)
+    {
+        NameserverToDomainScanTaskAdapter tasks_by_nameserver(_tasks);
+        serialize(tasks_by_nameserver, _writter);
     }
 };
 

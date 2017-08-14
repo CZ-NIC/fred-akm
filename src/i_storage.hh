@@ -2,7 +2,7 @@
 #define I_STORAGE_HH_1B55415E3EB327260D5DA07399BAA5FB
 
 #include "src/i_scanner.hh"
-#include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 #include "src/scan_result_row.hh"
 #include "src/notified_domain_status.hh"
 
@@ -18,17 +18,17 @@ namespace Akm {
 class IStorage
 {
 public:
-    virtual void append_to_scan_queue(const NameserverDomainsCollection& _data) const = 0;
+    virtual void append_to_scan_queue(const DomainScanTaskCollection& _data) const = 0;
 
-    virtual void append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const = 0;
+    virtual void append_to_scan_queue_if_not_exists(const DomainScanTaskCollection& _data) const = 0;
 
     virtual void wipe_scan_queue() const = 0;
 
     virtual void prune_scan_queue() const = 0;
 
-    virtual NameserverDomainsCollection get_scan_queue_tasks() const = 0;
+    virtual DomainScanTaskCollection get_scan_queue_tasks() const = 0;
 
-    virtual void save_scan_results(const std::vector<ScanResult>& _results, long long _iteration_id) const = 0;
+    virtual void save_scan_results(const ScanResults& _results, const DomainScanTaskCollection& _tasks, long long _iteration_id) const = 0;
 
     virtual long long start_new_scan_iteration() const = 0;
 

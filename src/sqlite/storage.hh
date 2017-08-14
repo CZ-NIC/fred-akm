@@ -15,17 +15,17 @@ class SqliteStorage : public IStorage
 public:
     SqliteStorage(const std::string& _filename);
 
-    void append_to_scan_queue(const NameserverDomainsCollection& _data) const;
+    void append_to_scan_queue(const DomainScanTaskCollection& _data) const;
 
-    void append_to_scan_queue_if_not_exists(const NameserverDomainsCollection& _data) const;
+    void append_to_scan_queue_if_not_exists(const DomainScanTaskCollection& _data) const;
 
     void wipe_scan_queue() const;
 
     void prune_scan_queue() const;
 
-    NameserverDomainsCollection get_scan_queue_tasks() const;
+    DomainScanTaskCollection get_scan_queue_tasks() const;
 
-    void save_scan_results(const std::vector<ScanResult>& _results, long long _iteration_id) const;
+    void save_scan_results(const ScanResults& _results, const DomainScanTaskCollection& _tasks, long long _iteration_id) const;
 
     long long start_new_scan_iteration() const;
 

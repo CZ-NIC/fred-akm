@@ -2,7 +2,7 @@
 #define I_AKM_HH_EF26886C00D8568723C7861B5F04FF1F
 
 #include "src/keyset.hh"
-#include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 #include "src/nsset.hh"
 
 #include <exception>
@@ -69,9 +69,9 @@ struct InternalServerError : AkmException
 class IAkm
 {
 public:
-    virtual NameserverDomainsCollection get_nameservers_with_automatically_managed_domain_candidates() const = 0;
+    virtual DomainScanTaskCollection get_nameservers_with_automatically_managed_domain_candidates() const = 0;
 
-    virtual NameserverDomainsCollection get_nameservers_with_automatically_managed_domains() const = 0;
+    virtual DomainScanTaskCollection get_nameservers_with_automatically_managed_domains() const = 0;
 
     virtual std::vector<std::string> get_nsset_notification_emails_by_domain_id(unsigned long long domain_id) const = 0;
 

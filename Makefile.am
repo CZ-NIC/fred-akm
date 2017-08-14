@@ -41,6 +41,8 @@ fred_akm_SOURCES = \
 	src/loader_impl/backend.cc \
 	src/loader_impl/domain_whitelist_filter.hh \
 	src/loader_impl/domain_whitelist_filter.cc \
+	src/scan_task.hh \
+	src/scan_task.cc \
 	src/command_load.hh \
 	src/command_load.cc \
 	src/command_scan.hh \

@@ -20,7 +20,6 @@
 #define DOMAIN_STATE_STACK_HH_13945F8D78934FF6A7CFE9B6A6CBAC06
 
 #include "src/cdnskey.hh"
-#include "src/nameserver_domains.hh"
 #include "src/scan_iteration.hh"
 #include "src/scan_result_row.hh"
 #include "src/domain_state.hh"

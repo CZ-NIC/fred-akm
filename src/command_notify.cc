@@ -24,7 +24,6 @@
 #include "src/domain_status_stack.hh"
 #include "src/enum_conversions.hh"
 #include "src/log.hh"
-#include "src/nameserver_domains.hh"
 #include "src/notification_type.hh"
 #include "src/notification.hh"
 #include "src/notified_domain_status.hh"

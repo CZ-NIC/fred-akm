@@ -1,33 +1,12 @@
 #include <algorithm>
 #include <functional>
 
-#include "src/nameserver_domains.hh"
+#include "src/scan_task.hh"
 #include "src/log.hh"
 #include "src/command_scan.hh"
 
 namespace Fred {
 namespace Akm {
-
-struct DomainHash
-{
-    size_t operator()(const Domain& _domain) const
-    {
-        return std::hash<std::string>()(_domain.fqdn)
-            ^ std::hash<unsigned long long>()(_domain.id)
-            ^ std::hash<bool>()(_domain.has_keyset);
-    }
-};
-
-
-struct DomainEqual
-{
-    bool operator()(const Domain& _left, const Domain& _right) const
-    {
-        return _left.id == _right.id
-            && _left.fqdn == _right.fqdn
-            && _left.has_keyset == _right.has_keyset;
-    }
-};
 
 
 void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
@@ -36,20 +15,20 @@ void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
     auto removed_tasks = _storage.prune_finished_scan_queue();
     log()->info("removed {} finished tasks from scan queue", removed_tasks);
 
-    auto tasks = _storage.get_scan_queue_tasks();
-    log()->info("loaded scan queue ({} namserver(s))", tasks.size());
-    if (tasks.size() == 0)
+    auto scan_tasks = _storage.get_scan_queue_tasks();
+    log()->info("loaded scan queue ({} namserver(s))", scan_tasks.size());
+    if (scan_tasks.size() == 0)
     {
         log()->info("queue empty...");
         return;
     }
 
-    auto run_batch_scan = [&_storage, &_scanner](const NameserverDomainsCollection& _batch)
+    auto run_batch_scan = [&_storage, &_scanner](const DomainScanTaskCollection& _scan_batch)
     {
         long iteration_id = _storage.start_new_scan_iteration();
         log()->info("started new scan iteration (id={})", iteration_id);
-        _scanner.scan(_batch, [&_storage, &iteration_id](const std::vector<ScanResult>& _results)
-            { _storage.save_scan_results(_results, iteration_id); }
+        _scanner.scan(_scan_batch, [&_storage, &_scan_batch, &iteration_id](const std::vector<ScanResult>& _results)
+            { _storage.save_scan_results(_results, _scan_batch, iteration_id); }
         );
         _storage.end_scan_iteration(iteration_id);
         log()->info("scan iteration finished (id={})", iteration_id);
@@ -57,56 +36,30 @@ void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
 
     if (!batch_mode)
     {
-        run_batch_scan(tasks);
+        run_batch_scan(scan_tasks);
     }
     else
     {
-        typedef std::vector<std::string> Nameservers;
-        typedef std::unordered_map<Domain, Nameservers, DomainHash, DomainEqual> DomainNameserversMap;
-        DomainNameserversMap inverse_tasks;
-        for (const auto kv : tasks)
-        {
-            const auto& ns = kv.second.nameserver;
-            const auto& ns_domains = kv.second.nameserver_domains;
-            for (const auto& domain : ns_domains)
-            {
-                inverse_tasks[domain].push_back(ns);
-            }
-        }
-
         const auto BATCH_NS_MIN = 2000UL;
         const auto BATCH_DS_MIN = 10000UL;
-        auto batch_ns_max = std::max(tasks.size() / 10, BATCH_NS_MIN);
-        auto batch_ds_max = std::max(inverse_tasks.size() / 50, BATCH_DS_MIN);
-        log()->debug("ns total:{} batch-max:{}", tasks.size(), batch_ns_max);
-        log()->debug("ds total:{} batch-max:{}", inverse_tasks.size(), batch_ds_max);
+        auto batch_ns_max = std::max(scan_tasks.nameserver_size() / 10, BATCH_NS_MIN);
+        auto batch_ds_max = std::max(scan_tasks.domain_size() / 50, BATCH_DS_MIN);
+        log()->debug("ns total:{} batch-max:{}", scan_tasks.nameserver_size(), batch_ns_max);
+        log()->debug("ds total:{} batch-max:{}", scan_tasks.domain_size(), batch_ds_max);
 
         auto batch_domains_count = 0;
 
-        NameserverDomainsCollection batch;
-        auto it = inverse_tasks.begin();
-        while (it != inverse_tasks.end())
+        DomainScanTaskCollection scan_batch;
+        for (const auto& task : scan_tasks)
         {
-            const auto& domain = it->first;
-            const auto& nameservers = it->second;
-            for (const auto& ns : nameservers)
+            scan_batch.insert_or_update(task);
+            if (scan_batch.nameserver_size() >= batch_ns_max || scan_batch.domain_size() >= batch_ds_max)
             {
-                batch[ns].nameserver = ns;
-                batch[ns].nameserver_domains.push_back(domain);
-                batch_domains_count += 1;
+                run_batch_scan(scan_batch);
+                scan_batch.clear();
             }
-            if (batch.size() >= batch_ns_max || batch_domains_count >= batch_ds_max)
-            {
-                {
-                    run_batch_scan(batch);
-                }
-
-                batch_domains_count = 0;
-                batch.clear();
-            }
-            ++it;
         }
-        run_batch_scan(batch);
+        run_batch_scan(scan_batch);
     }
 
     log()->debug("all done");
