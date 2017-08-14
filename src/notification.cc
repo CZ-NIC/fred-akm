@@ -61,7 +61,7 @@ void notify_and_save_domain_status(
         const bool real_contact_emails = !(_dry_run && _fake_contact_emails);
         if (real_contact_emails)
         {
-            tech_contacts = _akm_backend.get_nsset_notification_emails_by_domain_id(_notified_domain_status.domain.id);
+            tech_contacts = _akm_backend.get_email_addresses_by_domain_id(_notified_domain_status.domain.id);
         }
 
         std::string emails = boost::algorithm::join(tech_contacts, ", ");
