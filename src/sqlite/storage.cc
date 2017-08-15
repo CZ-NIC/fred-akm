@@ -352,7 +352,6 @@ ScanResultRows get_secure_scan_result_rows_for_update(
         const int _seconds_back,
         const bool _align_to_start_of_day)
 {
-    const bool has_keyset = true;
     const ScanType scan_type = ScanType::secure_auto;
     const NotificationType notification_type = NotificationType::akm_notification_managed_ok;
 
@@ -379,7 +378,6 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                 "FROM scan_result "
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND scan_result.has_keyset = :has_keyset "
            "AND scan_result.scan_type = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type OR domain_status_notification.notification_type IS NULL) "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
