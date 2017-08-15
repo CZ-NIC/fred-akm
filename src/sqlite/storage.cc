@@ -214,7 +214,7 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
            "AND enum_scan_type.handle = 'insecure' "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
            "%2%"
-         "ORDER BY id DESC")
+         "ORDER BY scan_result.id DESC")
                    % (_seconds_back * -1)
                    % (_notify_from_last_iteration_only ? "AND scan_iteration_id = (SELECT MAX(scan_iteration_id) FROM scan_result) " : "")).c_str());
 
@@ -296,7 +296,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
            "AND (domain_status_notification.notification_type = :notification_type "
            "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
            "AND domain_status_notification.last_at < datetime('now', '%2% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
-         "ORDER BY id DESC";
+         "ORDER BY scan_result.id DESC";
 
     query.prepare(boost::str(boost::format(sql)
                    % (_seconds_back * -1)
@@ -383,7 +383,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
            "AND scan_result.scan_type = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type OR domain_status_notification.notification_type IS NULL) "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
-         "ORDER BY id DESC";
+         "ORDER BY scan_result.id DESC";
 
     query.prepare(boost::str(boost::format(sql)
                    % (_seconds_back * -1)).c_str());
