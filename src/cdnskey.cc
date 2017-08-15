@@ -25,6 +25,7 @@
 
 #include <string>
 #include <vector>
+#include <numeric>
 
 namespace Fred {
 namespace Akm {
