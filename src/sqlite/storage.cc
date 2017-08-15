@@ -378,7 +378,7 @@ ScanResultRows get_secure_scan_result_rows_for_update(
                 "FROM scan_result "
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND scan_result.scan_type = :scan_type "
+           "AND enum_scan_type.handle = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type OR domain_status_notification.notification_type IS NULL) "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
          "ORDER BY scan_result.id DESC";
