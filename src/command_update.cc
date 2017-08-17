@@ -127,7 +127,6 @@ struct StatsSecure {
 
 
 StatsInsecure stats_insecure;
-StatsSecure stats_secure;
 
 void command_update_insecure(
         const IStorage& _storage,
@@ -245,7 +244,7 @@ void command_update_insecure(
             {
                 if (!_dry_run)
                 {
-                    _akm_backend.turn_on_automatic_keyset_management_on_insecure_domain(domain.id, current_nsset, new_keyset); // FIXME (?)
+                    _akm_backend.turn_on_automatic_keyset_management_on_insecure_domain(domain.id, current_nsset, new_keyset);
                     log()->debug("UPDATE OK for insecure domain {}", domain.fqdn);
                     stats_insecure.domains_updated_ok++;
                     domain_newest_status.status = DomainStatus::DomainStatusType::akm_status_managed_ok;
@@ -289,6 +288,8 @@ void command_update_insecure(
 
     }
 }
+
+StatsSecure stats_secure;
 
 void command_update_secure(
         const IStorage& _storage,
@@ -400,7 +401,7 @@ void command_update_secure(
                                     cdnskey.second.public_key));
                 }
 
-                _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset); // FIXME (?)
+                _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
                 log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
                 stats_secure.domains_updated_ok++;
                 NotifiedDomainStatus new_notified_domain_status =
@@ -429,14 +430,14 @@ void command_update_secure(
         //catch (const Fred::Akm::ObjectNotFound& e)
         //{
         //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-        //    stats_insecure.domains_updated_ko_object_not_found++;
+        //    stats_secure.domains_updated_ko_object_not_found++;
         //    log()->debug(e.what());
         //    continue;
         //}
         catch (const Fred::Akm::AkmException& e)
         {
             log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-            stats_insecure.domains_updated_ko++;
+            stats_secure.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }

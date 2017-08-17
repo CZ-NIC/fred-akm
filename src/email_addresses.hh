@@ -16,8 +16,8 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TECH_CONTACTS_HH_0435275C9A9F4CAEB4B0C9D763B702FE
-#define TECH_CONTACTS_HH_0435275C9A9F4CAEB4B0C9D763B702FE
+#ifndef EMAIL_ADDRESSES_HH_0435275C9A9F4CAEB4B0C9D763B702FE
+#define EMAIL_ADDRESSES_HH_0435275C9A9F4CAEB4B0C9D763B702FE
 
 #include <string>
 #include <vector>
@@ -25,7 +25,7 @@
 namespace Fred {
 namespace Akm {
 
-typedef std::vector<std::string> TechContacts;
+typedef std::vector<std::string> EmailAddresses;
 
 } // namespace Fred::Akm
 } // namespace Fred
