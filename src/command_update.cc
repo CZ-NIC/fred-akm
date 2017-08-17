@@ -50,7 +50,7 @@ namespace Akm {
 
 namespace {
 
-struct StatsInsecure {
+struct StatsInsecureCandidates {
     int domains_loaded;
     int domains_checked;
     int domains_ok_for_update;
@@ -62,7 +62,7 @@ struct StatsInsecure {
     int domains_ko_for_update_not_all_historic_statuses_coherent;
     int domains_unknown_no_data;
 
-    StatsInsecure()
+    StatsInsecureCandidates()
         : domains_loaded(),
           domains_checked(),
           domains_ok_for_update(),
@@ -75,7 +75,7 @@ struct StatsInsecure {
 
     void print()
     {
-        log()->info("============= UPDATE STATS INSECURE =============");
+        log()->info("======== UPDATE STATS INSECURE CANDIDATES ========");
         log()->info("domains loaded:                          {:>8}", domains_loaded);
         log()->info("domains checked:                         {:>8}", domains_checked);
         log()->info(" ├─ ok_for_update:                       {:>8}", domains_ok_for_update);
@@ -94,7 +94,51 @@ struct StatsInsecure {
     }
 };
 
-struct StatsSecure {
+struct StatsSecureCandidates {
+    int domains_loaded;
+    int domains_checked;
+    int domains_ok_for_update;
+    int domains_updated_ok;
+    int domains_updated_ko;
+    int domains_ko_for_update_run_notify_first;
+    int domains_ko_for_update_no_recent_scan;
+    int domains_ko_for_update_not_all_historic_statuses_ok;
+    int domains_ko_for_update_not_all_historic_statuses_coherent;
+    int domains_unknown_no_data;
+
+    StatsSecureCandidates()
+        : domains_loaded(),
+          domains_checked(),
+          domains_ok_for_update(),
+          domains_ko_for_update_run_notify_first(),
+          domains_ko_for_update_not_all_historic_statuses_ok(),
+          domains_ko_for_update_not_all_historic_statuses_coherent(),
+          domains_unknown_no_data()
+    {
+    }
+
+    void print()
+    {
+        log()->info("========= UPDATE STATS SECURE CANDIDATES =========");
+        log()->info("domains loaded:                          {:>8}", domains_loaded);
+        log()->info("domains checked:                         {:>8}", domains_checked);
+        log()->info(" ├─ ok_for_update:                       {:>8}", domains_ok_for_update);
+        log()->info(" │   ├─ updated:                         {:>8}", domains_updated_ok);
+        log()->info(" │   └─ failed:                          {:>8}", domains_updated_ko);
+        log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_run_notify_first +
+                                                                      domains_ko_for_update_no_recent_scan +
+                                                                      domains_ko_for_update_not_all_historic_statuses_ok +
+                                                                      domains_ko_for_update_not_all_historic_statuses_coherent);
+        log()->info("     ├─ run notify first:                {:>8}", domains_ko_for_update_run_notify_first);
+        log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
+        log()->info("     ├─ not all hist. statuses ok:       {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
+        log()->info("     ├─ not all hist. statuses coherent: {:>8}", domains_ko_for_update_not_all_historic_statuses_coherent);
+        log()->info("     └─ no data:                         {:>8}", domains_unknown_no_data);
+        log()->info("==================================================");
+    }
+};
+
+struct StatsMembers {
     int domains_loaded;
     int domains_checked;
     int domains_ok_for_update;
@@ -103,7 +147,7 @@ struct StatsSecure {
     int domains_ko_for_update_same_keys;
     int domains_ko_for_update_no_keys;
 
-    StatsSecure()
+    StatsMembers()
         : domains_loaded(),
           domains_checked(),
           domains_ok_for_update()
@@ -112,7 +156,7 @@ struct StatsSecure {
 
     void print()
     {
-        log()->info("============== UPDATE STATS SECURE ==============");
+        log()->info("============== UPDATE STATS MEMBERS =============");
         log()->info("domains loaded:                          {:>8}", domains_loaded);
         log()->info("domains checked:                         {:>8}", domains_checked);
         log()->info(" ├─ ok_for_update:                       {:>8}", domains_ok_for_update);
@@ -126,9 +170,9 @@ struct StatsSecure {
 };
 
 
-StatsInsecure stats_insecure;
+StatsInsecureCandidates stats_insecure_akm_candidates;
 
-void command_update_insecure(
+void command_update_insecure_akm_candidates(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         unsigned long _maximal_time_between_scan_results,
@@ -137,10 +181,11 @@ void command_update_insecure(
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
-    log()->debug(";== [command_update (insecure)] =========================================================================");
+    log()->debug(";== [command_update (insecure akm candidates)] ===========================================================");
 
     auto scan_result_rows =
-            _storage.get_insecure_scan_result_rows_for_update(
+            _storage.get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
+                    ScanType::insecure,
                     _minimal_scan_result_sequence_length_to_update,
                     _align_to_start_of_day);
 
@@ -158,7 +203,7 @@ void command_update_insecure(
 
     for (const auto& scan_iteration : domain_state_stack.scan_iterations)
     {
-        stats_insecure.domains_loaded += scan_iteration.second.size();
+        stats_insecure_akm_candidates.domains_loaded += scan_iteration.second.size();
     }
 
     const int current_unix_time = _storage.get_current_unix_time();
@@ -168,7 +213,7 @@ void command_update_insecure(
     print(domain_status_stack);
 
     log()->debug(";== command_update (insecure) data ready");
-    stats_insecure.domains_loaded = domain_status_stack.domains_with_statuses.size();
+    stats_insecure_akm_candidates.domains_loaded = domain_status_stack.domains_with_statuses.size();
     for (const auto& domain_with_statuses : domain_status_stack.domains_with_statuses)
     {
         const auto& domain = domain_with_statuses.first;
@@ -177,10 +222,10 @@ void command_update_insecure(
         if (domain_statuses.empty())
         {
             log()->error("no statuses for domain {}", domain.fqdn);
-            stats_insecure.domains_unknown_no_data++;
+            stats_insecure_akm_candidates.domains_unknown_no_data++;
             continue;
         }
-        stats_insecure.domains_checked++;
+        stats_insecure_akm_candidates.domains_checked++;
 
         log()->debug("domain {}", to_string(domain));
 
@@ -195,7 +240,7 @@ void command_update_insecure(
         if (notified_domain_status && (domain_newest_status.status != notified_domain_status->domain_status))
         {
             log()->error("WILL NOT UPDATE domain {}: newest domain state != notified domain state; run notify first???", domain.fqdn);
-            stats_insecure.domains_ko_for_update_run_notify_first++;
+            stats_insecure_akm_candidates.domains_ko_for_update_run_notify_first++;
             continue;
         }
 
@@ -206,21 +251,21 @@ void command_update_insecure(
             {
                 log()->debug("non-acceptable (not ok) domain status found {}", to_string(domain_status));
                 domain_ok = false;
-                stats_insecure.domains_ko_for_update_not_all_historic_statuses_ok++;
+                stats_insecure_akm_candidates.domains_ko_for_update_not_all_historic_statuses_ok++;
                 break;
             }
             if (!are_coherent(*domain_status.domain_state, *notified_domain_status))
             {
                 log()->debug("non-acceptable (not coherent with the current one) domain status found {}", to_string(domain_status));
                 domain_ok = false;
-                stats_insecure.domains_ko_for_update_not_all_historic_statuses_coherent++;
+                stats_insecure_akm_candidates.domains_ko_for_update_not_all_historic_statuses_coherent++;
                 break;
             }
         }
 
         if (domain_ok)
         {
-            stats_insecure.domains_ok_for_update++;
+            stats_insecure_akm_candidates.domains_ok_for_update++;
             log()->debug("will update domain {}", domain.fqdn);
 
             Nsset current_nsset(domain_newest_status.nameservers);
@@ -246,7 +291,7 @@ void command_update_insecure(
                 {
                     _akm_backend.turn_on_automatic_keyset_management_on_insecure_domain(domain.id, current_nsset, new_keyset);
                     log()->debug("UPDATE OK for insecure domain {}", domain.fqdn);
-                    stats_insecure.domains_updated_ok++;
+                    stats_insecure_akm_candidates.domains_updated_ok++;
                     domain_newest_status.status = DomainStatus::DomainStatusType::akm_status_managed_ok;
                     NotifiedDomainStatus new_notified_domain_status =
                             NotifiedDomainStatus(
@@ -260,28 +305,28 @@ void command_update_insecure(
             //catch (const Fred::Akm::ObjectNotFound& e)
             //{
             //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-            //    stats_insecure.domains_updated_ko_object_not_found++;
+            //    stats_insecure_akm_candidates.domains_updated_ko_object_not_found++;
             //    log()->debug(e.what());
             //    continue;
             //}
             catch (const Fred::Akm::AkmException& e)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-                stats_insecure.domains_updated_ko++;
+                stats_insecure_akm_candidates.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch (const std::runtime_error& e)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-                stats_insecure.domains_updated_ko++;
+                stats_insecure_akm_candidates.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch (...)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-                stats_insecure.domains_updated_ko++;
+                stats_insecure_akm_candidates.domains_updated_ko++;
                 throw;
             }
         }
@@ -289,9 +334,24 @@ void command_update_insecure(
     }
 }
 
-StatsSecure stats_secure;
+StatsSecureCandidates stats_secure_akm_candidates;
 
-void command_update_secure(
+void command_update_secure_akm_candidates(
+        const IStorage& _storage,
+        const IAkm& _akm_backend,
+        unsigned long _maximal_time_between_scan_results,
+        const bool _align_to_start_of_day,
+        const bool _dry_run,
+        const bool _fake_contact_emails)
+{
+    log()->debug(";== [command_update (secure akm candidates)] ===========================================================");
+
+    log()->error("NOT YET IMPLEMENTED"); // TODO
+}
+
+StatsMembers stats_akm_members;
+
+void command_update_akm_members(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
@@ -303,7 +363,7 @@ void command_update_secure(
     log()->debug(";== [command_update (secure)] =========================================================================");
 
     auto scan_result_rows =
-            _storage.get_secure_scan_result_rows_for_update(
+            _storage.get_scan_result_rows_of_akm_members_for_update(
                     _minimal_scan_result_sequence_length_to_update,
                     _align_to_start_of_day);
 
@@ -321,7 +381,7 @@ void command_update_secure(
 
     for (const auto& scan_iteration : domain_state_stack.scan_iterations)
     {
-        stats_secure.domains_loaded += scan_iteration.second.size();
+        stats_akm_members.domains_loaded += scan_iteration.second.size();
     }
 
     //DomainStatusStack domain_status_stack(domain_state_stack, _minimal_scan_result_sequence_length_to_update);
@@ -352,7 +412,7 @@ void command_update_secure(
         const auto& domain = domain_with_status.first;
         const auto& domain_statuses = domain_with_status.second;
 
-        stats_secure.domains_checked++;
+        stats_akm_members.domains_checked++;
 
         log()->debug("domain {}", to_string(domain));
 
@@ -364,7 +424,7 @@ void command_update_secure(
         if(domain_newest_status.domain_state->cdnskeys.empty())
         {
             log()->debug("will not update domain {}, no cdnskeys", domain.fqdn);
-            stats_secure.domains_ko_for_update_no_keys++;
+            stats_akm_members.domains_ko_for_update_no_keys++;
             continue;
         }
 
@@ -379,12 +439,12 @@ void command_update_secure(
         if (notified_domain_status && (notified_domain_status->serialized_cdnskeys == serialized_new_keys)) // FIXME not set
         {
             log()->debug("will not update domain {} with {}, keys are identical", domain.fqdn, serialized_new_keys);
-            stats_secure.domains_ko_for_update_same_keys++;
+            stats_akm_members.domains_ko_for_update_same_keys++;
             continue;
         }
 
         log()->info("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.fqdn, serialized_new_keys);
-        stats_secure.domains_ok_for_update++;
+        stats_akm_members.domains_ok_for_update++;
 
         try
         {
@@ -403,7 +463,7 @@ void command_update_secure(
 
                 _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
                 log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
-                stats_secure.domains_updated_ok++;
+                stats_akm_members.domains_updated_ok++;
                 NotifiedDomainStatus new_notified_domain_status =
                         NotifiedDomainStatus(
                                 domain,
@@ -430,28 +490,28 @@ void command_update_secure(
         //catch (const Fred::Akm::ObjectNotFound& e)
         //{
         //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-        //    stats_secure.domains_updated_ko_object_not_found++;
+        //    stats_akm_members.domains_updated_ko_object_not_found++;
         //    log()->debug(e.what());
         //    continue;
         //}
         catch (const Fred::Akm::AkmException& e)
         {
             log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-            stats_secure.domains_updated_ko++;
+            stats_akm_members.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (const std::runtime_error& e)
         {
             log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-            stats_secure.domains_updated_ko++;
+            stats_akm_members.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (...)
         {
             log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-            stats_secure.domains_updated_ko++;
+            stats_akm_members.domains_updated_ko++;
             throw;
         }
 
@@ -470,7 +530,7 @@ void command_update(
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
-    command_update_insecure(
+    command_update_insecure_akm_candidates(
             _storage,
             _akm_backend,
             _maximal_time_between_scan_results,
@@ -479,7 +539,15 @@ void command_update(
             _dry_run,
             _fake_contact_emails);
 
-    command_update_secure(
+    command_update_secure_akm_candidates(
+            _storage,
+            _akm_backend,
+            _maximal_time_between_scan_results,
+            _align_to_start_of_day,
+            _dry_run,
+            _fake_contact_emails);
+
+    command_update_akm_members(
             _storage,
             _akm_backend,
             _mailer_backend,
@@ -488,8 +556,8 @@ void command_update(
             _dry_run,
             _fake_contact_emails);
 
-    stats_insecure.print();
-    stats_secure.print();
+    stats_insecure_akm_candidates.print();
+    stats_akm_members.print();
 }
 
 } //namespace Fred::Akm

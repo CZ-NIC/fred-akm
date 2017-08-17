@@ -5,6 +5,7 @@
 #include "src/scan_task.hh"
 #include "src/scan_result_row.hh"
 #include "src/notified_domain_status.hh"
+#include "src/scan_type.hh"
 
 #include <boost/optional.hpp>
 
@@ -38,16 +39,18 @@ public:
 
     virtual long long prune_finished_scan_queue() const = 0;
 
-    virtual ScanResultRows get_insecure_scan_result_rows_for_notify(
+    virtual ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
+            ScanType _scan_type,
             int _seconds_back,
             bool _notify_from_last_iteration_only,
             bool _align_to_start_of_day = false) const = 0;
 
-    virtual ScanResultRows get_insecure_scan_result_rows_for_update(
+    virtual ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
+            ScanType _scan_type,
             int _seconds_back,
             bool _align_to_start_of_day = false) const = 0;
 
-    virtual ScanResultRows get_secure_scan_result_rows_for_update(
+    virtual ScanResultRows get_scan_result_rows_of_akm_members_for_update(
             int _seconds_back,
             bool _align_to_start_of_day = false) const = 0;
 

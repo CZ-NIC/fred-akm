@@ -2,6 +2,7 @@
 #define STORAGE_HH_F547FDFC7F6B4D918928C606B9E4A87E
 
 #include "src/i_storage.hh"
+#include "src/scan_type.hh"
 
 #include "3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h"
 
@@ -35,16 +36,18 @@ public:
 
     long long prune_finished_scan_queue() const;
 
-    ScanResultRows get_insecure_scan_result_rows_for_notify(
+    ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
+            ScanType _scan_type,
             int _seconds_back,
             bool _notify_from_last_iteration_only,
             bool _align_to_start_of_day = false) const;
 
-    ScanResultRows get_insecure_scan_result_rows_for_update(
+    ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
+            ScanType _scan_type,
             int _seconds_back,
             bool _align_to_start_of_day = false) const;
 
-    ScanResultRows get_secure_scan_result_rows_for_update(
+    ScanResultRows get_scan_result_rows_of_akm_members_for_update(
             int _seconds_back,
             bool _align_to_start_of_day = false) const;
 

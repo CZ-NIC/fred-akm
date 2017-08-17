@@ -183,8 +183,10 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const DomainSc
 }
 
 
-ScanResultRows get_insecure_scan_result_rows_for_notify(
-        sqlite3pp::database& _db, const int _seconds_back,
+ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
+        sqlite3pp::database& _db,
+        const ScanType _scan_type,
+        const int _seconds_back,
         const bool _notify_from_last_iteration_only,
         const bool _align_to_start_of_day)
 {
@@ -212,12 +214,14 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
                 "FROM scan_result "
                "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
-           "AND enum_scan_type.handle = 'insecure' "
+           "AND enum_scan_type.handle = :scan_type "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
            "%2%"
          "ORDER BY scan_result.id DESC")
                    % (_seconds_back * -1)
                    % (_notify_from_last_iteration_only ? "AND scan_iteration_id = (SELECT MAX(scan_iteration_id) FROM scan_result) " : "")).c_str());
+
+    query.bind(":scan_type", to_db_handle(_scan_type), sqlite3pp::nocopy);
 
     // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
 
@@ -260,12 +264,12 @@ ScanResultRows get_insecure_scan_result_rows_for_notify(
     return scan_result;
 }
 
-ScanResultRows get_insecure_scan_result_rows_for_update(
+ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
         sqlite3pp::database& _db,
+        const ScanType _scan_type,
         const int _seconds_back,
         const bool _align_to_start_of_day)
 {
-    const ScanType scan_type = ScanType::insecure;
     const NotificationType notification_type = NotificationType::akm_notification_candidate_ok;
     const NotificationType notification_type_fallen_angel = NotificationType::akm_notification_managed_ok;
 
@@ -295,7 +299,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
            "AND enum_scan_type.handle = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type "
-           "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
+               "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
            "AND domain_status_notification.last_at < datetime('now', '%2% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
          "ORDER BY scan_result.id DESC";
 
@@ -303,7 +307,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
                    % (_seconds_back * -1)
                    % (_seconds_back * -1)).c_str());
 
-    query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
+    query.bind(":scan_type", to_db_handle(_scan_type), sqlite3pp::nocopy);
     query.bind(":notification_type", to_db_handle(notification_type));
     query.bind(":notification_type_fallen_angel", to_db_handle(notification_type_fallen_angel));
 
@@ -348,7 +352,7 @@ ScanResultRows get_insecure_scan_result_rows_for_update(
     return scan_result;
 }
 
-ScanResultRows get_secure_scan_result_rows_for_update(
+ScanResultRows get_scan_result_rows_of_akm_members_for_update(
         sqlite3pp::database& _db,
         const int _seconds_back,
         const bool _align_to_start_of_day)
@@ -540,39 +544,43 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const DomainScanTaskColle
 }
 
 
-ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(
+ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_candidates_for_akm_notify(
+        const ScanType _scan_type,
         const int _seconds_back,
         const bool _notify_from_last_iteration_only,
         const bool _align_to_start_of_day) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    return Impl::get_insecure_scan_result_rows_for_notify(
+    return Impl::get_scan_result_rows_of_akm_candidates_for_akm_notify(
             db,
+            _scan_type,
             _seconds_back,
             _notify_from_last_iteration_only,
             _align_to_start_of_day);
 }
 
-ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_update(
+ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
+        const ScanType _scan_type,
         const int _seconds_back,
         const bool _align_to_start_of_day) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    return Impl::get_insecure_scan_result_rows_for_update(
+    return Impl::get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
             db,
+            _scan_type,
             _seconds_back,
             _align_to_start_of_day);
 }
 
-ScanResultRows SqliteStorage::get_secure_scan_result_rows_for_update(
+ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_members_for_update(
         const int _seconds_back,
         const bool _align_to_start_of_day) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    return Impl::get_secure_scan_result_rows_for_update(
+    return Impl::get_scan_result_rows_of_akm_members_for_update(
             db,
             _seconds_back,
             _align_to_start_of_day);

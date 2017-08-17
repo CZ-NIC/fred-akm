@@ -227,9 +227,7 @@ boost::optional<DomainStatus> lookup_intermediate_domain_status_to_notify(
     return boost::optional<DomainStatus>();
 }
 
-} // namespace Fred::Akm::{anonymous}
-
-void command_notify(
+void command_notify_insecure_akm_candidates(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
@@ -241,7 +239,8 @@ void command_notify(
         const bool _fake_contact_emails)
 {
     auto scan_result_rows =
-            _storage.get_insecure_scan_result_rows_for_notify(
+            _storage.get_scan_result_rows_of_akm_candidates_for_akm_notify(
+                    ScanType::insecure,
                     _minimal_scan_result_sequence_length_to_notify,
                     _notify_from_last_scan_iteration_only);
 
@@ -368,6 +367,64 @@ void command_notify(
     }
 
     stats.print();
+}
+
+void command_notify_secure_akm_candidates(
+        const IStorage& _storage,
+        const IAkm& _akm_backend,
+        const IMailer& _mailer_backend,
+        const unsigned long _maximal_time_between_scan_results,
+        const bool  _notify_from_last_scan_iteration_only,
+        const bool _align_to_start_of_day,
+        const bool _dry_run,
+        const bool _fake_contact_emails)
+{
+    const auto minimal_scan_result_sequence_length_to_notify = _maximal_time_between_scan_results;
+
+    auto scan_result_rows =
+            _storage.get_scan_result_rows_of_akm_candidates_for_akm_notify(
+                    ScanType::secure_noauto,
+                    minimal_scan_result_sequence_length_to_notify,
+                    _notify_from_last_scan_iteration_only);
+
+    log()->debug("got from database {} scan result(s)", scan_result_rows.size());
+
+    log()->error("NOT YET IMPLEMENTED"); // TODO
+}
+
+} // namespace Fred::Akm::{anonymous}
+
+void command_notify(
+        const IStorage& _storage,
+        const IAkm& _akm_backend,
+        const IMailer& _mailer_backend,
+        const unsigned long _maximal_time_between_scan_results,
+        const unsigned long _minimal_scan_result_sequence_length_to_notify,
+        const bool  _notify_from_last_scan_iteration_only,
+        const bool _align_to_start_of_day,
+        const bool _dry_run,
+        const bool _fake_contact_emails)
+{
+    command_notify_insecure_akm_candidates(
+            _storage,
+            _akm_backend,
+            _mailer_backend,
+            _maximal_time_between_scan_results,
+            _minimal_scan_result_sequence_length_to_notify,
+            _notify_from_last_scan_iteration_only,
+            _align_to_start_of_day,
+            _dry_run,
+            _fake_contact_emails);
+
+    command_notify_secure_akm_candidates(
+            _storage,
+            _akm_backend,
+            _mailer_backend,
+            _maximal_time_between_scan_results,
+            _notify_from_last_scan_iteration_only,
+            _align_to_start_of_day,
+            _dry_run,
+            _fake_contact_emails);
 }
 
 
