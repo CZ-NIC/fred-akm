@@ -103,11 +103,12 @@ void create_schema_domain_status_notification(sqlite3pp::database& _db)
 
 void create_schema(sqlite3pp::database& _db)
 {
-
+    sqlite3pp::transaction xct(_db);
     create_schema_scan_iteration(_db);
     create_schema_scan_queue(_db);
     create_schema_scan_result(_db);
     create_schema_domain_status_notification(_db);
+    xct.commit();
 }
 
 
@@ -115,7 +116,6 @@ void drop_schema(sqlite3pp::database& _db)
 {
     _db.execute("DROP TABLE IF EXISTS scan_queue");
     _db.execute("DROP TABLE IF EXISTS scan_result");
-    _db.execute("DROP TABLE IF EXISTS scan");
     _db.execute("DROP TABLE IF EXISTS scan_iteration");
     _db.execute("DROP TABLE IF EXISTS domain_status_notification");
 }
@@ -511,6 +511,7 @@ sqlite3pp::database SqliteStorage::get_db() const
     sqlite3pp::database db(filename_.c_str());
     db.enable_foreign_keys(true);
     db.enable_triggers(true);
+    create_schema(db);
     return db;
 }
 
@@ -525,7 +526,6 @@ void SqliteStorage::append_to_scan_queue(const DomainScanTaskCollection& _data) 
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     Impl::append_to_scan_queue(db, _data);
     xct.commit();
 }
@@ -535,7 +535,6 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const DomainScanTaskColle
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     Impl::append_to_scan_queue_if_not_exists(db, _data);
     xct.commit();
 }
@@ -546,9 +545,8 @@ ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_notify(
         const bool _notify_from_last_iteration_only,
         const bool _align_to_start_of_day) const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     return Impl::get_insecure_scan_result_rows_for_notify(
             db,
             _seconds_back,
@@ -560,9 +558,8 @@ ScanResultRows SqliteStorage::get_insecure_scan_result_rows_for_update(
         const int _seconds_back,
         const bool _align_to_start_of_day) const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     return Impl::get_insecure_scan_result_rows_for_update(
             db,
             _seconds_back,
@@ -573,9 +570,8 @@ ScanResultRows SqliteStorage::get_secure_scan_result_rows_for_update(
         const int _seconds_back,
         const bool _align_to_start_of_day) const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     return Impl::get_secure_scan_result_rows_for_update(
             db,
             _seconds_back,
@@ -584,9 +580,8 @@ ScanResultRows SqliteStorage::get_secure_scan_result_rows_for_update(
 
 void SqliteStorage::set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     Impl::set_notified_domain_status(db, _notified_domain_status);
     xct.commit();
 }
@@ -594,9 +589,8 @@ void SqliteStorage::set_notified_domain_status(const NotifiedDomainStatus& _noti
 boost::optional<NotifiedDomainStatus> SqliteStorage::get_last_notified_domain_status(
         const unsigned long long _domain_id) const
 {
-    sqlite3pp::database db(filename_.c_str());
+    auto db = get_db();
     sqlite3pp::transaction xct(db);
-    create_schema(db);
     return Impl::get_last_notified_domain_status(
             db,
             _domain_id);
