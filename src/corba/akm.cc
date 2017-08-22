@@ -17,34 +17,66 @@ struct ObjectNotFound : AkmException
 };
 
 
-struct NssetInvalid : AkmException
+struct NssetIsInvalid : AkmException
 {
     const char* what() const throw () {
-        return "nsset invalid ";
+        return "nsset is invalid ";
     }
 };
 
 
-struct KeysetInvalid : AkmException
+struct KeysetIsInvalid : AkmException
 {
     const char* what() const throw () {
-        return "keyset invalid ";
+        return "keyset is invalid ";
     }
 };
 
 
-struct NssetDiffers : AkmException
+struct NssetIsEmpty : AkmException
 {
     const char* what() const throw () {
-        return "nsset differs ";
+        return "nsset is empty";
     }
 };
 
 
-struct DomainHasOtherKeyset : AkmException
+struct NssetIsDifferent : AkmException
 {
     const char* what() const throw () {
-        return "domain hasother keyset ";
+        return "nsset is different";
+    }
+};
+
+
+struct DomainNssetIsEmpty : AkmException
+{
+    const char* what() const throw () {
+        return "domain nsset is empty";
+    }
+};
+
+
+struct DomainHasKeyset : AkmException
+{
+    const char* what() const throw () {
+        return "domain has keyset";
+    }
+};
+
+
+struct DomainDoesNotHaveKeyset : AkmException
+{
+    const char* what() const throw () {
+        return "domain does not have keyset";
+    }
+};
+
+
+struct DomainAlreadyHasAutomaticallyManagedKeyset : AkmException
+{
+    const char* what() const throw () {
+        return "domain already has automatically managed keyset";
     }
 };
 
@@ -61,14 +93,6 @@ struct KeysetStatePolicyError : AkmException
 {
     const char* what() const throw () {
         return "keyset state policy error ";
-    }
-};
-
-
-struct SystemRegistratorNotFound : AkmException
-{
-    const char* what() const throw () {
-        return "system registrator not found ";
     }
 };
 
@@ -117,7 +141,7 @@ DomainScanTaskCollection unwrap_NameserverDomains(
     return collection;
 }
 
-TechContacts unwrap_TechContactSeq(Registry::AutomaticKeysetManagement::TechContactSeq_var _tech_contacts)
+TechContacts unwrap_EmailAddressSeq(Registry::AutomaticKeysetManagement::EmailAddressSeq_var _tech_contacts)
 {
         TechContacts tech_contacts;
         tech_contacts.reserve(_tech_contacts->length());
@@ -165,15 +189,19 @@ Registry::AutomaticKeysetManagement::Keyset wrap_Keyset(Keyset _keyset)
 } // Fred::Akm::{anonymous}
 
 
-DomainScanTaskCollection Akm::get_nameservers_with_automatically_managed_domain_candidates() const
+DomainScanTaskCollection Akm::get_nameservers_with_insecure_automatically_managed_domain_candidates() const
 {
     try
     {
         namespace AkmModule = Registry::AutomaticKeysetManagement;
         AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
-        AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_automatically_managed_domain_candidates();
+        AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_insecure_automatically_managed_domain_candidates();
 
         return unwrap_NameserverDomains(c_all_nameserver_domains, ScanType::insecure);
+    }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR& e)
+    {
+        throw InternalServerError();
     }
     catch (const CORBA::SystemException& e)
     {
@@ -196,6 +224,10 @@ DomainScanTaskCollection Akm::get_nameservers_with_automatically_managed_domains
 
         return unwrap_NameserverDomains(c_all_nameserver_domains, ScanType::secure_auto);
     }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR& e)
+    {
+        throw InternalServerError();
+    }
     catch (const CORBA::SystemException& e)
     {
         throw std::runtime_error(e._name());
@@ -207,17 +239,50 @@ DomainScanTaskCollection Akm::get_nameservers_with_automatically_managed_domains
 }
 
 
-TechContacts Akm::get_nsset_notification_emails_by_domain_id(unsigned long long _domain_id) const
+DomainScanTaskCollection Akm::get_nameservers_with_secure_automatically_managed_domain_candidates() const
+{
+    try
+    {
+        namespace AkmModule = Registry::AutomaticKeysetManagement;
+        AkmModule::AutomaticKeysetManagementIntf_var akm = AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
+        AkmModule::NameserverDomainsSeq_var c_all_nameserver_domains = akm->get_nameservers_with_secure_automatically_managed_domain_candidates();
+
+        return unwrap_NameserverDomains(c_all_nameserver_domains, ScanType::secure_noauto);
+    }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR& e)
+    {
+        throw InternalServerError();
+    }
+    catch (const CORBA::SystemException& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::Exception& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+}
+
+
+TechContacts Akm::get_email_addresses_by_domain_id(unsigned long long _domain_id) const
 {
     try
     {
         namespace AkmModule = Registry::AutomaticKeysetManagement;
         AkmModule::AutomaticKeysetManagementIntf_var akm =
                 AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
-        AkmModule::TechContactSeq_var c_tech_contacts =
-                akm->get_nsset_notification_emails_by_domain_id(_domain_id);
+        AkmModule::EmailAddressSeq_var c_tech_contacts =
+                akm->get_email_addresses_by_domain_id(_domain_id);
 
-        return unwrap_TechContactSeq(c_tech_contacts);
+        return unwrap_EmailAddressSeq(c_tech_contacts);
+    }
+    catch (const Registry::AutomaticKeysetManagement::OBJECT_NOT_FOUND& e)
+    {
+        throw ObjectNotFound();
+    }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR& e)
+    {
+        throw InternalServerError();
     }
     catch (const CORBA::SystemException& e)
     {
@@ -229,7 +294,12 @@ TechContacts Akm::get_nsset_notification_emails_by_domain_id(unsigned long long 
     }
 }
 
-void Akm::update_domain_automatic_keyset(unsigned long long _domain_id, Nsset _current_nsset, Keyset _new_keyset) const
+
+void Akm::turn_on_automatic_keyset_management_on_insecure_domain(
+    unsigned long long _domain_id,
+    Nsset _current_nsset,
+    Keyset _new_keyset
+) const
 {
     try
     {
@@ -240,40 +310,35 @@ void Akm::update_domain_automatic_keyset(unsigned long long _domain_id, Nsset _c
         AkmModule::Nsset current_nsset = wrap_Nsset(_current_nsset);
         AkmModule::Keyset new_keyset = wrap_Keyset(_new_keyset);
 
-        akm->update_domain_automatic_keyset(_domain_id, current_nsset, new_keyset);
-
+        akm->turn_on_automatic_keyset_management_on_insecure_domain(_domain_id, current_nsset, new_keyset);
     }
     catch (const Registry::AutomaticKeysetManagement::OBJECT_NOT_FOUND&)
     {
         throw ObjectNotFound();
     }
-    catch (const Registry::AutomaticKeysetManagement::NSSET_INVALID&)
+    catch (const Registry::AutomaticKeysetManagement::NSSET_IS_EMPTY&)
     {
-        throw NssetInvalid();
+        throw NssetIsEmpty();
     }
-    catch (const Registry::AutomaticKeysetManagement::KEYSET_INVALID&)
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_NSSET_IS_EMPTY&)
     {
-        throw KeysetInvalid();
+        throw DomainNssetIsEmpty();
     }
-    catch (const Registry::AutomaticKeysetManagement::NSSET_DIFFERS&)
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_IS_INVALID&)
     {
-        throw NssetDiffers();
+        throw KeysetIsInvalid();
     }
-    catch (const Registry::AutomaticKeysetManagement::DOMAIN_HAS_OTHER_KEYSET&)
+    catch (const Registry::AutomaticKeysetManagement::NSSET_IS_DIFFERENT&)
     {
-        throw DomainHasOtherKeyset();
+        throw NssetIsDifferent();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_HAS_KEYSET&)
+    {
+        throw DomainHasKeyset();
     }
     catch (const Registry::AutomaticKeysetManagement::DOMAIN_STATE_POLICY_ERROR&)
     {
         throw DomainStatePolicyError();
-    }
-    catch (const Registry::AutomaticKeysetManagement::KEYSET_STATE_POLICY_ERROR&)
-    {
-        throw KeysetStatePolicyError();
-    }
-    catch (const Registry::AutomaticKeysetManagement::SYSTEM_REGISTRATOR_NOT_FOUND&)
-    {
-        throw SystemRegistratorNotFound();
     }
     catch (const Registry::AutomaticKeysetManagement::CONFIGURATION_ERROR&)
     {
@@ -296,6 +361,123 @@ void Akm::update_domain_automatic_keyset(unsigned long long _domain_id, Nsset _c
         throw std::runtime_error(e._name());
     }
 }
+
+
+void Akm::turn_on_automatic_keyset_management_on_secure_domain(
+    unsigned long long _domain_id,
+    Keyset _new_keyset
+) const
+{
+    try
+    {
+        namespace AkmModule = Registry::AutomaticKeysetManagement;
+        AkmModule::AutomaticKeysetManagementIntf_var akm =
+                AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
+
+        AkmModule::Keyset new_keyset = wrap_Keyset(_new_keyset);
+
+        akm->turn_on_automatic_keyset_management_on_secure_domain(_domain_id, new_keyset);
+    }
+    catch (const Registry::AutomaticKeysetManagement::OBJECT_NOT_FOUND&)
+    {
+        throw ObjectNotFound();
+    }
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_IS_INVALID&)
+    {
+        throw KeysetIsInvalid();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_DOES_NOT_HAVE_KEYSET&)
+    {
+        throw DomainDoesNotHaveKeyset();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_ALREADY_HAS_AUTOMATICALLY_MANAGED_KEYSET&)
+    {
+        throw DomainAlreadyHasAutomaticallyManagedKeyset();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_STATE_POLICY_ERROR&)
+    {
+        throw DomainStatePolicyError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::CONFIGURATION_ERROR&)
+    {
+        throw ConfigurationError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR&)
+    {
+        throw InternalServerError();
+    }
+    catch (const CORBA::UserException& e) // unhandled user exception
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::SystemException& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::Exception& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+}
+
+
+void Akm::update_automatically_managed_keyset_of_domain(
+    unsigned long long _domain_id,
+    Keyset _new_keyset
+) const
+{
+    try
+    {
+        namespace AkmModule = Registry::AutomaticKeysetManagement;
+        AkmModule::AutomaticKeysetManagementIntf_var akm =
+                AkmModule::AutomaticKeysetManagementIntf::_narrow(ns_.resolve(ns_path_akm_));
+
+        AkmModule::Keyset new_keyset = wrap_Keyset(_new_keyset);
+
+        akm->update_automatically_managed_keyset_of_domain(_domain_id, new_keyset);
+    }
+    catch (const Registry::AutomaticKeysetManagement::OBJECT_NOT_FOUND&)
+    {
+        throw ObjectNotFound();
+    }
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_IS_INVALID&)
+    {
+        throw KeysetIsInvalid();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_ALREADY_HAS_AUTOMATICALLY_MANAGED_KEYSET&)
+    {
+        throw DomainAlreadyHasAutomaticallyManagedKeyset();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_STATE_POLICY_ERROR&)
+    {
+        throw DomainStatePolicyError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_STATE_POLICY_ERROR&)
+    {
+        throw KeysetStatePolicyError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::CONFIGURATION_ERROR&)
+    {
+        throw ConfigurationError();
+    }
+    catch (const Registry::AutomaticKeysetManagement::INTERNAL_SERVER_ERROR&)
+    {
+        throw InternalServerError();
+    }
+    catch (const CORBA::UserException& e) // unhandled user exception
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::SystemException& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+    catch (const CORBA::Exception& e)
+    {
+        throw std::runtime_error(e._name());
+    }
+}
+
 
 } // namespace Corba
 } // namespace Akm

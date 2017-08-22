@@ -245,7 +245,7 @@ void command_update_insecure(
             {
                 if (!_dry_run)
                 {
-                    _akm_backend.update_domain_automatic_keyset(domain.id, current_nsset, new_keyset); // FIXME
+                    _akm_backend.turn_on_automatic_keyset_management_on_insecure_domain(domain.id, current_nsset, new_keyset); // FIXME (?)
                     log()->debug("UPDATE OK for insecure domain {}", domain.fqdn);
                     stats_insecure.domains_updated_ok++;
                     domain_newest_status.status = DomainStatus::DomainStatusType::akm_status_managed_ok;
@@ -400,7 +400,7 @@ void command_update_secure(
                                     cdnskey.second.public_key));
                 }
 
-                _akm_backend.update_domain_automatic_keyset(domain.id, Nsset(), new_keyset); // FIXME
+                _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset); // FIXME (?)
                 log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
                 stats_secure.domains_updated_ok++;
                 NotifiedDomainStatus new_notified_domain_status =

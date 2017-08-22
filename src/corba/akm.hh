@@ -20,15 +20,26 @@ class Akm : public IAkm
 public:
     Akm(const Nameservice& _ns, const std::string& _ns_path_akm);
 
-    DomainScanTaskCollection get_nameservers_with_automatically_managed_domain_candidates() const;
+    DomainScanTaskCollection get_nameservers_with_insecure_automatically_managed_domain_candidates() const;
 
     DomainScanTaskCollection get_nameservers_with_automatically_managed_domains() const;
 
-    std::vector<std::string> get_nsset_notification_emails_by_domain_id(unsigned long long _domain_id) const;
+    DomainScanTaskCollection get_nameservers_with_secure_automatically_managed_domain_candidates() const;
 
-    void save_notification(unsigned long long domain_id, const std::string& last_at) const;
+    std::vector<std::string> get_email_addresses_by_domain_id(unsigned long long domain_id) const;
 
-    void update_domain_automatic_keyset(unsigned long long domain_id, Nsset current_nsset, Keyset new_keyset) const;
+    void turn_on_automatic_keyset_management_on_insecure_domain(
+        unsigned long long domain_id,
+        Nsset current_nsset,
+        Keyset new_keyset) const;
+
+    void turn_on_automatic_keyset_management_on_secure_domain(
+        unsigned long long domain_id,
+        Keyset new_keyset) const;
+
+    void update_automatically_managed_keyset_of_domain(
+        unsigned long long domain_id,
+        Keyset new_keyset) const;
 
 private:
     const Nameservice& ns_;
