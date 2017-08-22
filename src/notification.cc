@@ -29,19 +29,19 @@ namespace Fred {
 namespace Akm {
 
 void save_domain_status(
-        const NotifiedDomainStatus& _notified_domain_status,
+        const DomainNotifiedStatus& _domain_notified_status,
         const IStorage& _storage,
         const bool _dry_run)
 {
     if (!_dry_run)
     {
-        log()->debug("saving domain_status_notification of state \"{}\"", to_string(_notified_domain_status));
-        _storage.set_notified_domain_status(_notified_domain_status);
+        log()->debug("saving domain_status_notification of state \"{}\"", to_string(_domain_notified_status));
+        _storage.set_domain_notified_status(_domain_notified_status);
     }
 }
 
 void notify_and_save_domain_status(
-        const NotifiedDomainStatus& _notified_domain_status,
+        const DomainNotifiedStatus& _domain_notified_status,
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
@@ -51,17 +51,17 @@ void notify_and_save_domain_status(
     const std::string mail_from = "";
     const std::string mail_reply_to = "";
 
-    const std::string template_name_str = Conversion::Enums::to_template_name(Conversion::Enums::to_notification_type(_notified_domain_status.domain_status));
+    const std::string template_name_str = Conversion::Enums::to_template_name(Conversion::Enums::to_notification_type(_domain_notified_status.domain_status));
 
-    log()->info("shall notify template \"{}\" to domain {}", template_name_str, _notified_domain_status.domain.fqdn);
-    log()->debug("asking backend for emails for domain id {}", _notified_domain_status.domain.id);
+    log()->info("shall notify template \"{}\" to domain {}", template_name_str, _domain_notified_status.domain.fqdn);
+    log()->debug("asking backend for emails for domain id {}", _domain_notified_status.domain.id);
     try
     {
         std::vector<std::string> tech_contacts = { "fake.contact.email.akm@example.com" };
         const bool real_contact_emails = !(_dry_run && _fake_contact_emails);
         if (real_contact_emails)
         {
-            tech_contacts = _akm_backend.get_email_addresses_by_domain_id(_notified_domain_status.domain.id);
+            tech_contacts = _akm_backend.get_email_addresses_by_domain_id(_domain_notified_status.domain.id);
         }
 
         std::string emails = boost::algorithm::join(tech_contacts, ", ");
@@ -72,12 +72,12 @@ void notify_and_save_domain_status(
         const IMailer::TemplateName template_name = template_name_str;
 
         IMailer::TemplateParameters template_parameters;
-        template_parameters["domain"] = _notified_domain_status.domain.fqdn;
+        template_parameters["domain"] = _domain_notified_status.domain.fqdn;
         template_parameters["zone"] = ".cz"; // TODO hardwired, get from domain.name
-        template_parameters["datetime"] = _notified_domain_status.last_at;
+        template_parameters["datetime"] = to_template_string(_domain_notified_status.last_at);
         template_parameters["days_to_left"] = "7"; // TODO hardwired, get from config (notify_update_within_x_days)
         std::vector<std::string> keys;
-        boost::split(keys, _notified_domain_status.serialized_cdnskeys, boost::is_any_of("|"));
+        boost::split(keys, _domain_notified_status.serialized_cdnskeys, boost::is_any_of("|"));
         for (int i = 0; i < keys.size(); ++i)
         {
             template_parameters["keys." + std::to_string(i)] = keys[i];
@@ -93,7 +93,7 @@ void notify_and_save_domain_status(
             log()->info("sending notification to template_name \"{}\"", template_name);
             _mailer_backend.enqueue(header, template_name, template_parameters);
             // TODO (exceptions thrown by enqueue? (combination of "email sent + exception throw" would spam)
-            save_domain_status(_notified_domain_status, _storage, _dry_run);
+            save_domain_status(_domain_notified_status, _storage, _dry_run);
         }
     }
     catch (std::runtime_error& e)

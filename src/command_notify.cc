@@ -21,12 +21,13 @@
 #include "src/domain_state.hh"
 #include "src/domain_state_stack.hh"
 #include "src/domain_status.hh"
-#include "src/domain_status_stack.hh"
+#include "src/domain_united_state.hh"
+#include "src/domain_united_state_stack.hh"
 #include "src/enum_conversions.hh"
 #include "src/log.hh"
 #include "src/notification_type.hh"
 #include "src/notification.hh"
-#include "src/notified_domain_status.hh"
+#include "src/domain_notified_status.hh"
 #include "src/utils.hh"
 
 #include <boost/lexical_cast.hpp>
@@ -50,7 +51,7 @@ namespace Akm {
 
 namespace {
 
-struct Stats {
+struct StatsInsecureAkmCandidates {
     int domains_loaded;
     int domains_checked;
     int domains_ok;
@@ -68,19 +69,22 @@ struct Stats {
 
     void print()
     {
-        log()->info("=============== NOTIFY STATS ================");
+        log()->info("===== NOTIFY STATS INSECURE CANDIDATES ======");
         log()->info("domains loaded:                      {:>8}", domains_loaded);
         log()->info("domains checked:                     {:>8}", domains_checked);
         log()->info(" ├─ ok:                              {:>8}", domains_ok);
         log()->info(" ├─ ko:                              {:>8}", domains_ko);
         log()->info(" └─ no data:                         {:>8}", domains_unknown_no_data);
         log()->info("---------------------------------------------");
-        log()->info("sent notifications:                  {:>8}", sent_ok_notifications + sent_ko_notifications);
+        log()->info("sent notifications:                  {:>8}", sent_ok_notifications +
+                                                                  sent_ko_notifications);
         log()->info(" ├─ ok notifications:                {:>8}", sent_ok_notifications);
         log()->info(" │   └─ first ok:                    {:>8}", sent_first_ok_notifications);
         log()->info(" └─ ko notifications:                {:>8}", sent_ko_notifications);
         log()->info("     └─first ko:                     {:>8}", sent_first_ko_notifications);
-        log()->info("not sent notifications:              {:>8}", not_sent_still_ok_notifications + not_sent_first_ko_notifications + not_sent_still_ko_notifications);
+        log()->info("not sent notifications:              {:>8}", not_sent_still_ok_notifications +
+                                                                  not_sent_first_ko_notifications +
+                                                                  not_sent_still_ko_notifications);
         log()->info(" ├─ still ok:                        {:>8}", not_sent_still_ok_notifications);
         log()->info(" ├─ first ko:                        {:>8}", not_sent_first_ko_notifications);
         log()->info(" └─ still ko:                        {:>8}", not_sent_still_ko_notifications);
@@ -89,7 +93,7 @@ struct Stats {
     }
 };
 
-Stats stats;
+StatsInsecureAkmCandidates stats_insecure_akm_candidates;
 
 enum struct DomainStatusChange
 {
@@ -116,44 +120,46 @@ std::string to_string(const DomainStatusChange& domain_status_change)
     }
 }
 
-void update_stats_according_to_domain_status_change(Stats& stats, const DomainStatusChange& domain_status_change)
+void update_stats_according_to_domain_status_change(
+        StatsInsecureAkmCandidates& stats_insecure_akm_candidates,
+        const DomainStatusChange& domain_status_change)
 {
     switch (domain_status_change)
     {
         case DomainStatusChange::new_ok:
-            stats.domains_ok++;
-            stats.sent_ok_notifications++;
-            stats.sent_first_ok_notifications++;
+            stats_insecure_akm_candidates.domains_ok++;
+            stats_insecure_akm_candidates.sent_ok_notifications++;
+            stats_insecure_akm_candidates.sent_first_ok_notifications++;
             break;
 
         case DomainStatusChange::new_ko:
-            stats.domains_ko++;
-            stats.not_sent_first_ko_notifications++;
+            stats_insecure_akm_candidates.domains_ko++;
+            stats_insecure_akm_candidates.not_sent_first_ko_notifications++;
             break;
 
         case DomainStatusChange::ok_ok:
-            stats.domains_ok++;
-            stats.not_sent_still_ok_notifications++;
+            stats_insecure_akm_candidates.domains_ok++;
+            stats_insecure_akm_candidates.not_sent_still_ok_notifications++;
             break;
 
         case DomainStatusChange::ok_ko:
-            stats.domains_ko++;
-            stats.sent_ko_notifications++;
+            stats_insecure_akm_candidates.domains_ko++;
+            stats_insecure_akm_candidates.sent_ko_notifications++;
             break;
 
         case DomainStatusChange::ko_ok:
-            stats.domains_ok++;
-            stats.sent_ok_notifications++;
+            stats_insecure_akm_candidates.domains_ok++;
+            stats_insecure_akm_candidates.sent_ok_notifications++;
             break;
 
         case DomainStatusChange::ko_ko:
-            stats.domains_ko++;
-            stats.not_sent_still_ko_notifications++;
+            stats_insecure_akm_candidates.domains_ko++;
+            stats_insecure_akm_candidates.not_sent_still_ko_notifications++;
             break;
 
         case DomainStatusChange::ok_ok2:
-            stats.domains_ok++;
-            stats.sent_ok_notifications++;
+            stats_insecure_akm_candidates.domains_ok++;
+            stats_insecure_akm_candidates.sent_ok_notifications++;
             break;
     }
 }
@@ -166,65 +172,72 @@ struct UnknownDomainStatusChange : std::exception
     }
 };
 
-DomainStatusChange get_domain_status_change(
-        const boost::optional<NotifiedDomainStatus>& _notified_domain_status,
-        const DomainStatus& _domain_newest_status)
+DomainStatus::DomainStatusType to_new_domain_status_type(const DomainStatusChange& _domain_status_change)
 {
-    if (!_notified_domain_status)
+    switch (_domain_status_change)
     {
-        if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
+        case DomainStatusChange::new_ok: return DomainStatus::DomainStatusType::akm_status_candidate_ok; break;
+        case DomainStatusChange::new_ko: return DomainStatus::DomainStatusType::akm_status_candidate_ko; break;
+        case DomainStatusChange::ok_ok: return DomainStatus::DomainStatusType::akm_status_candidate_ok; break;
+        case DomainStatusChange::ok_ko: return DomainStatus::DomainStatusType::akm_status_candidate_ko; break;
+        case DomainStatusChange::ko_ok: return DomainStatus::DomainStatusType::akm_status_candidate_ok; break;
+        case DomainStatusChange::ko_ko: return DomainStatus::DomainStatusType::akm_status_candidate_ko; break;
+        case DomainStatusChange::ok_ok2: return DomainStatus::DomainStatusType::akm_status_candidate_ok; break;
+    }
+}
+
+DomainStatusChange get_domain_status_change(
+        boost::optional<DomainNotifiedStatus> _domain_notified_status,
+        const DomainUnitedState& _domain_newest_united_state)
+{
+    const auto domain_newest_united_state_status =
+            !_domain_newest_united_state.is_coherent()
+            ? DomainStatus::DomainStatusType::akm_status_candidate_ko
+            : DomainStatus::DomainStatusType::akm_status_candidate_ok;
+
+    if (!_domain_notified_status)
+    {
+        if (domain_newest_united_state_status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
         {
             return DomainStatusChange::new_ok;
         }
-        else if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
+        else if (domain_newest_united_state_status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
         {
             return DomainStatusChange::new_ko;
         }
     }
     else {
-        if (_notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok))
+        if (_domain_notified_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok))
         {
-            if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
+            if (domain_newest_united_state_status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
             {
-                return are_coherent(*_domain_newest_status.domain_state, *_notified_domain_status)
+                const bool domain_states_are_coherent =
+                        _domain_notified_status
+                                ? are_coherent(_domain_newest_united_state, *_domain_notified_status)
+                                : false;
+                return domain_states_are_coherent
                         ? DomainStatusChange::ok_ok
                         : DomainStatusChange::ok_ok2;
             }
-            else if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
+            else if (domain_newest_united_state_status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
             {
                 return DomainStatusChange::ok_ko;
             }
         }
-        else if ((_notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko)) ||
-                (_notified_domain_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_managed_ok))) // fallen angel
+        else if ((_domain_notified_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ko)) ||
+                (_domain_notified_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_managed_ok))) // fallen angel
         {
-            if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
+            if (domain_newest_united_state_status == DomainStatus::DomainStatusType::akm_status_candidate_ok)
             {
                 return DomainStatusChange::ko_ok;
             }
-            else if (_domain_newest_status.status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
+            else if (domain_newest_united_state_status == DomainStatus::DomainStatusType::akm_status_candidate_ko)
             {
                 return DomainStatusChange::ko_ko;
             }
         }
     }
     throw UnknownDomainStatusChange();
-}
-
-boost::optional<DomainStatus> lookup_intermediate_domain_status_to_notify(
-        const std::pair<const Domain, DomainStatusStack::DomainStatuses>& domain, const NotifiedDomainStatus& _notified_domain_status)
-{
-
-    for (const auto& domain_status : boost::adaptors::reverse(domain.second))
-    {
-        if (domain_status.status != DomainStatus::DomainStatusType::akm_status_candidate_ok &&
-                domain_status.scan_iteration.start_at > _notified_domain_status.last_at)
-        {
-            log()->debug("ok->...(ko)...->ok (ko_found@scan_iteration {})", to_string(domain_status.scan_iteration));
-            return domain_status;
-        }
-    }
-    return boost::optional<DomainStatus>();
 }
 
 void command_notify_insecure_akm_candidates(
@@ -239,8 +252,7 @@ void command_notify_insecure_akm_candidates(
         const bool _fake_contact_emails)
 {
     auto scan_result_rows =
-            _storage.get_scan_result_rows_of_akm_candidates_for_akm_notify(
-                    ScanType::insecure,
+            _storage.get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
                     _minimal_scan_result_sequence_length_to_notify,
                     _notify_from_last_scan_iteration_only);
 
@@ -256,103 +268,111 @@ void command_notify_insecure_akm_candidates(
     DomainStateStack domain_state_stack(scan_result_rows);
     print(domain_state_stack);
 
-    for (const auto& scan_iteration : domain_state_stack.scan_iterations)
-    {
-        stats.domains_loaded += scan_iteration.second.size();
-    }
+    DomainUnitedStateStack domain_united_state_stack(domain_state_stack);
+    print(domain_united_state_stack);
 
-    const int current_unix_time = _storage.get_current_unix_time();
+    stats_insecure_akm_candidates.domains_loaded = domain_united_state_stack.domains_with_united_states.size();
+
+    const unsigned int current_unix_time = _storage.get_current_unix_time();
     log()->debug("current unix time taken from db: {}", current_unix_time);
-
-    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results, current_unix_time);
-    print(domain_status_stack);
 
     log()->debug(";== [command_notify] =========================================================================");
 
-    stats.domains_loaded = domain_status_stack.domains_with_statuses.size();
-    for (const auto& domain_with_statuses : domain_status_stack.domains_with_statuses)
+    for (const auto& domain_with_united_states : domain_united_state_stack.domains_with_united_states)
     {
-        const auto& domain = domain_with_statuses.first;
-        const auto& domain_statuses = domain_with_statuses.second;
+        const auto& domain = domain_with_united_states.first;
+        const auto& domain_united_states = domain_with_united_states.second;
 
         try
         {
-            if (domain_statuses.empty())
+            if (domain_united_states.empty())
             {
-                log()->error("no statuses for domain {}", domain.fqdn);
-                stats.domains_unknown_no_data++;
+                log()->error("no united state for domain {}", domain.fqdn);
+                stats_insecure_akm_candidates.domains_unknown_no_data++;
                 continue;
             }
-            stats.domains_checked++;
+            stats_insecure_akm_candidates.domains_checked++;
 
-            log()->debug("---");
             log()->debug("domain {}", to_string(domain));
 
-            boost::optional<NotifiedDomainStatus> notified_domain_status =
-                    _storage.get_last_notified_domain_status(domain.id);
+            boost::optional<DomainNotifiedStatus> domain_notified_status =
+                    _storage.get_domain_last_notified_status(domain.id);
             log()->debug("last notified status: {}",
-                    notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
+                    domain_notified_status ? to_string(*domain_notified_status) : "NOT FOUND");
 
-            DomainStatus domain_newest_status = domain_statuses.back();
-            log()->debug("newest domain_status: {}", to_string(domain_newest_status));
-
-
-            DomainStatusChange domain_status_change =
-                    get_domain_status_change(notified_domain_status, domain_newest_status);
-            log()->debug(to_string(domain_status_change));
-
-            if (domain_status_change == DomainStatusChange::ok_ok) // oh, special case
+            bool all_status_changes_worth_to_notify_processed = false;
+            while (!all_status_changes_worth_to_notify_processed) // Note: can be dangerous
             {
-                const boost::optional<DomainStatus> intermediate_domain_status_to_notify =
-                        lookup_intermediate_domain_status_to_notify(domain_with_statuses, *notified_domain_status);
+                DomainUnitedState domain_united_state_to_notify;
 
-                if (intermediate_domain_status_to_notify)
+                const DomainUnitedState& domain_newest_united_state = domain_united_states.back();
+                log()->debug("newest domain_status: {}", to_string(domain_newest_united_state));
+
+                DomainStatusChange domain_status_change =
+                        get_domain_status_change(
+                                domain_notified_status,
+                                domain_newest_united_state);
+
+                log()->debug(to_string(domain_status_change));
+
+                if (domain_status_change == DomainStatusChange::ok_ok) // oh, special case
                 {
-                    stats.sent_first_ko_notifications++;
-
-                    NotifiedDomainStatus new_notified_domain_status =
-                            NotifiedDomainStatus(
+                    const boost::optional<DomainUnitedState> domain_intermediate_united_state_to_notify =
+                            lookup_domain_intermediate_united_state(
                                     domain,
-                                    *intermediate_domain_status_to_notify);
+                                    domain_united_states,
+                                    _maximal_time_between_scan_results);
+                    if (domain_intermediate_united_state_to_notify)
+                    {
+                        domain_united_state_to_notify = *domain_intermediate_united_state_to_notify;
+                        domain_status_change = DomainStatusChange::ok_ko;
+                        all_status_changes_worth_to_notify_processed = false;
+                    }
+                    else
+                    {
+                        domain_united_state_to_notify = domain_newest_united_state;
+                        all_status_changes_worth_to_notify_processed = true;
+                    }
+                }
+                else
+                {
+                    domain_united_state_to_notify = domain_newest_united_state;
+                    all_status_changes_worth_to_notify_processed = true;
+                }
+
+                const bool domain_status_has_changed =
+                        domain_status_change == DomainStatusChange::new_ok ||
+                        domain_status_change == DomainStatusChange::ok_ko ||
+                        domain_status_change == DomainStatusChange::ko_ok ||
+                        domain_status_change == DomainStatusChange::ok_ok2;
+
+                const bool notification_should_be_sent = domain_status_has_changed;
+
+                if (notification_should_be_sent)
+                {
+                    DomainNotifiedStatus new_domain_notified_status =
+                            DomainNotifiedStatus(
+                                    domain,
+                                    domain_united_state_to_notify,
+                                    to_new_domain_status_type(domain_status_change));
+
                     notify_and_save_domain_status(
-                            new_notified_domain_status,
+                            new_domain_notified_status,
                             _storage,
                             _akm_backend,
                             _mailer_backend,
                             _dry_run,
                             _fake_contact_emails);
 
-                    notified_domain_status = new_notified_domain_status;
+                    domain_notified_status = new_domain_notified_status;
                     log()->debug("last notified status now: {}",
-                            notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
-
-                    domain_status_change = get_domain_status_change(notified_domain_status, domain_newest_status);
-                    log()->debug("now: " + to_string(domain_status_change));
+                            domain_notified_status ? to_string(*domain_notified_status) : "NOT FOUND");
                 }
+
+                update_stats_according_to_domain_status_change(
+                        stats_insecure_akm_candidates,
+                        domain_status_change);
             }
-
-            const bool domain_status_has_changed =
-                    domain_status_change == DomainStatusChange::new_ok ||
-                    domain_status_change == DomainStatusChange::ok_ko ||
-                    domain_status_change == DomainStatusChange::ko_ok ||
-                    domain_status_change == DomainStatusChange::ok_ok2;
-
-            const bool notification_should_be_sent = domain_status_has_changed;
-
-            if (notification_should_be_sent)
-            {
-                notify_and_save_domain_status(
-                        NotifiedDomainStatus(
-                                domain,
-                                domain_newest_status),
-                        _storage,
-                        _akm_backend,
-                        _mailer_backend,
-                        _dry_run,
-                        _fake_contact_emails);
-            }
-
-            update_stats_according_to_domain_status_change(stats, domain_status_change);
 
         }
         catch (const UnknownDomainStatusChange&)
@@ -362,34 +382,11 @@ void command_notify_insecure_akm_candidates(
         catch (const NotificationFailed&)
         {
             log()->error("notification failed for domain domain: {} ", domain.fqdn);
-            stats.sending_notification_failures++;
+            stats_insecure_akm_candidates.sending_notification_failures++;
         }
     }
 
-    stats.print();
-}
-
-void command_notify_secure_akm_candidates(
-        const IStorage& _storage,
-        const IAkm& _akm_backend,
-        const IMailer& _mailer_backend,
-        const unsigned long _maximal_time_between_scan_results,
-        const bool  _notify_from_last_scan_iteration_only,
-        const bool _align_to_start_of_day,
-        const bool _dry_run,
-        const bool _fake_contact_emails)
-{
-    const auto minimal_scan_result_sequence_length_to_notify = _maximal_time_between_scan_results;
-
-    auto scan_result_rows =
-            _storage.get_scan_result_rows_of_akm_candidates_for_akm_notify(
-                    ScanType::secure_noauto,
-                    minimal_scan_result_sequence_length_to_notify,
-                    _notify_from_last_scan_iteration_only);
-
-    log()->debug("got from database {} scan result(s)", scan_result_rows.size());
-
-    log()->error("NOT YET IMPLEMENTED"); // TODO
+    stats_insecure_akm_candidates.print();
 }
 
 } // namespace Fred::Akm::{anonymous}
@@ -411,16 +408,6 @@ void command_notify(
             _mailer_backend,
             _maximal_time_between_scan_results,
             _minimal_scan_result_sequence_length_to_notify,
-            _notify_from_last_scan_iteration_only,
-            _align_to_start_of_day,
-            _dry_run,
-            _fake_contact_emails);
-
-    command_notify_secure_akm_candidates(
-            _storage,
-            _akm_backend,
-            _mailer_backend,
-            _maximal_time_between_scan_results,
             _notify_from_last_scan_iteration_only,
             _align_to_start_of_day,
             _dry_run,

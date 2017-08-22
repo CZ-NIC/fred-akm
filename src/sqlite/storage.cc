@@ -6,11 +6,13 @@
 #include "src/domain_status.hh"
 #include "src/enum_conversions.hh"
 #include "src/notification_type.hh"
-#include "src/notified_domain_status.hh"
+#include "src/domain_notified_status.hh"
+#include "src/scan_date_time.hh"
 #include "src/scan_result_row.hh"
 
 #include <boost/format.hpp>
 #include <boost/format/free_funcs.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/optional.hpp>
 #include <boost/functional/hash.hpp>
 
@@ -183,13 +185,14 @@ void append_to_scan_queue_if_not_exists(sqlite3pp::database& _db, const DomainSc
 }
 
 
-ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
+ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
         sqlite3pp::database& _db,
-        const ScanType _scan_type,
         const int _seconds_back,
         const bool _notify_from_last_iteration_only,
         const bool _align_to_start_of_day)
 {
+    const auto scan_type = ScanType::insecure;
+
     sqlite3pp::query query(_db);
     query.prepare(boost::str(boost::format(
         "SELECT scan_result.id, "
@@ -221,7 +224,7 @@ ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
                    % (_seconds_back * -1)
                    % (_notify_from_last_iteration_only ? "AND scan_iteration_id = (SELECT MAX(scan_iteration_id) FROM scan_result) " : "")).c_str());
 
-    query.bind(":scan_type", to_db_handle(_scan_type), sqlite3pp::nocopy);
+    query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
 
     // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
 
@@ -236,8 +239,8 @@ ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
             row.getter()
                     >> scan_result_row.id
                     >> scan_result_row.scan_iteration_id
-                    >> scan_result_row.scan_at
-                    >> scan_result_row.scan_at_seconds
+                    >> scan_result_row.scan_at.scan_date_time
+                    >> scan_result_row.scan_at.scan_seconds
                     >> scan_result_row.domain_id
                     >> scan_result_row.domain_name
                     >> scan_type_handle
@@ -251,27 +254,24 @@ ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
 
             scan_result_row.scan_type = from_db_handle<ScanType>(scan_type_handle);
             scan_result.emplace_back(scan_result_row);
-            //log()->debug(to_string(scan_result_row));
         }
         catch (...)
         {
             log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
         }
     }
-    //if (scan_result.empty()) {
-    //    throw std::runtime_error("no scan_results found");
-    //}
     return scan_result;
 }
 
-ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
+ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
         sqlite3pp::database& _db,
-        const ScanType _scan_type,
         const int _seconds_back,
         const bool _align_to_start_of_day)
 {
-    const NotificationType notification_type = NotificationType::akm_notification_candidate_ok;
-    const NotificationType notification_type_fallen_angel = NotificationType::akm_notification_managed_ok;
+    const auto scan_type = ScanType::insecure;
+
+    const auto notification_type = NotificationType::akm_notification_candidate_ok;
+    const auto notification_type_fallen_angel = NotificationType::akm_notification_managed_ok;
 
     sqlite3pp::query query(_db);
     std::string sql =
@@ -307,7 +307,7 @@ ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
                    % (_seconds_back * -1)
                    % (_seconds_back * -1)).c_str());
 
-    query.bind(":scan_type", to_db_handle(_scan_type), sqlite3pp::nocopy);
+    query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
     query.bind(":notification_type", to_db_handle(notification_type));
     query.bind(":notification_type_fallen_angel", to_db_handle(notification_type_fallen_angel));
 
@@ -324,8 +324,8 @@ ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
             row.getter()
                     >> scan_result_row.id
                     >> scan_result_row.scan_iteration_id
-                    >> scan_result_row.scan_at
-                    >> scan_result_row.scan_at_seconds
+                    >> scan_result_row.scan_at.scan_date_time
+                    >> scan_result_row.scan_at.scan_seconds
                     >> scan_result_row.domain_id
                     >> scan_result_row.domain_name
                     >> scan_type_handle
@@ -339,16 +339,90 @@ ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
 
             scan_result_row.scan_type = from_db_handle<ScanType>(scan_type_handle);
             scan_result.emplace_back(scan_result_row);
-            //log()->debug(to_string(scan_result_row));
         }
         catch (...)
         {
             log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
         }
     }
-    //if (scan_result.empty()) {
-    //    throw std::runtime_error("no scan_results found");
-    //}
+    return scan_result;
+}
+
+ScanResultRows get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
+        sqlite3pp::database& _db,
+        const int _seconds_back,
+        const bool _align_to_start_of_day)
+{
+    const ScanType scan_type = ScanType::secure_noauto;
+    const NotificationType notification_type = NotificationType::akm_notification_managed_ok;
+
+    sqlite3pp::query query(_db);
+    std::string sql =
+        "SELECT scan_result.id, "
+               "scan_result.scan_iteration_id, "
+               "COALESCE(scan_result.scan_at, ''), "
+               "strftime('%%s', datetime(scan_at)) AS scan_at_seconds, "
+               "scan_result.domain_id, "
+               "COALESCE(scan_result.domain_name, ''), "
+               "enum_scan_type.handle AS scan_type, "
+               "COALESCE(scan_result.cdnskey_status, ''), "
+               "COALESCE(scan_result.nameserver, ''), "
+               "scan_result.cdnskey_flags, "
+               "scan_result.cdnskey_proto, "
+               "scan_result.cdnskey_alg, "
+               "COALESCE(scan_result.cdnskey_public_key, '') "
+          "FROM scan_result "
+          "JOIN enum_scan_type ON enum_scan_type.id = scan_result.scan_type_id "
+          "LEFT JOIN domain_status_notification ON domain_status_notification.domain_id = scan_result.domain_id "
+         "WHERE scan_iteration_id IN "
+             "(SELECT scan_iteration_id "
+                "FROM scan_result "
+               "WHERE scan_at >= datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
+               "GROUP BY scan_iteration_id) " // always get all scan_results from concrete iteration_id
+           "AND enum_scan_type.handle = :scan_type "
+           "AND (domain_status_notification.notification_type = :notification_type OR domain_status_notification.notification_type IS NULL) "
+           "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
+         "ORDER BY scan_result.id DESC";
+
+    query.prepare(boost::str(boost::format(sql)
+                   % (_seconds_back * -1)).c_str());
+
+    query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
+    query.bind(":notification_type", to_db_handle(notification_type));
+
+    // Note: if (query.begin() == query.end()) increments internal pointer, do not use here!
+
+    ScanResultRows scan_result;
+
+    boost::optional<ScanResultRow> last_scan_result_row;
+    for (auto row : query)
+    {
+        std::string scan_type_handle;
+        ScanResultRow scan_result_row;
+        try {
+            row.getter()
+                    >> scan_result_row.id
+                    >> scan_result_row.scan_iteration_id
+                    >> scan_result_row.scan_at.scan_date_time
+                    >> scan_result_row.scan_at.scan_seconds
+                    >> scan_result_row.domain_id
+                    >> scan_result_row.domain_name
+                    >> scan_type_handle
+                    >> scan_result_row.cdnskey.status
+                    >> scan_result_row.nameserver
+                    >> scan_result_row.cdnskey.flags
+                    >> scan_result_row.cdnskey.proto
+                    >> scan_result_row.cdnskey.alg
+                    >> scan_result_row.cdnskey.public_key;
+
+            scan_result_row.scan_type = from_db_handle<ScanType>(scan_type_handle);
+            scan_result.emplace_back(scan_result_row);
+        }
+        catch (...)
+        {
+            log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
+        }
+    }
     return scan_result;
 }
 
@@ -407,8 +481,8 @@ ScanResultRows get_scan_result_rows_of_akm_members_for_update(
             row.getter()
                     >> scan_result_row.id
                     >> scan_result_row.scan_iteration_id
-                    >> scan_result_row.scan_at
-                    >> scan_result_row.scan_at_seconds
+                    >> scan_result_row.scan_at.scan_date_time
+                    >> scan_result_row.scan_at.scan_seconds
                     >> scan_result_row.domain_id
                     >> scan_result_row.domain_name
                     >> scan_type_handle
@@ -427,13 +501,10 @@ ScanResultRows get_scan_result_rows_of_akm_members_for_update(
             log()->error("FAILED to get a scan_result_row from the database: {}", to_string(scan_result_row));
         }
     }
-    //if (scan_result.empty()) {
-    //    throw std::runtime_error("no scan_results found");
-    //}
     return scan_result;
 }
 
-void set_notified_domain_status(sqlite3pp::database& _db, const NotifiedDomainStatus& _notified_domain_status)
+void set_domain_notified_status(sqlite3pp::database& _db, const DomainNotifiedStatus& _domain_notified_status)
 {
     sqlite3pp::command insert(_db);
     insert.prepare(
@@ -441,17 +512,17 @@ void set_notified_domain_status(sqlite3pp::database& _db, const NotifiedDomainSt
             " (domain_id, domain_name, scan_type_id, cdnskeys, domain_status, notification_type, last_at)"
             " VALUES (?, ?, (SELECT id FROM enum_scan_type WHERE handle = ?), ?, ?, ?, ?)");
     insert.binder()
-            << static_cast<long long>(_notified_domain_status.domain.id)
-            << _notified_domain_status.domain.fqdn
-            << to_db_handle(_notified_domain_status.domain.scan_type)
-            << _notified_domain_status.serialized_cdnskeys
-            << to_db_handle(_notified_domain_status.domain_status)
-            << to_db_handle(_notified_domain_status.notification_type)
-            << _notified_domain_status.last_at;
+            << static_cast<long long>(_domain_notified_status.domain.id)
+            << _domain_notified_status.domain.fqdn
+            << to_db_handle(_domain_notified_status.domain.scan_type)
+            << _domain_notified_status.serialized_cdnskeys
+            << to_db_handle(_domain_notified_status.domain_status)
+            << to_db_handle(_domain_notified_status.notification_type)
+            << to_db_string(_domain_notified_status.last_at);
     insert.execute();
 }
 
-boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp::database& _db, const unsigned long long _domain_id)
+boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(sqlite3pp::database& _db, const unsigned long long _domain_id)
 {
     sqlite3pp::query query(_db);
     query.prepare(
@@ -474,29 +545,29 @@ boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(sqlite3pp:
     // solution for now:
     for (auto row : query)
     {
-        NotifiedDomainStatus notified_domain_status;
+        DomainNotifiedStatus domain_notified_status;
         long long domain_id;
         int domain_status;
         int notification_type;
         std::string scan_type_handle;
         row.getter()
             >> domain_id
-            >> notified_domain_status.domain.fqdn
+            >> domain_notified_status.domain.fqdn
             >> scan_type_handle
-            >> notified_domain_status.serialized_cdnskeys
+            >> domain_notified_status.serialized_cdnskeys
             >> domain_status
             >> notification_type
-            >> notified_domain_status.last_at
-            >> notified_domain_status.last_at_seconds;
-        notified_domain_status.domain.id = static_cast<unsigned long long>(domain_id);
-        notified_domain_status.domain.scan_type = from_db_handle<ScanType>(scan_type_handle);
-        notified_domain_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus::DomainStatusType>(domain_status);
-        notified_domain_status.notification_type = Conversion::Enums::from_db_handle<NotificationType>(notification_type);
-        return notified_domain_status;
+            >> domain_notified_status.last_at.scan_date_time
+            >> domain_notified_status.last_at.scan_seconds;
+        domain_notified_status.domain.id = static_cast<unsigned long long>(domain_id);
+        domain_notified_status.domain.scan_type = from_db_handle<ScanType>(scan_type_handle);
+        domain_notified_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus::DomainStatusType>(domain_status);
+        domain_notified_status.notification_type = Conversion::Enums::from_db_handle<NotificationType>(notification_type);
+        return domain_notified_status;
     }
 
     // if we got here, query was empty
-    return boost::optional<NotifiedDomainStatus>();
+    return boost::optional<DomainNotifiedStatus>();
 }
 
 
@@ -544,32 +615,40 @@ void SqliteStorage::append_to_scan_queue_if_not_exists(const DomainScanTaskColle
 }
 
 
-ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_candidates_for_akm_notify(
-        const ScanType _scan_type,
+ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
         const int _seconds_back,
         const bool _notify_from_last_iteration_only,
         const bool _align_to_start_of_day) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    return Impl::get_scan_result_rows_of_akm_candidates_for_akm_notify(
+    return Impl::get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
             db,
-            _scan_type,
             _seconds_back,
             _notify_from_last_iteration_only,
             _align_to_start_of_day);
 }
 
-ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
-        const ScanType _scan_type,
+ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
         const int _seconds_back,
         const bool _align_to_start_of_day) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    return Impl::get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
+    return Impl::get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
             db,
-            _scan_type,
+            _seconds_back,
+            _align_to_start_of_day);
+}
+
+ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
+        const int _seconds_back,
+        const bool _align_to_start_of_day) const
+{
+    auto db = get_db();
+    sqlite3pp::transaction xct(db);
+    return Impl::get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
+            db,
             _seconds_back,
             _align_to_start_of_day);
 }
@@ -586,20 +665,20 @@ ScanResultRows SqliteStorage::get_scan_result_rows_of_akm_members_for_update(
             _align_to_start_of_day);
 }
 
-void SqliteStorage::set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const
+void SqliteStorage::set_domain_notified_status(const DomainNotifiedStatus& _domain_notified_status) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    Impl::set_notified_domain_status(db, _notified_domain_status);
+    Impl::set_domain_notified_status(db, _domain_notified_status);
     xct.commit();
 }
 
-boost::optional<NotifiedDomainStatus> SqliteStorage::get_last_notified_domain_status(
+boost::optional<DomainNotifiedStatus> SqliteStorage::get_domain_last_notified_status(
         const unsigned long long _domain_id) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    return Impl::get_last_notified_domain_status(
+    return Impl::get_domain_last_notified_status(
             db,
             _domain_id);
 }
@@ -888,7 +967,7 @@ void SqliteStorage::clean_scan_results(
 }
 
 
-int SqliteStorage::get_current_unix_time() const
+unsigned int SqliteStorage::get_current_unix_time() const
 {
     auto db = get_db();
     sqlite3pp::query query(db);
@@ -900,7 +979,7 @@ int SqliteStorage::get_current_unix_time() const
     {
         try {
             row.getter() >> current_unix_time;
-            return current_unix_time;
+            return boost::numeric_cast<unsigned int>(current_unix_time);
         }
         catch (...)
         {

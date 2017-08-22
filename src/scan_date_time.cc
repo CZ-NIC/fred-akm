@@ -16,35 +16,21 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NSSET_HH_52BFED7EB867466FA9FFA781FBE45837
-#define NSSET_HH_52BFED7EB867466FA9FFA781FBE45837
+#include "scan_date_time.hh"
 
 #include <string>
-#include <set>
 
-namespace Fred {
-namespace Akm {
-
-
-struct Nsset
+std::string to_string(const ScanDateTime& scan_date_time)
 {
+    return scan_date_time.scan_date_time;
+}
 
-    Nsset()
-        : nameservers()
-    {
-    }
+std::string to_db_string(const ScanDateTime& scan_date_time)
+{
+    return scan_date_time.scan_date_time;
+}
 
-    Nsset(const std::set<std::string>& _nameservers)
-        : nameservers(_nameservers)
-    {
-    }
-
-    std::set<std::string> nameservers;
-};
-
-std::string to_string(const Nsset& _nsset);
-
-} // namespace Fred
-} // namespace Akm
-
-#endif
+std::string to_template_string(const ScanDateTime& scan_date_time)
+{
+    return scan_date_time.scan_date_time; // TODO localize?
+}

@@ -4,7 +4,7 @@
 #include "src/i_scanner.hh"
 #include "src/scan_task.hh"
 #include "src/scan_result_row.hh"
-#include "src/notified_domain_status.hh"
+#include "src/domain_notified_status.hh"
 #include "src/scan_type.hh"
 
 #include <boost/optional.hpp>
@@ -39,14 +39,16 @@ public:
 
     virtual long long prune_finished_scan_queue() const = 0;
 
-    virtual ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_notify(
-            ScanType _scan_type,
+    virtual ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
             int _seconds_back,
             bool _notify_from_last_iteration_only,
             bool _align_to_start_of_day = false) const = 0;
 
-    virtual ScanResultRows get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
-            ScanType _scan_type,
+    virtual ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
+            int _seconds_back,
+            bool _align_to_start_of_day = false) const = 0;
+
+    virtual ScanResultRows get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
             int _seconds_back,
             bool _align_to_start_of_day = false) const = 0;
 
@@ -54,16 +56,16 @@ public:
             int _seconds_back,
             bool _align_to_start_of_day = false) const = 0;
 
-    virtual void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const = 0;
+    virtual void set_domain_notified_status(const DomainNotifiedStatus& _domain_notified_status) const = 0;
 
-    virtual boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(
+    virtual boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(
             unsigned long long _domain_id) const = 0;
 
     virtual void clean_scan_results(
             const int _keep_seconds_back,
             bool _align_to_start_of_day = false) const = 0;
 
-    virtual int get_current_unix_time() const = 0;
+    virtual unsigned int get_current_unix_time() const = 0;
 };
 
 

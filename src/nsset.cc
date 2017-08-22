@@ -45,7 +45,7 @@ std::string to_string(const Nsset& _nsset)
     for (const auto& nameserver : _nsset.nameservers)
     {
         retval += quote(nameserver);
-        if (&nameserver != &_nsset.nameservers.back())
+        if (!_nsset.nameservers.empty() && (nameserver != *_nsset.nameservers.rbegin()))
         {
             retval += delim;
         }

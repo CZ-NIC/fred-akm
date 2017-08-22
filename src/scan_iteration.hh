@@ -19,6 +19,8 @@
 #ifndef SCAN_ITERATION_HH_60A1E0DFDE794EB782532E557B3902DE
 #define SCAN_ITERATION_HH_60A1E0DFDE794EB782532E557B3902DE
 
+#include "src/scan_date_time.hh"
+
 #include <string>
 
 namespace Fred {
@@ -28,19 +30,25 @@ namespace Akm {
 struct ScanIteration
 {
     ScanIteration()
-        : id(), start_at(), start_at_seconds(), end_at()
+        : id(),
+          start_at(),
+          end_at()
     {
     }
 
-    ScanIteration(int _id, const std::string& _start_at, int start_at_seconds,  const std::string& _end_at)
-        : id(_id), start_at(_start_at), start_at_seconds(), end_at(_end_at)
+    ScanIteration(
+            int _id,
+            const ScanDateTime& _start_at,
+            const ScanDateTime& _end_at)
+        : id(_id),
+          start_at(_start_at),
+          end_at(_end_at)
     {
     }
 
     int id;
-    std::string start_at;
-    int start_at_seconds;
-    std::string end_at;
+    ScanDateTime start_at;
+    ScanDateTime end_at;
 };
 
 bool operator==(const ScanIteration& _lhs, const ScanIteration& _rhs);

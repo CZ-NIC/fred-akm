@@ -16,12 +16,13 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "src/notified_domain_status.hh"
+#include "src/domain_notified_status.hh"
 
 #include "src/domain.hh"
-#include "src/notification_type.hh"
 #include "src/domain_status.hh"
 #include "src/enum_conversions.hh"
+#include "src/notification_type.hh"
+#include "src/scan_date_time.hh"
 
 #include <string>
 #include <vector>
@@ -46,23 +47,29 @@ std::string quote(int value) {
 
 // see "src/sqlite/storage.cc"
 
-std::string to_string(const NotifiedDomainStatus& _notified_domain_status)
+std::string to_string(const DomainNotifiedStatus& _domain_notified_status)
 {
     static const std::string delim = ", ";
     return  "[" +
-            quote(to_string(_notified_domain_status.domain_status)) + delim +
-            quote(_notified_domain_status.last_at) + delim +
-            to_string(_notified_domain_status.domain) + delim +
-            quote(_notified_domain_status.serialized_cdnskeys) + delim +
-            quote(to_string(_notified_domain_status.notification_type)) +
+            quote(to_string(_domain_notified_status.domain_status)) + delim +
+            quote(to_string(_domain_notified_status.last_at)) + delim +
+            to_string(_domain_notified_status.domain) + delim +
+            quote(_domain_notified_status.serialized_cdnskeys) + delim +
+            quote(to_string(_domain_notified_status.notification_type)) +
             "]";
 }
 
-bool are_coherent(const DomainState& _domain_state, const NotifiedDomainStatus& _notified_domain_status)
+bool are_coherent(const DomainState& _domain_state, const DomainNotifiedStatus& _domain_notified_status)
 {
-    return
-            _domain_state.domain == _notified_domain_status.domain &&
-            serialize(_domain_state.cdnskeys) == _notified_domain_status.serialized_cdnskeys;
+    return _domain_state.domain == _domain_notified_status.domain &&
+           serialize(_domain_state.cdnskeys) == _domain_notified_status.serialized_cdnskeys;
+}
+
+bool are_coherent(const DomainUnitedState& _domain_united_state, const DomainNotifiedStatus& _domain_notified_status)
+{
+    return _domain_united_state.domain == _domain_notified_status.domain &&
+           !_domain_united_state.is_empty() &&
+           serialize(_domain_united_state.get_cdnskeys()) == _domain_notified_status.serialized_cdnskeys;
 }
 
 } // namespace Fred::Akm

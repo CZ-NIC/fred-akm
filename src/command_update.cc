@@ -22,8 +22,9 @@
 #include "src/dnskey.hh"
 #include "src/domain_state.hh"
 #include "src/domain_state_stack.hh"
-#include "src/domain_status_stack.hh"
-#include "src/notified_domain_status.hh"
+#include "src/domain_united_state.hh"
+#include "src/domain_united_state_stack.hh"
+#include "src/domain_notified_status.hh"
 #include "src/keyset.hh"
 #include "src/log.hh"
 #include "src/nsset.hh"
@@ -84,7 +85,8 @@ struct StatsInsecureCandidates {
         log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_run_notify_first +
                                                                       domains_ko_for_update_no_recent_scan +
                                                                       domains_ko_for_update_not_all_historic_statuses_ok +
-                                                                      domains_ko_for_update_not_all_historic_statuses_coherent);
+                                                                      domains_ko_for_update_not_all_historic_statuses_coherent +
+                                                                      domains_unknown_no_data);
         log()->info("     ├─ run notify first:                {:>8}", domains_ko_for_update_run_notify_first);
         log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
         log()->info("     ├─ not all hist. statuses ok:       {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
@@ -100,20 +102,16 @@ struct StatsSecureCandidates {
     int domains_ok_for_update;
     int domains_updated_ok;
     int domains_updated_ko;
-    int domains_ko_for_update_run_notify_first;
     int domains_ko_for_update_no_recent_scan;
-    int domains_ko_for_update_not_all_historic_statuses_ok;
-    int domains_ko_for_update_not_all_historic_statuses_coherent;
     int domains_unknown_no_data;
+    int domains_ko_for_update_no_keys;
 
     StatsSecureCandidates()
         : domains_loaded(),
           domains_checked(),
           domains_ok_for_update(),
-          domains_ko_for_update_run_notify_first(),
-          domains_ko_for_update_not_all_historic_statuses_ok(),
-          domains_ko_for_update_not_all_historic_statuses_coherent(),
-          domains_unknown_no_data()
+          domains_unknown_no_data(),
+          domains_ko_for_update_no_keys()
     {
     }
 
@@ -125,14 +123,11 @@ struct StatsSecureCandidates {
         log()->info(" ├─ ok_for_update:                       {:>8}", domains_ok_for_update);
         log()->info(" │   ├─ updated:                         {:>8}", domains_updated_ok);
         log()->info(" │   └─ failed:                          {:>8}", domains_updated_ko);
-        log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_run_notify_first +
-                                                                      domains_ko_for_update_no_recent_scan +
-                                                                      domains_ko_for_update_not_all_historic_statuses_ok +
-                                                                      domains_ko_for_update_not_all_historic_statuses_coherent);
-        log()->info("     ├─ run notify first:                {:>8}", domains_ko_for_update_run_notify_first);
+        log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_no_recent_scan +
+                                                                      domains_ko_for_update_no_keys +
+                                                                      domains_unknown_no_data);
         log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
-        log()->info("     ├─ not all hist. statuses ok:       {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
-        log()->info("     ├─ not all hist. statuses coherent: {:>8}", domains_ko_for_update_not_all_historic_statuses_coherent);
+        log()->info("     ├─ no keys:                         {:>8}", domains_ko_for_update_no_keys);
         log()->info("     └─ no data:                         {:>8}", domains_unknown_no_data);
         log()->info("==================================================");
     }
@@ -170,9 +165,9 @@ struct StatsMembers {
 };
 
 
-StatsInsecureCandidates stats_insecure_akm_candidates;
+StatsInsecureCandidates stats_akm_insecure_candidates;
 
-void command_update_insecure_akm_candidates(
+void command_update_turn_on_akm_on_insecure_candidates(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         unsigned long _maximal_time_between_scan_results,
@@ -181,11 +176,10 @@ void command_update_insecure_akm_candidates(
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
-    log()->debug(";== [command_update (insecure akm candidates)] ===========================================================");
+    log()->debug(";== [command_update (akm insecure candidates)] ===========================================================");
 
     auto scan_result_rows =
-            _storage.get_scan_result_rows_of_akm_candidates_for_akm_turn_on(
-                    ScanType::insecure,
+            _storage.get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
                     _minimal_scan_result_sequence_length_to_update,
                     _align_to_start_of_day);
 
@@ -201,78 +195,96 @@ void command_update_insecure_akm_candidates(
     DomainStateStack domain_state_stack(scan_result_rows);
     print(domain_state_stack);
 
-    for (const auto& scan_iteration : domain_state_stack.scan_iterations)
-    {
-        stats_insecure_akm_candidates.domains_loaded += scan_iteration.second.size();
-    }
+    DomainUnitedStateStack domain_united_state_stack(domain_state_stack);
+    print(domain_united_state_stack);
 
-    const int current_unix_time = _storage.get_current_unix_time();
+    stats_akm_insecure_candidates.domains_loaded = domain_united_state_stack.domains_with_united_states.size();
+
+    const unsigned int current_unix_time = _storage.get_current_unix_time();
     log()->debug("current unix time taken from db: {}", current_unix_time);
 
-    DomainStatusStack domain_status_stack(domain_state_stack, _maximal_time_between_scan_results, current_unix_time);
-    print(domain_status_stack);
-
-    log()->debug(";== command_update (insecure) data ready");
-    stats_insecure_akm_candidates.domains_loaded = domain_status_stack.domains_with_statuses.size();
-    for (const auto& domain_with_statuses : domain_status_stack.domains_with_statuses)
+    for (const auto& domain_with_united_states : domain_united_state_stack.domains_with_united_states)
     {
-        const auto& domain = domain_with_statuses.first;
-        const auto& domain_statuses = domain_with_statuses.second;
+        const auto& domain = domain_with_united_states.first;
+        const auto& domain_united_states = domain_with_united_states.second;
 
-        if (domain_statuses.empty())
+        if (domain_united_states.empty())
         {
-            log()->error("no statuses for domain {}", domain.fqdn);
-            stats_insecure_akm_candidates.domains_unknown_no_data++;
+            log()->error("no united state for domain {}", domain.fqdn);
+            stats_akm_insecure_candidates.domains_unknown_no_data++;
             continue;
         }
-        stats_insecure_akm_candidates.domains_checked++;
+        stats_akm_insecure_candidates.domains_checked++;
 
         log()->debug("domain {}", to_string(domain));
 
-        boost::optional<NotifiedDomainStatus> notified_domain_status =
-                _storage.get_last_notified_domain_status(domain.id);
+        boost::optional<DomainNotifiedStatus> domain_notified_status =
+                _storage.get_domain_last_notified_status(domain.id);
         log()->debug("last notified status: {}",
-                notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND");
+                domain_notified_status ? to_string(*domain_notified_status) : "NOT FOUND");
 
-        DomainStatus domain_newest_status = domain_statuses.back();
-        log()->debug("newest domain status: {}", to_string(domain_newest_status));
+        //DomainStatus domain_newest_status = domain_united_states.back();
+        //log()->debug("newest domain status: {}", to_string(domain_newest_status));
 
-        if (notified_domain_status && (domain_newest_status.status != notified_domain_status->domain_status))
+        const DomainUnitedState& domain_newest_united_state = domain_united_states.back();
+        log()->debug("newest domain_status: {}", to_string(domain_newest_united_state));
+
+
+        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && (current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds > _maximal_time_between_scan_results);
+        if (!domain_newest_state_is_recent)
         {
-            log()->error("WILL NOT UPDATE domain {}: newest domain state != notified domain state; run notify first???", domain.fqdn);
-            stats_insecure_akm_candidates.domains_ko_for_update_run_notify_first++;
+            log()->error("WILL NOT UPDATE domain {}: domain latest state too old", domain.fqdn);
+            stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
             continue;
         }
 
-        bool domain_ok = true;
-        for (const auto& domain_status : boost::adaptors::reverse(domain_statuses))
+        const bool domain_notified_state_is_ok = domain_notified_status && (domain_notified_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok));
+        if (!domain_notified_state_is_ok)
         {
-            if (domain_status.status != DomainStatus::DomainStatusType::akm_status_candidate_ok)
-            {
-                log()->debug("non-acceptable (not ok) domain status found {}", to_string(domain_status));
-                domain_ok = false;
-                stats_insecure_akm_candidates.domains_ko_for_update_not_all_historic_statuses_ok++;
-                break;
-            }
-            if (!are_coherent(*domain_status.domain_state, *notified_domain_status))
-            {
-                log()->debug("non-acceptable (not coherent with the current one) domain status found {}", to_string(domain_status));
-                domain_ok = false;
-                stats_insecure_akm_candidates.domains_ko_for_update_not_all_historic_statuses_coherent++;
-                break;
-            }
+            log()->error("WILL NOT UPDATE domain {}: domain notified state != OK", domain.fqdn);
+            stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
+            continue;
         }
+
+        const bool domain_notified_state_is_newest_state = domain_notified_status && (are_coherent(domain_newest_united_state, *domain_notified_status));
+        if (!domain_notified_state_is_newest_state)
+        {
+            log()->error("WILL NOT UPDATE domain {}: domain newest state != domain notified state; run notify first???", domain.fqdn);
+            stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
+            continue;
+        }
+
+        const boost::optional<DomainUnitedState> domain_intermediate_united_state_to_not_turn_on =
+                lookup_domain_intermediate_united_state(
+                        domain,
+                        domain_united_states,
+                        _maximal_time_between_scan_results);
+
+        const bool domain_history_ok =
+                (domain_intermediate_united_state_to_not_turn_on &&
+                 current_unix_time >= domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds && // TODO fix poor unsigned handling someday
+                 (current_unix_time - domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds >= _minimal_scan_result_sequence_length_to_update))
+                ||
+                (!domain_intermediate_united_state_to_not_turn_on &&
+                 current_unix_time >= domain_united_states.front().get_scan_from().scan_seconds && // TODO fix poor unsigned handling someday
+                 (current_unix_time - domain_united_states.front().get_scan_from().scan_seconds >= _minimal_scan_result_sequence_length_to_update));
+
+        const bool domain_ok =
+                domain_newest_state_is_recent &&
+                domain_notified_state_is_ok &&
+                domain_notified_state_is_newest_state &&
+                domain_history_ok;
 
         if (domain_ok)
         {
-            stats_insecure_akm_candidates.domains_ok_for_update++;
+            stats_akm_insecure_candidates.domains_ok_for_update++;
             log()->debug("will update domain {}", domain.fqdn);
 
-            Nsset current_nsset(domain_newest_status.nameservers);
+            Nsset current_nsset(domain_newest_united_state.get_nameservers());
             log()->debug("current_nsset: {}", to_string(current_nsset));
 
             Keyset new_keyset;
-            for (const auto& cdnskey : domain_newest_status.domain_state->cdnskeys)
+            for (const auto& cdnskey : domain_newest_united_state.get_cdnskeys())
             {
                 //log()->debug("cdnskey: {}", to_string(cdnskey.second));
                 new_keyset.dnskeys.push_back(
@@ -291,42 +303,43 @@ void command_update_insecure_akm_candidates(
                 {
                     _akm_backend.turn_on_automatic_keyset_management_on_insecure_domain(domain.id, current_nsset, new_keyset);
                     log()->debug("UPDATE OK for insecure domain {}", domain.fqdn);
-                    stats_insecure_akm_candidates.domains_updated_ok++;
-                    domain_newest_status.status = DomainStatus::DomainStatusType::akm_status_managed_ok;
-                    NotifiedDomainStatus new_notified_domain_status =
-                            NotifiedDomainStatus(
+                    stats_akm_insecure_candidates.domains_updated_ok++;
+                    const auto domain_newest_united_state_status = DomainStatus::DomainStatusType::akm_status_managed_ok;
+                    DomainNotifiedStatus new_domain_notified_status =
+                            DomainNotifiedStatus(
                                     domain,
-                                    domain_newest_status);
+                                    domain_newest_united_state,
+                                    domain_newest_united_state_status);
                     log()->debug("first update from insecure to secure: not sending any notification/template for domain {}", domain.fqdn);
-                    save_domain_status(new_notified_domain_status, _storage, _dry_run);
+                    save_domain_status(new_domain_notified_status, _storage, _dry_run);
                 }
             }
             // TODO stats
             //catch (const Fred::Akm::ObjectNotFound& e)
             //{
             //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-            //    stats_insecure_akm_candidates.domains_updated_ko_object_not_found++;
+            //    stats_akm_insecure_candidates.domains_updated_ko_object_not_found++;
             //    log()->debug(e.what());
             //    continue;
             //}
             catch (const Fred::Akm::AkmException& e)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-                stats_insecure_akm_candidates.domains_updated_ko++;
+                stats_akm_insecure_candidates.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch (const std::runtime_error& e)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-                stats_insecure_akm_candidates.domains_updated_ko++;
+                stats_akm_insecure_candidates.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch (...)
             {
                 log()->error("UPDATE FAILED for domain {}", domain.fqdn);
-                stats_insecure_akm_candidates.domains_updated_ko++;
+                stats_akm_insecure_candidates.domains_updated_ko++;
                 throw;
             }
         }
@@ -334,9 +347,9 @@ void command_update_insecure_akm_candidates(
     }
 }
 
-StatsSecureCandidates stats_secure_akm_candidates;
+StatsSecureCandidates stats_akm_secure_candidates;
 
-void command_update_secure_akm_candidates(
+void command_update_turn_on_akm_on_secure_candidates(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         unsigned long _maximal_time_between_scan_results,
@@ -344,14 +357,130 @@ void command_update_secure_akm_candidates(
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
-    log()->debug(";== [command_update (secure akm candidates)] ===========================================================");
+    log()->debug(";== [command_update (akm secure candidates)] ===========================================================");
 
-    log()->error("NOT YET IMPLEMENTED"); // TODO
+    auto scan_result_rows =
+            _storage.get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
+                    _maximal_time_between_scan_results,
+                    _align_to_start_of_day);
+
+    log()->debug("got from database {} scan result(s)", scan_result_rows.size());
+
+    remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(scan_result_rows);
+    log()->debug("removed domains with invalid scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
+    remove_scan_result_rows_other_than_secure_noauto_with_data(scan_result_rows);
+    log()->debug("removed scan_result_rows with other than secure_noauto_with_data scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
+    remove_scan_result_rows_from_older_scan_iterations_per_domain(scan_result_rows);
+    log()->debug("removed scan_result_rows from older scan iterations than the latest one per domain -> remains {} scan result(s)", scan_result_rows.size());
+
+    DomainStateStack domain_state_stack(scan_result_rows);
+    print(domain_state_stack);
+
+    DomainUnitedStateStack domain_united_state_stack(domain_state_stack);
+    print(domain_united_state_stack);
+
+    stats_akm_secure_candidates.domains_loaded = domain_united_state_stack.domains_with_united_states.size();
+
+    for (const auto& domain_with_united_states : domain_united_state_stack.domains_with_united_states)
+    {
+        const auto& domain = domain_with_united_states.first;
+        const auto& domain_united_states = domain_with_united_states.second;
+
+        stats_akm_secure_candidates.domains_checked++;
+
+        log()->debug("domain {}", to_string(domain));
+
+        const DomainUnitedState& domain_newest_united_state = domain_united_states.back();
+
+        log()->debug("newest domain united state: {}", to_string(domain_newest_united_state));
+
+        if(!domain_newest_united_state.is_empty() && domain_newest_united_state.get_cdnskeys().empty())
+        {
+            log()->debug("will not update domain {}, no cdnskeys", domain.fqdn);
+            stats_akm_secure_candidates.domains_ko_for_update_no_keys++;
+            continue;
+        }
+
+        /*
+        boost::optional<DomainNotifiedStatus> domain_notified_status =
+                _storage.get_domain_last_notified_status(domain.id);
+
+        log()->debug("last notified status: {}",
+                domain_notified_status ? to_string(*domain_notified_status) : "NOT FOUND");
+
+        if (domain_notified_status)
+        {
+            stats_akm_secure_candidates.fallen_angel++;
+        }
+        */
+
+        const std::string serialized_new_keys = serialize(domain_newest_united_state.get_cdnskeys());
+        log()->info("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.fqdn, serialized_new_keys);
+        stats_akm_secure_candidates.domains_ok_for_update++;
+
+        try
+        {
+            if (!_dry_run)
+            {
+                Keyset new_keyset;
+                for (const auto& cdnskey : domain_newest_united_state.get_cdnskeys())
+                {
+                    new_keyset.dnskeys.push_back(
+                            Dnskey(
+                                    cdnskey.second.flags,
+                                    cdnskey.second.proto,
+                                    cdnskey.second.alg,
+                                    cdnskey.second.public_key));
+                }
+
+                _akm_backend.turn_on_automatic_keyset_management_on_secure_domain(domain.id, new_keyset);
+                log()->debug("UPDATE OK for secure noauto domain {}", domain.fqdn);
+                stats_akm_secure_candidates.domains_updated_ok++;
+
+                DomainStatus::DomainStatusType domain_newest_united_state_status = DomainStatus::DomainStatusType::akm_status_managed_ok;
+                DomainNotifiedStatus new_domain_notified_status =
+                        DomainNotifiedStatus(
+                                domain,
+                                domain_newest_united_state,
+                                domain_newest_united_state_status);
+                save_domain_status(new_domain_notified_status, _storage, _dry_run);
+            }
+        }
+        // TODO stats
+        //catch (const Fred::Akm::ObjectNotFound& e)
+        //{
+        //    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+        //    stats_akm_secure_candidates.domains_updated_ko_object_not_found++;
+        //    log()->debug(e.what());
+        //    continue;
+        //}
+        catch (const Fred::Akm::AkmException& e)
+        {
+            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            stats_akm_secure_candidates.domains_updated_ko++;
+            log()->debug(e.what());
+            continue;
+        }
+        catch (const std::runtime_error& e)
+        {
+            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            stats_akm_secure_candidates.domains_updated_ko++;
+            log()->debug(e.what());
+            continue;
+        }
+        catch (...)
+        {
+            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            stats_akm_secure_candidates.domains_updated_ko++;
+            throw;
+        }
+
+    }
 }
 
 StatsMembers stats_akm_members;
 
-void command_update_akm_members(
+void command_update_update_akm_members(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
@@ -360,7 +489,7 @@ void command_update_akm_members(
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
-    log()->debug(";== [command_update (secure)] =========================================================================");
+    log()->debug(";== [command_update (secure members)] =========================================================================");
 
     auto scan_result_rows =
             _storage.get_scan_result_rows_of_akm_members_for_update(
@@ -371,7 +500,7 @@ void command_update_akm_members(
 
     remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(scan_result_rows);
     log()->debug("removed domains with invalid scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
-    remove_scan_result_rows_other_than_secure_with_data(scan_result_rows);
+    remove_scan_result_rows_other_than_secure_auto_with_data(scan_result_rows);
     log()->debug("removed scan_result_rows with other than secure_with_data scan_results_rows -> remains {} scan result(s)", scan_result_rows.size());
     remove_scan_result_rows_from_older_scan_iterations_per_domain(scan_result_rows);
     log()->debug("removed scan_result_rows from older scan iterations than the latest one per domain -> remains {} scan result(s)", scan_result_rows.size());
@@ -379,64 +508,39 @@ void command_update_akm_members(
     DomainStateStack domain_state_stack(scan_result_rows);
     print(domain_state_stack);
 
-    for (const auto& scan_iteration : domain_state_stack.scan_iterations)
-    {
-        stats_akm_members.domains_loaded += scan_iteration.second.size();
-    }
+    DomainUnitedStateStack domain_united_state_stack(domain_state_stack);
+    print(domain_united_state_stack);
 
-    //DomainStatusStack domain_status_stack(domain_state_stack, _minimal_scan_result_sequence_length_to_update);
-    //print(domain_status_stack);
-    std::map<Domain, DomainState> domains_with_statuses;
-    for (const auto& scan_iteration : boost::adaptors::reverse(domain_state_stack.scan_iterations))
-    {
-        for (const auto& domain : scan_iteration.second)
-        {
-            for (const auto& nameserver : domain.second)
-            {
-                for (const auto& nameserver_ip : nameserver.second)
-                {
-                    for (const auto& domain_state : nameserver_ip.second) // TODO is just one state per domain/iteration, loop/vector not needed
-                    {
-                        //log()->debug(to_string(domain_state));
-                        domains_with_statuses[domain_state.domain] = domain_state;
-                    }
-                }
-            }
-        }
-    }
+    stats_akm_members.domains_loaded = domain_united_state_stack.domains_with_united_states.size();
 
-    log()->debug(";== command_update (secure) data ready");
-
-    for (const auto& domain_with_status : domains_with_statuses)
+    for (const auto& domain_with_united_states : domain_united_state_stack.domains_with_united_states)
     {
-        const auto& domain = domain_with_status.first;
-        const auto& domain_statuses = domain_with_status.second;
+        const auto& domain = domain_with_united_states.first;
+        const auto& domain_united_states = domain_with_united_states.second;
 
         stats_akm_members.domains_checked++;
 
         log()->debug("domain {}", to_string(domain));
 
-        Nsset current_nsset;
-        const DomainStatus domain_newest_status(DomainStatus::DomainStatusType::akm_status_managed_ok, ScanIteration(), domain_statuses, current_nsset.nameservers);
+        const DomainUnitedState& domain_newest_united_state = domain_united_states.back();
 
-        log()->debug("newest domain_status: {}", to_string(domain_newest_status));
+        log()->debug("newest domain united state: {}", to_string(domain_newest_united_state));
 
-        if(domain_newest_status.domain_state->cdnskeys.empty())
+        if(!domain_newest_united_state.is_empty() && domain_newest_united_state.get_cdnskeys().empty())
         {
             log()->debug("will not update domain {}, no cdnskeys", domain.fqdn);
             stats_akm_members.domains_ko_for_update_no_keys++;
             continue;
         }
 
-        boost::optional<NotifiedDomainStatus> notified_domain_status =
-                _storage.get_last_notified_domain_status(domain.id);
+        boost::optional<DomainNotifiedStatus> domain_notified_status =
+                _storage.get_domain_last_notified_status(domain.id);
 
         log()->debug("last notified status: {}",
-                notified_domain_status ? to_string(*notified_domain_status) : "NOT FOUND (AKM administratively set?)");
+                domain_notified_status ? to_string(*domain_notified_status) : "NOT FOUND (AKM administratively set?)");
 
-
-        const std::string serialized_new_keys = serialize(domain_newest_status.domain_state->cdnskeys);
-        if (notified_domain_status && (notified_domain_status->serialized_cdnskeys == serialized_new_keys)) // FIXME not set
+        const std::string serialized_new_keys = serialize(domain_newest_united_state.get_cdnskeys());
+        if (domain_notified_status && (domain_notified_status->serialized_cdnskeys == serialized_new_keys))
         {
             log()->debug("will not update domain {} with {}, keys are identical", domain.fqdn, serialized_new_keys);
             stats_akm_members.domains_ko_for_update_same_keys++;
@@ -451,7 +555,7 @@ void command_update_akm_members(
             if (!_dry_run)
             {
                 Keyset new_keyset;
-                for (const auto& cdnskey : domain_newest_status.domain_state->cdnskeys)
+                for (const auto& cdnskey : domain_newest_united_state.get_cdnskeys())
                 {
                     new_keyset.dnskeys.push_back(
                             Dnskey(
@@ -464,15 +568,18 @@ void command_update_akm_members(
                 _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
                 log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
                 stats_akm_members.domains_updated_ok++;
-                NotifiedDomainStatus new_notified_domain_status =
-                        NotifiedDomainStatus(
+
+                DomainStatus::DomainStatusType domain_newest_united_state_status = DomainStatus::DomainStatusType::akm_status_managed_ok;
+                DomainNotifiedStatus new_domain_notified_status =
+                        DomainNotifiedStatus(
                                 domain,
-                                domain_newest_status);
-                if (!has_deletekey(*domain_newest_status.domain_state))
+                                domain_newest_united_state,
+                                domain_newest_united_state_status);
+                if (!is_dnssec_turn_off_requested(domain_newest_united_state))
                 {
                     // do notification of akm change because automatic keyset update notification goes from backend to automatic keyset sponsoring registrar only
                     notify_and_save_domain_status(
-                            new_notified_domain_status,
+                            new_domain_notified_status,
                             _storage,
                             _akm_backend,
                             _mailer_backend,
@@ -482,7 +589,7 @@ void command_update_akm_members(
                 else
                 {
                     log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.fqdn);
-                    save_domain_status(new_notified_domain_status, _storage, _dry_run);
+                    save_domain_status(new_domain_notified_status, _storage, _dry_run);
                 }
             }
         }
@@ -530,7 +637,7 @@ void command_update(
         const bool _dry_run,
         const bool _fake_contact_emails)
 {
-    command_update_insecure_akm_candidates(
+    command_update_turn_on_akm_on_insecure_candidates(
             _storage,
             _akm_backend,
             _maximal_time_between_scan_results,
@@ -539,7 +646,7 @@ void command_update(
             _dry_run,
             _fake_contact_emails);
 
-    command_update_secure_akm_candidates(
+    command_update_turn_on_akm_on_secure_candidates(
             _storage,
             _akm_backend,
             _maximal_time_between_scan_results,
@@ -547,7 +654,7 @@ void command_update(
             _dry_run,
             _fake_contact_emails);
 
-    command_update_akm_members(
+    command_update_update_akm_members(
             _storage,
             _akm_backend,
             _mailer_backend,
@@ -556,7 +663,8 @@ void command_update(
             _dry_run,
             _fake_contact_emails);
 
-    stats_insecure_akm_candidates.print();
+    stats_akm_insecure_candidates.print();
+    stats_akm_secure_candidates.print();
     stats_akm_members.print();
 }
 

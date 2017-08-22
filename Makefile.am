@@ -65,8 +65,8 @@ fred_akm_SOURCES = \
 	src/command_notify.cc \
 	src/command_update.hh \
 	src/command_update.cc \
-	src/notified_domain_status.hh \
-	src/notified_domain_status.cc \
+	src/domain_notified_status.hh \
+	src/domain_notified_status.cc \
 	src/notification.hh \
 	src/notification.cc \
 	src/notification_type.hh \
@@ -91,10 +91,14 @@ fred_akm_SOURCES = \
 	src/scan_result_row.cc \
 	src/domain_state_stack.hh \
 	src/domain_state_stack.cc \
-	src/domain_status_stack.hh \
-	src/domain_status_stack.cc \
+	src/domain_united_state.hh \
+	src/domain_united_state.cc \
+	src/domain_united_state_stack.hh \
+	src/domain_united_state_stack.cc \
 	src/command_clean.hh \
 	src/command_clean.cc \
+	src/scan_date_time.hh \
+	src/scan_date_time.cc \
 	src/main.cc
 
 fred_akm_LDADD = \
