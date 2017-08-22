@@ -46,9 +46,8 @@ std::string to_string(const ScanIteration& _scan_iteration)
     static const std::string delim = ", ";
     return std::string("[") +
            quote(_scan_iteration.id) + delim +
-           quote(_scan_iteration.start_at) + delim +
-           quote(_scan_iteration.start_at_seconds) + delim +
-           quote(_scan_iteration.end_at) +
+           quote(to_string(_scan_iteration.start_at)) + delim +
+           quote(to_string(_scan_iteration.end_at)) +
            "]";
 }
 
@@ -57,7 +56,6 @@ bool operator==(const ScanIteration& _lhs, const ScanIteration& _rhs)
     return
         _lhs.id == _rhs.id &&
         _lhs.start_at == _rhs.start_at &&
-        _lhs.start_at_seconds == _rhs.start_at_seconds &&
         _lhs.end_at == _rhs.end_at;
 }
 

@@ -48,8 +48,7 @@ std::string to_string(const ScanResultRow& scan_result_row)
     return  "[" +
             quote(scan_result_row.id) + delim +
             quote(scan_result_row.scan_iteration_id) + delim +
-            quote(scan_result_row.scan_at) + delim +
-            quote(scan_result_row.scan_at_seconds) + delim +
+            quote(to_string(scan_result_row.scan_at)) + delim +
             quote(to_string(scan_result_row.scan_type)) + delim +
             quote(scan_result_row.cdnskey.status) + delim +
             quote(scan_result_row.domain_id) + delim +
@@ -199,7 +198,7 @@ bool is_insecure_with_data(const ScanResultRow& _scan_result_row)
     return false;
 }
 
-bool is_secure(const ScanResultRow& _scan_result_row)
+bool is_secure_auto(const ScanResultRow& _scan_result_row)
 {
     if (_scan_result_row.scan_type == ScanType::secure_auto &&
         (_scan_result_row.cdnskey.status == "secure" ||
@@ -212,9 +211,33 @@ bool is_secure(const ScanResultRow& _scan_result_row)
     return false;
 }
 
-bool is_secure_with_data(const ScanResultRow& _scan_result_row)
+bool is_secure_noauto(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.scan_type == ScanType::secure_noauto &&
+        (_scan_result_row.cdnskey.status == "secure" ||
+         _scan_result_row.cdnskey.status == "secure-empty" ||
+         _scan_result_row.cdnskey.status == "untrustworthy" ||
+         _scan_result_row.cdnskey.status == "unknown"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_secure_auto_with_data(const ScanResultRow& _scan_result_row)
 {
     if (_scan_result_row.scan_type == ScanType::secure_auto &&
+        (_scan_result_row.cdnskey.status == "secure" ||
+         _scan_result_row.cdnskey.status == "secure-empty"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool is_secure_noauto_with_data(const ScanResultRow& _scan_result_row)
+{
+    if (_scan_result_row.scan_type == ScanType::secure_noauto &&
         (_scan_result_row.cdnskey.status == "secure" ||
          _scan_result_row.cdnskey.status == "secure-empty"))
     {

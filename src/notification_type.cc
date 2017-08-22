@@ -18,6 +18,8 @@
 
 #include "src/notification_type.hh"
 
+#include <stdexcept>
+
 namespace Fred {
 namespace Akm {
 
@@ -32,6 +34,7 @@ std::string to_string(const NotificationType& _notification_type)
         case NotificationType::akm_notification_managed_ok:
                        return "akm_notification_managed_ok";
     }
+    throw std::invalid_argument("Fred::Akm::NotificationType value out of range");
 }
 
 int to_db_handle(const NotificationType& _notification_type)
@@ -45,6 +48,7 @@ int to_db_handle(const NotificationType& _notification_type)
         case NotificationType::akm_notification_managed_ok:
             return 2;
     }
+    throw std::invalid_argument("Fred::Akm::NotificationType value out of range");
 }
 
 } // namespace Fred::Akm

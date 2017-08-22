@@ -58,7 +58,6 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
         {
             last_domain_state = DomainState(
                             r.scan_at,
-                            r.scan_at_seconds,
                             Domain(r.domain_id, r.domain_name, r.scan_type),
                             r.nameserver,
                             r.nameserver_ip,
@@ -74,7 +73,6 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
                         .emplace_back(*last_domain_state);
                 last_domain_state = DomainState(
                         r.scan_at,
-                        r.scan_at_seconds,
                         Domain(r.domain_id, r.domain_name, r.scan_type),
                         r.nameserver,
                         r.nameserver_ip,
@@ -83,11 +81,11 @@ DomainStateStack::DomainStateStack(const ScanResultRows& _scan_result_rows)
         }
         if (!scan_iteration)
         {
-            scan_iteration = ScanIteration(r.scan_iteration_id, r.scan_at, r.scan_at_seconds, "");
+            scan_iteration = ScanIteration(r.scan_iteration_id, r.scan_at, ScanDateTime());
         }
         else if (r.scan_iteration_id != scan_iteration->id)
         {
-            scan_iteration = ScanIteration(r.scan_iteration_id, r.scan_at, r.scan_at_seconds, "");
+            scan_iteration = ScanIteration(r.scan_iteration_id, r.scan_at, ScanDateTime());
         }
         if (&r == &_scan_result_rows.back())
         {
@@ -101,13 +99,11 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         const int _scan_result_row_timediff_max,
-        const int _scan_result_row_sequence_timediff_min,
         const boost::optional<int> _current_unix_time)
 {
-    bool domain_ok = true;
+    bool recent_state_present = false;
     bool scan_result_row_timediff_max_ok = true;
     bool key_check_ok = true;
-    bool scan_result_row_sequence_timediff_min_ok = false;
     int indent = 1;
 
     boost::optional<DomainState> domain_newest_state; // domain state as reported by its most recently scanned namserver_ip
@@ -122,7 +118,7 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
                 {
                     domain_newest_state = domain_state;
                 }
-                else if (domain_state.scan_at_seconds > domain_newest_state->scan_at_seconds)
+                else if (domain_state.scan_at > domain_newest_state->scan_at)
                 {
                     domain_newest_state = domain_state;
                 }
@@ -136,12 +132,12 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
 
     if (domain_newest_state && domain_newest_state->cdnskeys.size())
     {
+        recent_state_present = true;
         indented_print(indent + 0, "domain newest state: " + to_string(*domain_newest_state));
         indented_print(indent + 0, "");
 
         for (const auto& nameserver : _nameservers) {
             indented_print(indent + 1, nameserver.first);
-            scan_result_row_sequence_timediff_min_ok = false;
             boost::optional<DomainState> last_domain_state = domain_newest_state;
             for (const auto& nameserver_ip : nameserver.second) {
                 indented_print(indent + 2, nameserver_ip.first);
@@ -150,19 +146,19 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
 
                     if (!domain_state.cdnskeys.size())
                     {
-                        indented_print(indent + 3, "KEY CHECK KO (no keys ~ insecure-empty)");
+                        indented_print(indent + 3, "KEY CHECK KO (no keys - is empty)");
                         key_check_ok = false;
                         break;
                     }
 
-                    if (_current_unix_time && (*_current_unix_time - last_domain_state->scan_at_seconds > _scan_result_row_timediff_max))
+                    if (_current_unix_time && (*_current_unix_time - last_domain_state->scan_at.scan_seconds > _scan_result_row_timediff_max))
                     {
                         indented_print(indent + 3, "TIMEDIFF CHECK KO (too old)");
                         scan_result_row_timediff_max_ok = false;
                         break;
                     }
 
-                    if (last_domain_state->scan_at_seconds - domain_state.scan_at_seconds
+                    if (last_domain_state->scan_at.scan_seconds - domain_state.scan_at.scan_seconds
                         > _scan_result_row_timediff_max)
                     {
                         indented_print(indent + 3, "TIMEDIFF CHECK KO ");
@@ -183,17 +179,6 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
                         indented_print(indent + 3, "key check ok");
                     }
 
-                    if (domain_newest_state->scan_at_seconds - last_domain_state->scan_at_seconds
-                        >= _scan_result_row_sequence_timediff_min)
-                    {
-                        indented_print(indent + 3, "sequence timediff check reached ok, leaving this ns");
-                        scan_result_row_sequence_timediff_min_ok = true;
-                        break; // requirements reached, can leave now
-                    }
-                    else {
-                        indented_print(indent + 3, "sequence timediff check pending");
-                    }
-
                     last_domain_state = domain_state;
                 }
             }
@@ -201,25 +186,9 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
     }
     else {
         indented_print(indent + 1, "KO, no recent scan result WITH CDNSKEYS for domain " + _domain.fqdn);
-        domain_ok = false;
     }
 
-    if (!key_check_ok)
-    {
-        domain_ok = false;
-    }
-    if (!scan_result_row_timediff_max_ok)
-    {
-        domain_ok = false;
-    }
-    if (!scan_result_row_sequence_timediff_min_ok)
-    {
-        if (domain_ok)
-        {
-            indented_print(indent + 2, "SEQUENCE TIMEDIFF CHECK KO");
-        }
-        domain_ok = false;
-    }
+    const bool domain_ok = recent_state_present && key_check_ok && scan_result_row_timediff_max_ok;
 
     indented_print(indent + 1, std::string("DOMAIN STATUS for this iteration: ") + (domain_ok ? "OK" : "KO"));
 
@@ -311,7 +280,7 @@ void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan
             _scan_result_rows.end());
 }
 
-void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows)
+void remove_scan_result_rows_other_than_secure_auto(ScanResultRows& _scan_result_rows)
 {
     std::map<unsigned long long, int> domains;
     _scan_result_rows.erase(
@@ -320,9 +289,9 @@ void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows
                     _scan_result_rows.end(),
                     [&](const ScanResultRow& _scan_result_row)
                     {
-                        if (!is_secure(_scan_result_row))
+                        if (!is_secure_auto(_scan_result_row))
                         {
-                            log()->debug("IGNORING NOT SECURE scan_result_row: {}", to_string(_scan_result_row));
+                            log()->debug("IGNORING NOT SECURE AUTO scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;
@@ -330,7 +299,7 @@ void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows
             _scan_result_rows.end());
 }
 
-void remove_scan_result_rows_other_than_secure_with_data(ScanResultRows& _scan_result_rows)
+void remove_scan_result_rows_other_than_secure_auto_with_data(ScanResultRows& _scan_result_rows)
 {
     std::map<unsigned long long, int> domains;
     _scan_result_rows.erase(
@@ -339,9 +308,47 @@ void remove_scan_result_rows_other_than_secure_with_data(ScanResultRows& _scan_r
                     _scan_result_rows.end(),
                     [&](const ScanResultRow& _scan_result_row)
                     {
-                        if (!is_secure_with_data(_scan_result_row))
+                        if (!is_secure_auto_with_data(_scan_result_row))
                         {
-                            log()->debug("IGNORING NOT SECURE WITH DATA scan_result_row: {}", to_string(_scan_result_row));
+                            log()->debug("IGNORING NOT SECURE AUTO WITH DATA scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_scan_result_rows_other_than_secure_noauto(ScanResultRows& _scan_result_rows)
+{
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        if (!is_secure_noauto(_scan_result_row))
+                        {
+                            log()->debug("IGNORING NOT SECURE NOAUTO scan_result_row: {}", to_string(_scan_result_row));
+                            return true;
+                        }
+                        return false;
+                    }),
+            _scan_result_rows.end());
+}
+
+void remove_scan_result_rows_other_than_secure_noauto_with_data(ScanResultRows& _scan_result_rows)
+{
+    std::map<unsigned long long, int> domains;
+    _scan_result_rows.erase(
+            std::remove_if(
+                    _scan_result_rows.begin(),
+                    _scan_result_rows.end(),
+                    [&](const ScanResultRow& _scan_result_row)
+                    {
+                        if (!is_secure_noauto_with_data(_scan_result_row))
+                        {
+                            log()->debug("IGNORING NOT SECURE NOAUTO WITH DATA scan_result_row: {}", to_string(_scan_result_row));
                             return true;
                         }
                         return false;

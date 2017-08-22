@@ -22,7 +22,7 @@
 #include "src/i_akm.hh"
 #include "src/i_mailer.hh"
 #include "src/i_storage.hh"
-#include "src/notified_domain_status.hh"
+#include "src/domain_notified_status.hh"
 
 #include <stdexcept>
 
@@ -39,12 +39,12 @@ struct NotificationFailed
 };
 
 void save_domain_status(
-        const NotifiedDomainStatus& _notified_domain_status,
+        const DomainNotifiedStatus& _domain_notified_status,
         const IStorage& _storage,
         const bool _dry_run);
 
 void notify_and_save_domain_status(
-        const NotifiedDomainStatus& _notified_domain_status,
+        const DomainNotifiedStatus& _domain_notified_status,
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,

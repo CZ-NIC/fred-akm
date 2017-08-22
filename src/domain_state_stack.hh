@@ -57,7 +57,6 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
         const Domain& _domain,
         const DomainStateStack::Nameservers& _nameservers,
         int _scan_result_row_timediff_max,
-        int _scan_result_row_sequence_timediff_min,
         boost::optional<int> _current_unix_time);
 
 void print(const DomainStateStack& _domain_state_stack);
@@ -67,8 +66,10 @@ bool operator<(const Domain& lhs, const Domain& rhs);
 void remove_scan_result_rows_from_older_scan_iterations_per_domain(ScanResultRows& _scan_result_rows);
 void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_rows);
 void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan_result_rows);
-void remove_scan_result_rows_other_than_secure(ScanResultRows& _scan_result_rows);
-void remove_scan_result_rows_other_than_secure_with_data(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_secure_auto(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_secure_auto_with_data(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_secure_noauto(ScanResultRows& _scan_result_rows);
+void remove_scan_result_rows_other_than_secure_noauto_with_data(ScanResultRows& _scan_result_rows);
 void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(ScanResultRows& _scan_result_rows);
 void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_scan_result_rows(ScanResultRows& _scan_result_rows);
 

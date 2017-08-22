@@ -16,33 +16,21 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "src/keyset.hh"
-#include "src/dnskey.hh"
+#include "scan_date_time.hh"
 
-#include <boost/algorithm/string/join.hpp>
-
-#include <ostream>
 #include <string>
 
-namespace Fred {
-namespace Akm {
-
-std::string to_string(const Keyset& _keyset)
+std::string to_string(const ScanDateTime& scan_date_time)
 {
-    static const std::string delim = ", ";
-    std::string retval;
-    retval = "[";
-    for (const auto& dnskey : _keyset.dnskeys)
-    {
-        retval += to_string(dnskey);
-        if (&dnskey != &_keyset.dnskeys.back())
-        {
-            retval += delim;
-        }
-    }
-    retval += "]";
-    return retval;
+    return scan_date_time.scan_date_time;
 }
 
-} // namespace Fred::Akm
-} // namespace Fred
+std::string to_db_string(const ScanDateTime& scan_date_time)
+{
+    return scan_date_time.scan_date_time;
+}
+
+std::string to_template_string(const ScanDateTime& scan_date_time)
+{
+    return scan_date_time.scan_date_time; // TODO localize?
+}

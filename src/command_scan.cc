@@ -47,8 +47,6 @@ void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
         log()->debug("ns total:{} batch-max:{}", scan_tasks.nameserver_size(), batch_ns_max);
         log()->debug("ds total:{} batch-max:{}", scan_tasks.domain_size(), batch_ds_max);
 
-        auto batch_domains_count = 0;
-
         DomainScanTaskCollection scan_batch;
         for (const auto& task : scan_tasks)
         {

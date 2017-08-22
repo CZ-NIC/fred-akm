@@ -33,25 +33,6 @@ std::string quote(const std::string& str)
     return "\"" + str + "\"";
 }
 
-std::string quote(int value)
-{
-    return std::to_string(value);
-}
-
-bool operator==(const DomainStatus& _lhs, const DomainStatus& _rhs)
-{
-    return
-        _lhs.status == _rhs.status &&
-        _lhs.scan_iteration == _rhs.scan_iteration &&
-        _lhs.domain_state == _rhs.domain_state;
-}
-
-
-bool operator!=(const DomainStatus& _lhs, const DomainStatus& _rhs)
-{
-    return !(_lhs == _rhs);
-}
-
 } // namespace Fred::Akim::{anonymous}
 
 
@@ -81,6 +62,7 @@ std::string to_string(const DomainStatus::DomainStatusType& _domain_status_type)
                    return "akm_status_managed_ok";
                    break;
     }
+    throw std::invalid_argument("Fred::Akm::DomainStatus::DomainStatusType value out of range");
 }
 
 int to_db_handle(const DomainStatus::DomainStatusType& _domain_status_type)
@@ -97,6 +79,7 @@ int to_db_handle(const DomainStatus::DomainStatusType& _domain_status_type)
             return 2;
             break;
     }
+    throw std::invalid_argument("Fred::Akm::DomainStatus::DomainStatusType value out of range");
 }
 
 } //namespace Fred::Akm

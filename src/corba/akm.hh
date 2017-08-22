@@ -5,7 +5,7 @@
 #include "src/i_akm.hh"
 #include "src/keyset.hh"
 #include "src/nsset.hh"
-#include "src/tech_contacts.hh"
+#include "src/email_addresses.hh"
 
 #include <string>
 #include <vector>
@@ -22,24 +22,24 @@ public:
 
     DomainScanTaskCollection get_nameservers_with_insecure_automatically_managed_domain_candidates() const;
 
-    DomainScanTaskCollection get_nameservers_with_automatically_managed_domains() const;
-
     DomainScanTaskCollection get_nameservers_with_secure_automatically_managed_domain_candidates() const;
 
-    std::vector<std::string> get_email_addresses_by_domain_id(unsigned long long domain_id) const;
+    DomainScanTaskCollection get_nameservers_with_automatically_managed_domains() const;
+
+    std::vector<std::string> get_email_addresses_by_domain_id(unsigned long long _domain_id) const;
 
     void turn_on_automatic_keyset_management_on_insecure_domain(
-        unsigned long long domain_id,
-        Nsset current_nsset,
-        Keyset new_keyset) const;
+            unsigned long long _domain_id,
+            Nsset _current_nsset,
+            Keyset _new_keyset) const;
 
     void turn_on_automatic_keyset_management_on_secure_domain(
-        unsigned long long domain_id,
-        Keyset new_keyset) const;
+            unsigned long long _domain_id,
+            Keyset _new_keyset) const;
 
     void update_automatically_managed_keyset_of_domain(
-        unsigned long long domain_id,
-        Keyset new_keyset) const;
+            unsigned long long _domain_id,
+            Keyset _new_keyset) const;
 
 private:
     const Nameservice& ns_;

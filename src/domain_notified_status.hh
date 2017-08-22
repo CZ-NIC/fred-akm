@@ -16,11 +16,12 @@
  * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NOTIFIED_DOMAIN_STATUS_HH_BBDA2A17589B41BC810D2B3BC4EF8ABE
-#define NOTIFIED_DOMAIN_STATUS_HH_BBDA2A17589B41BC810D2B3BC4EF8ABE
+#ifndef DOMAIN_NOTIFIED_STATUS_HH_BBDA2A17589B41BC810D2B3BC4EF8ABE
+#define DOMAIN_NOTIFIED_STATUS_HH_BBDA2A17589B41BC810D2B3BC4EF8ABE
 
 #include "src/domain.hh"
 #include "src/domain_status.hh"
+#include "src/domain_united_state.hh"
 #include "src/enum_conversions.hh"
 #include "src/notification_type.hh"
 #include "src/scan_result_row.hh"
@@ -32,45 +33,55 @@ namespace Fred {
 namespace Akm {
 
 
-struct NotifiedDomainStatus
+struct DomainNotifiedStatus
 {
-    NotifiedDomainStatus()
+    DomainNotifiedStatus()
         : domain(),
           serialized_cdnskeys(),
           domain_status(),
           notification_type(),
-          last_at(),
-          last_at_seconds()
+          last_at()
     {
     }
 
     /*
-    NotifiedDomainStatus(
+    DomainNotifiedStatus(
         const Domain& _domain,
         const std::string& _serialized_cdnskeys, // serialized _cdnskeys
         DomainStatus::DomainStatusType _domain_status,
         NotificationType _notification_type,
         std::string _last_at,
-        int _last_at_seconds)
         : domain(_domain),
           serialized_cdnskeys(_serialized_cdnskeys),
           domain_status(_domain_status),
           notification_type(_notification_type),
-          last_at(_last_at),
-          last_at_seconds(_last_at_seconds)
+          last_at(_last_at)
     {
     }
     */
 
-    NotifiedDomainStatus(
+    DomainNotifiedStatus(
             const Domain& _domain,
             const DomainStatus& _domain_status)
         : domain(_domain),
           serialized_cdnskeys(_domain_status.domain_state ? serialize(_domain_status.domain_state->cdnskeys) : ""),
           domain_status(_domain_status.status),
           notification_type(Conversion::Enums::to_notification_type(_domain_status.status)),
-          last_at(_domain_status.domain_state ? _domain_status.domain_state->scan_at : _domain_status.scan_iteration.start_at),
-          last_at_seconds(_domain_status.domain_state ? _domain_status.domain_state->scan_at_seconds : _domain_status.scan_iteration.start_at_seconds)
+          last_at(_domain_status.domain_state ? _domain_status.domain_state->scan_at : _domain_status.scan_iteration.start_at)
+    {
+    }
+
+
+    DomainNotifiedStatus(
+            const Domain& _domain,
+            const DomainUnitedState& _domain_united_state,
+            const DomainStatus::DomainStatusType _domain_united_state_status)
+        : domain(_domain),
+          serialized_cdnskeys(!_domain_united_state.is_empty() ? serialize(_domain_united_state.get_cdnskeys()) : ""),
+          domain_status(_domain_united_state_status),
+          notification_type(Conversion::Enums::to_notification_type(_domain_united_state_status)),
+          //last_at(!_domain_united_state.is_empty() ? _domain_united_state.get_scan_to() : _domain_united_state.scan_iteration.start_at)
+          last_at(_domain_united_state.get_scan_to())
     {
     }
 
@@ -79,12 +90,14 @@ struct NotifiedDomainStatus
     std::string serialized_cdnskeys; // serialized cdnskeys
     DomainStatus::DomainStatusType domain_status;
     NotificationType notification_type;
-    std::string last_at;
-    int last_at_seconds;
+    ScanDateTime last_at;
 };
 
-std::string to_string(const NotifiedDomainStatus& _notified_domain_status);
-bool are_coherent(const DomainState& _domain_state, const NotifiedDomainStatus& _notified_domain_status);
+std::string to_string(const DomainNotifiedStatus& _notified_domain_status);
+
+bool are_coherent(const DomainState& _domain_state, const DomainNotifiedStatus& _notified_domain_status);
+
+bool are_coherent(const DomainUnitedState& _domain_united_state, const DomainNotifiedStatus& _notified_domain_status);
 
 } // namespace Fred::Akm
 } // namespace Fred

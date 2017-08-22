@@ -2,6 +2,7 @@
 #define STORAGE_HH_F547FDFC7F6B4D918928C606B9E4A87E
 
 #include "src/i_storage.hh"
+#include "src/scan_type.hh"
 
 #include "3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h"
 
@@ -35,29 +36,33 @@ public:
 
     long long prune_finished_scan_queue() const;
 
-    ScanResultRows get_insecure_scan_result_rows_for_notify(
+    ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
             int _seconds_back,
             bool _notify_from_last_iteration_only,
             bool _align_to_start_of_day = false) const;
 
-    ScanResultRows get_insecure_scan_result_rows_for_update(
+    ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
             int _seconds_back,
             bool _align_to_start_of_day = false) const;
 
-    ScanResultRows get_secure_scan_result_rows_for_update(
+    ScanResultRows get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
             int _seconds_back,
             bool _align_to_start_of_day = false) const;
 
-    void set_notified_domain_status(const NotifiedDomainStatus& _notified_domain_status) const;
+    ScanResultRows get_scan_result_rows_of_akm_members_for_update(
+            int _seconds_back,
+            bool _align_to_start_of_day = false) const;
 
-    boost::optional<NotifiedDomainStatus> get_last_notified_domain_status(
+    void set_domain_notified_status(const DomainNotifiedStatus& _domain_notified_status) const;
+
+    boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(
             unsigned long long _domain_id) const;
 
     void clean_scan_results(
             int _keep_seconds_back,
             bool _align_to_start_of_day = false) const;
 
-    int get_current_unix_time() const;
+    unsigned int get_current_unix_time() const;
 
 private:
     sqlite3pp::database get_db() const;

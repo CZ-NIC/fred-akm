@@ -20,7 +20,7 @@
 #define NSSET_HH_52BFED7EB867466FA9FFA781FBE45837
 
 #include <string>
-#include <vector>
+#include <set>
 
 namespace Fred {
 namespace Akm {
@@ -34,12 +34,12 @@ struct Nsset
     {
     }
 
-    Nsset(const std::vector<std::string>& _nameservers)
+    Nsset(const std::set<std::string>& _nameservers)
         : nameservers(_nameservers)
     {
     }
 
-    std::vector<std::string> nameservers;
+    std::set<std::string> nameservers;
 };
 
 std::string to_string(const Nsset& _nsset);

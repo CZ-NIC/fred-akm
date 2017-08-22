@@ -22,6 +22,7 @@
 #include "src/cdnskey.hh"
 #include "src/domain_state.hh"
 #include "src/scan_type.hh"
+#include "src/scan_date_time.hh"
 
 #include <ostream>
 #include <string>
@@ -36,7 +37,6 @@ struct ScanResultRow
         : id(),
           scan_iteration_id(),
           scan_at(),
-          scan_at_seconds(),
           domain_id(),
           domain_name(),
           scan_type(),
@@ -49,8 +49,7 @@ struct ScanResultRow
     ScanResultRow(
             int _id,
             int _scan_iteration_id,
-            const std::string& _scan_at,
-            int _scan_at_seconds,
+            const ScanDateTime& _scan_at,
             int _domain_id,
             const std::string& _domain_name,
             ScanType _scan_type,
@@ -60,7 +59,6 @@ struct ScanResultRow
         : id(_id),
           scan_iteration_id(_scan_iteration_id),
           scan_at(_scan_at),
-          scan_at_seconds(_scan_at_seconds),
           domain_id(_domain_id),
           domain_name(_domain_name),
           scan_type(_scan_type),
@@ -74,7 +72,6 @@ struct ScanResultRow
         : id(_scan_result_row.id),
           scan_iteration_id(_scan_result_row.scan_iteration_id),
           scan_at(_scan_result_row.scan_at),
-          scan_at_seconds(_scan_result_row.scan_at_seconds),
           domain_id(_scan_result_row.domain_id),
           domain_name(_scan_result_row.domain_name),
           scan_type(_scan_result_row.scan_type),
@@ -86,8 +83,7 @@ struct ScanResultRow
 
     int id;
     int scan_iteration_id;
-    std::string scan_at;
-    int scan_at_seconds;
+    ScanDateTime scan_at;
     long long domain_id;
     std::string domain_name;
     ScanType scan_type;
@@ -104,8 +100,10 @@ std::string to_string(const ScanResultRow& scan_result_row);
 bool is_valid(const ScanResultRow& _scan_result_row);
 bool is_insecure(const ScanResultRow& _scan_result_row);
 bool is_insecure_with_data(const ScanResultRow& _scan_result_row);
-bool is_secure(const ScanResultRow& _scan_result_row);
-bool is_secure_with_data(const ScanResultRow& _scan_result_row);
+bool is_secure_auto(const ScanResultRow& _scan_result_row);
+bool is_secure_noauto(const ScanResultRow& _scan_result_row);
+bool is_secure_auto_with_data(const ScanResultRow& _scan_result_row);
+bool is_secure_noauto_with_data(const ScanResultRow& _scan_result_row);
 bool is_from_same_nameserver_ip(const ScanResultRow& _scan_result_row, const DomainState& _domain_state);
 
 } // namespace Fred::Akm

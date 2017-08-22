@@ -20,6 +20,7 @@
 
 #include "src/cdnskey.hh"
 #include "src/domain.hh"
+#include "src/scan_date_time.hh"
 
 #include <algorithm>
 #include <iterator>
@@ -38,11 +39,6 @@ std::string quote(const std::string& str)
     return "\"" + str + "\"";
 }
 
-std::string quote(unsigned long long value)
-{
-    return std::to_string(value);
-}
-
 } // namespace Fred::Akim::{anonymous}
 
 
@@ -53,7 +49,7 @@ std::string to_string(const DomainState& _domain_state, const bool verbose)
     static const std::string delim = ", ";
     std::string retval;
     retval = "[" +
-            quote(_domain_state.scan_at) + delim +
+            quote(_domain_state.scan_at.scan_date_time) + delim +
             to_string(_domain_state.domain);
     for (const auto& cdnskey : _domain_state.cdnskeys)
     {
@@ -65,7 +61,7 @@ std::string to_string(const DomainState& _domain_state, const bool verbose)
         retval += std::string(" (") +
                   "taken from NS: " + quote(_domain_state.nameserver) + delim +
                   "with IP: " + quote(_domain_state.nameserver_ip) + delim +
-                  "at: " + quote(_domain_state.scan_at);
+                  "at: " + quote(to_string(_domain_state.scan_at));
     }
     return retval;
 }
@@ -74,7 +70,6 @@ bool operator==(const DomainState& _lhs, const DomainState& _rhs)
 {
     return
         _lhs.scan_at == _rhs.scan_at &&
-        _lhs.scan_at_seconds == _rhs.scan_at_seconds &&
         _lhs.domain == _rhs.domain &&
         _lhs.nameserver == _rhs.nameserver &&
         _lhs.nameserver_ip == _rhs.nameserver_ip &&
@@ -86,29 +81,10 @@ bool operator!=(const DomainState& _lhs, const DomainState& _rhs)
     return !(_lhs == _rhs);
 }
 
-bool has_deletekey(const DomainState& _domain_state)
+bool are_coherent(const DomainState& _first_domain_state, const DomainState& _second_domain_state)
 {
-    return std::find_if(
-                   _domain_state.cdnskeys.begin(),
-                   _domain_state.cdnskeys.end(),
-                   [](std::pair<std::string, Cdnskey> cdnskeys_item)
-                   {
-                       return is_deletekey(cdnskeys_item.second);
-                   })
-           != _domain_state.cdnskeys.end();
-}
-
-bool are_coherent(const DomainState& _first, const DomainState& _second)
-{
-    if (_first.domain != _second.domain)
-    {
-        return false;
-    }
-    if (_first.cdnskeys != _second.cdnskeys)
-    {
-        return false;
-    }
-    return true;
+    return _first_domain_state.domain == _second_domain_state.domain &&
+           _first_domain_state.cdnskeys == _second_domain_state.cdnskeys;
 }
 
 } // namespace Fred::Akm
