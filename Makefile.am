@@ -18,7 +18,6 @@ fred_akm_SOURCES = \
 	src/i_loader_filter.hh \
 	src/i_akm.hh \
 	src/enum_conversions.hh \
-	src/tech_contacts.hh \
 	src/type_instance_map.hh \
 	src/from_string.hh \
 	src/scan_type.hh \
@@ -31,6 +30,7 @@ fred_akm_SOURCES = \
 	src/conf.cc \
 	src/log.hh \
 	src/log.cc \
+	src/email_addresses.hh \
 	src/subprocess.hh \
 	src/corba/corba_context.hh \
 	src/corba/corba_context.cc \
