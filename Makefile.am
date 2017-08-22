@@ -9,11 +9,16 @@ AM_CPPFLAGS = -I$(top_srcdir)
 bin_PROGRAMS = fred-akm
 
 fred_akm_SOURCES = \
+	3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h \
+	3rd_party/sqlite3pp/headeronly_src/sqlite3pp.ipp \
 	src/i_mailer.hh \
 	src/i_storage.hh \
 	src/i_scanner.hh \
 	src/i_loader.hh \
 	src/i_loader_filter.hh \
+	src/i_akm.hh \
+	src/enum_conversions.hh \
+	src/tech_contacts.hh \
 	src/type_instance_map.hh \
 	src/from_string.hh \
 	src/scan_type.hh \
@@ -31,8 +36,14 @@ fred_akm_SOURCES = \
 	src/corba/corba_context.cc \
 	src/corba/nameservice.hh \
 	src/corba/nameservice.cc \
+	src/corba/akm.cc \
+	src/corba/akm.hh \
+	src/corba/mailer.cc \
+	src/corba/mailer.hh \
 	src/sqlite/storage.hh \
 	src/sqlite/storage.cc \
+	src/sqlite/enum_conversion.hh \
+	src/sqlite/scan_type_conversion.hh \
 	src/cdnskey_scanner_impl/input_serializer.hh \
 	src/cdnskey_scanner_impl/output_parser.hh \
 	src/cdnskey_scanner_impl/output_parser.cc \
