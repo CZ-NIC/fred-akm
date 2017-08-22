@@ -104,7 +104,6 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
     bool recent_state_present = false;
     bool scan_result_row_timediff_max_ok = true;
     bool key_check_ok = true;
-    bool scan_result_row_sequence_timediff_min_ok = false;
     int indent = 1;
 
     boost::optional<DomainState> domain_newest_state; // domain state as reported by its most recently scanned namserver_ip
@@ -139,7 +138,6 @@ boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent
 
         for (const auto& nameserver : _nameservers) {
             indented_print(indent + 1, nameserver.first);
-            scan_result_row_sequence_timediff_min_ok = false;
             boost::optional<DomainState> last_domain_state = domain_newest_state;
             for (const auto& nameserver_ip : nameserver.second) {
                 indented_print(indent + 2, nameserver_ip.first);

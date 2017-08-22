@@ -118,6 +118,7 @@ std::string to_string(const DomainStatusChange& domain_status_change)
         case DomainStatusChange::ko_ko: return "ko->ko"; break;
         case DomainStatusChange::ok_ok2: return "ok->ok2"; break;
     }
+    throw std::invalid_argument("Fred::Akm::DomainStatusChange value out of range");
 }
 
 void update_stats_according_to_domain_status_change(
@@ -161,6 +162,8 @@ void update_stats_according_to_domain_status_change(
             stats_insecure_akm_candidates.domains_ok++;
             stats_insecure_akm_candidates.sent_ok_notifications++;
             break;
+        default:
+            throw std::invalid_argument("update_stats_according_to_domain_status_change input value(s) out of range");
     }
 }
 
@@ -184,6 +187,7 @@ DomainStatus::DomainStatusType to_new_domain_status_type(const DomainStatusChang
         case DomainStatusChange::ko_ko: return DomainStatus::DomainStatusType::akm_status_candidate_ko; break;
         case DomainStatusChange::ok_ok2: return DomainStatus::DomainStatusType::akm_status_candidate_ok; break;
     }
+    throw std::invalid_argument("Fred::Akm::DomainStatusChange value out of range");
 }
 
 DomainStatusChange get_domain_status_change(

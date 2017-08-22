@@ -27,20 +27,6 @@
 namespace Fred {
 namespace Akm {
 
-namespace {
-
-std::string quote(const std::string& str)
-{
-    return "\"" + str + "\"";
-}
-
-std::string quote(int value)
-{
-    return std::to_string(value);
-}
-
-} // namespace Fred::Akim::{anonymous}
-
 std::string to_string(const Keyset& _keyset)
 {
     static const std::string delim = ", ";
