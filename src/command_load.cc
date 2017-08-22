@@ -11,11 +11,23 @@ namespace Akm {
 void command_load(
     const IStorage& _storage,
     const ILoader& _loader,
+    const LoaderFlags& _loader_flags,
     std::unique_ptr<ILoaderOutputFilter> _filter,
     int _flags)
 {
     DomainScanTaskCollection scan_tasks;
-    _loader.load_domains(scan_tasks);
+    if (_loader_flags.should_load(LoaderFlags::Flag::load_insecure))
+    {
+        _loader.load_insecure_tasks(scan_tasks);
+    }
+    if (_loader_flags.should_load(LoaderFlags::Flag::load_secure_auto))
+    {
+        _loader.load_secure_auto_tasks(scan_tasks);
+    }
+    if (_loader_flags.should_load(LoaderFlags::Flag::load_secure_noauto))
+    {
+        _loader.load_secure_noauto_tasks(scan_tasks);
+    }
 
     if (_filter)
     {

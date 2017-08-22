@@ -39,6 +39,9 @@ struct LoadCommandArgs : public ArgsGroup
     bool wipe_queue;
     bool allow_dups;
     bool prune;
+    bool no_insecure;
+    bool no_secure_auto;
+    bool no_secure_noauto;
     std::string whitelist_file;
 };
 

@@ -48,7 +48,13 @@ Args parse_args(int argc, char* argv[])
              "allow duplicates tasks in scan queue")
             ("prune", po::bool_switch(&command_load_args->prune)->default_value(false),
              "prune domain with older id when importing same domain name")
-            ("whitelist-file", po::value<std::string>(&command_load_args->whitelist_file)->default_value(""),
+            ("no-insecure", po::bool_switch(&command_load_args->no_insecure)->default_value(false),
+             "disable load of insecure domains")
+            ("no-secure-auto", po::bool_switch(&command_load_args->no_secure_auto)->default_value(false),
+             "disable load of secure domains with already automatically managed keyset")
+            ("no-secure-noauto", po::bool_switch(&command_load_args->no_secure_noauto)->default_value(false),
+             "disable load of secure domains without automatically managed keyset")
+             ("whitelist-file", po::value<std::string>(&command_load_args->whitelist_file)->default_value(""),
              "whitelist file with domain names (one per line) which can be imported to scan queue (enforces --wipe-queue)");
 
         po::options_description command_scan("Scan options");

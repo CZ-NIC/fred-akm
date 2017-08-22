@@ -32,6 +32,7 @@ public:
     template<class Writter>
     void serialize_insecure(const NameserverToDomainScanTaskAdapter& _tasks, Writter& _writter)
     {
+        std::unordered_set<std::string> written_domains;
         bool insecure_marker_written = false;
         for (const auto& kv : _tasks)
         {
@@ -48,7 +49,11 @@ public:
                         insecure_marker_written = true;
                     }
                     line.append(" " + domain.fqdn);
-                    insecure_domains_counter += 1;
+                    if (written_domains.count(domain.fqdn) == 0)
+                    {
+                        insecure_domains_counter += 1;
+                        written_domains.insert(domain.fqdn);
+                    }
                 }
             }
             if (insecure_marker_written && !line.empty())
@@ -70,7 +75,9 @@ public:
             for (const auto task : _tasks.find_all(nameserver))
             {
                 const auto& domain = task->domain;
-                if (domain.scan_type == ScanType::secure_auto && written_domains.count(domain.fqdn) == 0)
+                if ((domain.scan_type == ScanType::secure_auto
+                    || domain.scan_type == ScanType::secure_noauto)
+                    && written_domains.count(domain.fqdn) == 0)
                 {
                     if (!secure_marker_written)
                     {

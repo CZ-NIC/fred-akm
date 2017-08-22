@@ -13,10 +13,14 @@ class BackendLoader : public ILoader
 public:
     BackendLoader(const IAkm& _akm_backend);
 
-    void load_domains(DomainScanTaskCollection& _scan_tasks) const;
+    void load_insecure_tasks(DomainScanTaskCollection& _scan_tasks) const;
+
+    void load_secure_auto_tasks(DomainScanTaskCollection& _scan_tasks) const;
+
+    void load_secure_noauto_tasks(DomainScanTaskCollection& _scan_tasks) const;
 
 private:
-    const IAkm& akm_backend_; 
+    const IAkm& akm_backend_;
 };
 
 

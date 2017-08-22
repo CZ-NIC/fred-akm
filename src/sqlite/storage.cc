@@ -45,6 +45,7 @@ void create_schema_scan_queue(sqlite3pp::database& _db)
     _db.execute("CREATE UNIQUE INDEX enum_scan_type_uniq_idx ON enum_scan_type(handle)");
     _db.execute("INSERT OR REPLACE INTO enum_scan_type (id, handle) VALUES (1, 'insecure')");
     _db.execute("INSERT OR REPLACE INTO enum_scan_type (id, handle) VALUES (2, 'secure-auto')");
+    _db.execute("INSERT OR REPLACE INTO enum_scan_type (id, handle) VALUES (3, 'secure-noauto')");
 
     _db.execute(
         "CREATE TABLE IF NOT EXISTS scan_queue ("

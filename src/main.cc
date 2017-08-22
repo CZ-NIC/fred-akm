@@ -62,6 +62,20 @@ void dispatch_command_load(
         load_flags |= Fred::Akm::LoadFlags::PRUNE;
     }
 
+    Fred::Akm::LoaderFlags loader_flags;
+    if (load_args->no_insecure)
+    {
+        loader_flags.disable_load(Fred::Akm::LoaderFlags::Flag::load_insecure);
+    }
+    if (load_args->no_secure_auto)
+    {
+        loader_flags.disable_load(Fred::Akm::LoaderFlags::Flag::load_secure_auto);
+    }
+    if (load_args->no_secure_noauto)
+    {
+        loader_flags.disable_load(Fred::Akm::LoaderFlags::Flag::load_secure_noauto);
+    }
+
     std::unique_ptr<Fred::Akm::ILoaderOutputFilter> filter;
     if (whitelist_file.length())
     {
@@ -70,12 +84,12 @@ void dispatch_command_load(
 
     if (input_file.length())
     {
-        command_load(db, Fred::Akm::FileLoader(input_file), std::move(filter), load_flags);
+        command_load(db, Fred::Akm::FileLoader(input_file), loader_flags, std::move(filter), load_flags);
     }
     else
     {
         auto akm_backend = Fred::Akm::Corba::Akm(_cctx.get_nameservice(), _conf.get<Fred::Akm::NameserviceConf>()->object_path_akm);
-        command_load(db, Fred::Akm::BackendLoader(akm_backend), std::move(filter), load_flags);
+        command_load(db, Fred::Akm::BackendLoader(akm_backend), loader_flags, std::move(filter), load_flags);
     }
 }
 
