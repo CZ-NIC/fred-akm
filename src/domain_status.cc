@@ -43,7 +43,7 @@ std::string to_string(const DomainStatus& _domain_status)
     static const std::string delim = ", ";
     return std::string("[") +
            quote(to_string(_domain_status.status)) + delim +
-           to_string(_domain_status.domain_state.value_or(DomainState())) +
+           to_string(_domain_status.domain_state ? *_domain_status.domain_state : DomainState()) +
            to_string(_domain_status.scan_iteration) +
            "]";
 }
