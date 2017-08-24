@@ -1,5 +1,5 @@
 #include <vector>
-#include <regex>
+#include <boost/regex.hpp>
 
 #include "src/corba/nameservice.hh"
 
@@ -10,9 +10,9 @@ namespace Corba {
 
 std::vector<std::string> parse_ns_path(const std::string& _object_path)
 {
-    std::regex split_on("[.]");
-    std::sregex_token_iterator beg(_object_path.begin(), _object_path.end(), split_on, -1);
-    std::sregex_token_iterator end;
+    boost::regex split_on("[.]");
+    boost::sregex_token_iterator beg(_object_path.begin(), _object_path.end(), split_on, -1);
+    boost::sregex_token_iterator end;
     return {beg, end};
 }
 

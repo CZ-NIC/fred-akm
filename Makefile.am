@@ -105,6 +105,7 @@ fred_akm_LDADD = \
 	src/corba/generated/libakm.a \
 	src/corba/generated/libmailer.a \
 	$(BOOST_PROGRAM_OPTIONS_LIB) \
+	$(BOOST_REGEX_LIB) \
 	$(OMNIORB4_LIBS) \
 	$(SQLITE3_LDFLAGS)
 

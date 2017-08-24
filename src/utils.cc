@@ -1,4 +1,3 @@
-#include <regex>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/lexical_cast.hpp>
 
