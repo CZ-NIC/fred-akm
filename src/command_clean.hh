@@ -29,6 +29,7 @@ namespace Akm {
 
 void command_clean(
         const IStorage& _storage,
+        unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_update,
         bool _align_to_start_of_day);
 
