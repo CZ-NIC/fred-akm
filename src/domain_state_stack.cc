@@ -36,15 +36,45 @@ namespace Fred {
 namespace Akm {
 
 namespace {
-    void indented_print(const int _indent, const std::string& _message, const std::string& _prefix = "")
-    {
-        std::string result = _prefix;
-        for (int i = 0; i < _indent; ++i) {
-            result += "    ";
-        }
-        result += _message;
-        log()->debug(result);
+
+void indented_print(const int _indent, const std::string& _message, const std::string& _prefix = "")
+{
+    std::string result = _prefix;
+    for (int i = 0; i < _indent; ++i) {
+        result += "    ";
     }
+    result += _message;
+    log()->debug(result);
+}
+
+struct DomainIdWithIterationId
+{
+
+
+    DomainIdWithIterationId(
+            const unsigned long long _domain_id,
+            const unsigned long long _scan_iteration_id)
+        : domain_id(_domain_id),
+          scan_iteration_id(_scan_iteration_id)
+    {
+    }
+
+
+    unsigned long long domain_id;
+    unsigned long long scan_iteration_id;
+
+};
+
+bool operator<(const DomainIdWithIterationId& _lhs, const DomainIdWithIterationId& _rhs)
+{
+    if (_lhs.domain_id != _rhs.domain_id)
+    {
+        return _lhs.domain_id < _rhs.domain_id;
+    }
+    return _lhs.scan_iteration_id < _rhs.scan_iteration_id;
+}
+
+
 } // namespace Fred::Akm::{anonymous}
 
 
@@ -358,19 +388,19 @@ void remove_scan_result_rows_other_than_secure_noauto_with_data(ScanResultRows& 
 
 void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_scan_result_rows(ScanResultRows& _scan_result_rows)
 {
-    std::set<unsigned long long> domains_with_invalid_scan_result_rows;
+    std::set<DomainIdWithIterationId> domains_with_invalid_scan_result_rows;
     for (const auto& r : _scan_result_rows)
     {
         if (!is_insecure_with_data(r))
         {
             log()->error("SKIPPED NOT INSECURE WITH DATA scan_result_row: {}", to_string(r));
-            domains_with_invalid_scan_result_rows.insert(r.domain_id);
+            domains_with_invalid_scan_result_rows.insert(DomainIdWithIterationId(r.domain_id, r.scan_iteration_id));
             continue;
         }
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
+        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
     }
     _scan_result_rows.erase(
             std::remove_if(
@@ -378,7 +408,7 @@ void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_sc
                     _scan_result_rows.end(),
                     [&](const ScanResultRow& _scan_result_row)
                     {
-                        auto domain = domains_with_invalid_scan_result_rows.find(_scan_result_row.domain_id);
+                        auto domain = domains_with_invalid_scan_result_rows.find(DomainIdWithIterationId(_scan_result_row.domain_id, _scan_result_row.scan_iteration_id));
                         if (domain != domains_with_invalid_scan_result_rows.end())
                         {
                             //log()->error("SKIPPED scan_result_row for DOMAIN with invalid scan_result_row(s): {}", to_string(_scan_result_row));
@@ -391,19 +421,19 @@ void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_sc
 
 void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(ScanResultRows& _scan_result_rows)
 {
-    std::set<unsigned long long> domains_with_invalid_scan_result_rows;
+    std::set<DomainIdWithIterationId> domains_with_invalid_scan_result_rows;
     for (const auto& r : _scan_result_rows)
     {
         if (!is_valid(r))
         {
             log()->error("SKIPPED INVALID scan_result_row:       {}", to_string(r));
-            domains_with_invalid_scan_result_rows.insert(r.domain_id);
+            domains_with_invalid_scan_result_rows.insert(DomainIdWithIterationId(r.domain_id, r.scan_iteration_id));
             continue;
         }
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {}", domain_with_invalid_scan_result_rows);
+        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
     }
     _scan_result_rows.erase(
             std::remove_if(
@@ -411,7 +441,7 @@ void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(
                     _scan_result_rows.end(),
                     [&](const ScanResultRow& _scan_result_row)
                     {
-                        auto domain = domains_with_invalid_scan_result_rows.find(_scan_result_row.domain_id);
+                        auto domain = domains_with_invalid_scan_result_rows.find(DomainIdWithIterationId(_scan_result_row.domain_id, _scan_result_row.scan_iteration_id));
                         if (domain != domains_with_invalid_scan_result_rows.end())
                         {
                             //log()->error("SKIPPED scan_result_row for DOMAIN with invalid scan_result_row(s): {}", to_string(_scan_result_row));
