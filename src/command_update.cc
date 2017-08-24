@@ -230,7 +230,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         log()->debug("newest domain_status: {}", to_string(domain_newest_united_state));
 
 
-        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && (current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds > _maximal_time_between_scan_results);
+        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && (current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
             log()->error("WILL NOT UPDATE domain {}: domain latest state too old", domain.fqdn);
