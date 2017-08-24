@@ -73,6 +73,14 @@ struct DomainDoesNotHaveAutomaticallyManagedKeyset : AkmException
 };
 
 
+struct DomainAlreadyDoesNotHaveKeyset : AkmException
+{
+    const char* what() const throw () {
+        return "domain already does not have a keyset";
+    }
+};
+
+
 struct DomainAlreadyHasAutomaticallyManagedKeyset : AkmException
 {
     const char* what() const throw () {
@@ -326,6 +334,10 @@ void Akm::turn_on_automatic_keyset_management_on_insecure_domain(
     catch (const Registry::AutomaticKeysetManagement::KEYSET_IS_INVALID&)
     {
         throw KeysetIsInvalid();
+    }
+    catch (const Registry::AutomaticKeysetManagement::DOMAIN_DOES_NOT_HAVE_KEYSET&)
+    {
+        throw DomainAlreadyDoesNotHaveKeyset();
     }
     catch (const Registry::AutomaticKeysetManagement::NSSET_IS_DIFFERENT&)
     {
