@@ -59,8 +59,7 @@ struct StatsInsecureCandidates {
     int domains_updated_ko;
     int domains_ko_for_update_run_notify_first;
     int domains_ko_for_update_no_recent_scan;
-    int domains_ko_for_update_not_all_historic_statuses_ok;
-    int domains_ko_for_update_not_all_historic_statuses_coherent;
+    int domains_ko_for_update_not_yet;
     int domains_unknown_no_data;
 
     StatsInsecureCandidates()
@@ -68,15 +67,14 @@ struct StatsInsecureCandidates {
           domains_checked(),
           domains_ok_for_update(),
           domains_ko_for_update_run_notify_first(),
-          domains_ko_for_update_not_all_historic_statuses_ok(),
-          domains_ko_for_update_not_all_historic_statuses_coherent(),
+          domains_ko_for_update_not_yet(),
           domains_unknown_no_data()
     {
     }
 
     void print()
     {
-        log()->info("======== UPDATE STATS INSECURE CANDIDATES ========");
+        log()->info("======== UPDATE STATS INSECURE CANDIDATES =======");
         log()->info("domains loaded:                          {:>8}", domains_loaded);
         log()->info("domains checked:                         {:>8}", domains_checked);
         log()->info(" ├─ ok_for_update:                       {:>8}", domains_ok_for_update);
@@ -84,15 +82,13 @@ struct StatsInsecureCandidates {
         log()->info(" │   └─ failed:                          {:>8}", domains_updated_ko);
         log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_run_notify_first +
                                                                       domains_ko_for_update_no_recent_scan +
-                                                                      domains_ko_for_update_not_all_historic_statuses_ok +
-                                                                      domains_ko_for_update_not_all_historic_statuses_coherent +
+                                                                      domains_ko_for_update_not_yet +
                                                                       domains_unknown_no_data);
         log()->info("     ├─ run notify first:                {:>8}", domains_ko_for_update_run_notify_first);
         log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
-        log()->info("     ├─ not all hist. statuses ok:       {:>8}", domains_ko_for_update_not_all_historic_statuses_ok);
-        log()->info("     ├─ not all hist. statuses coherent: {:>8}", domains_ko_for_update_not_all_historic_statuses_coherent);
+        log()->info("     ├─ not yet                          {:>8}", domains_ko_for_update_not_yet);
         log()->info("     └─ no data:                         {:>8}", domains_unknown_no_data);
-        log()->info("==================================================");
+        log()->info("=================================================");
     }
 };
 
@@ -117,7 +113,7 @@ struct StatsSecureCandidates {
 
     void print()
     {
-        log()->info("========= UPDATE STATS SECURE CANDIDATES =========");
+        log()->info("========= UPDATE STATS SECURE CANDIDATES ========");
         log()->info("domains loaded:                          {:>8}", domains_loaded);
         log()->info("domains checked:                         {:>8}", domains_checked);
         log()->info(" ├─ ok_for_update:                       {:>8}", domains_ok_for_update);
@@ -129,7 +125,7 @@ struct StatsSecureCandidates {
         log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
         log()->info("     ├─ no keys:                         {:>8}", domains_ko_for_update_no_keys);
         log()->info("     └─ no data:                         {:>8}", domains_unknown_no_data);
-        log()->info("==================================================");
+        log()->info("=================================================");
     }
 };
 
@@ -268,6 +264,13 @@ void command_update_turn_on_akm_on_insecure_candidates(
                 (!domain_intermediate_united_state_to_not_turn_on &&
                  current_unix_time >= domain_united_states.front().get_scan_from().scan_seconds && // TODO fix poor unsigned handling someday
                  (current_unix_time - domain_united_states.front().get_scan_from().scan_seconds >= _minimal_scan_result_sequence_length_to_update));
+
+        if (!domain_history_ok)
+        {
+            log()->error("WILL NOT UPDATE domain {}: domain historic states _minimal_scan_result_sequence_length_to_update not achieved", domain.fqdn);
+            stats_akm_insecure_candidates.domains_ko_for_update_not_yet++;
+            continue;
+        }
 
         const bool domain_ok =
                 domain_newest_state_is_recent &&
