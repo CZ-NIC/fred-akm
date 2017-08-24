@@ -195,7 +195,9 @@ DomainStatusChange get_domain_status_change(
         const DomainUnitedState& _domain_newest_united_state)
 {
     const auto domain_newest_united_state_status =
-            !_domain_newest_united_state.is_coherent() || is_dnssec_turn_off_requested(_domain_newest_united_state)
+            (!_domain_newest_united_state.is_coherent() ||
+             _domain_newest_united_state.get_cdnskeys().empty() ||
+             is_dnssec_turn_off_requested(_domain_newest_united_state))
                     ? DomainStatus::DomainStatusType::akm_status_candidate_ko
                     : DomainStatus::DomainStatusType::akm_status_candidate_ok;
 
