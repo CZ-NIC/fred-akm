@@ -167,11 +167,13 @@ void dispatch_command_clean(
     const Fred::Akm::Conf& _conf)
 {
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);
+    const auto maximal_time_between_scan_results = _conf.get<Fred::Akm::ScanResultsConf>()->maximal_time_between_scan_results;
     const auto minimal_scan_result_sequence_length_to_update = _conf.get<Fred::Akm::ScanResultsConf>()->minimal_scan_result_sequence_length_to_update;
     const auto align_to_start_of_day = _conf.get<Fred::Akm::ScanResultsConf>()->align_to_start_of_day;
 
     command_clean(
             db,
+            maximal_time_between_scan_results,
             minimal_scan_result_sequence_length_to_update,
             align_to_start_of_day);
 }
