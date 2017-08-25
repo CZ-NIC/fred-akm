@@ -229,7 +229,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && ((current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain latest state too old", domain.fqdn);
+            log()->error("WILL NOT UPDATE domain {}: domain latest state too old {} - {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
             stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
             continue;
         }
@@ -267,7 +267,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
         if (!domain_history_ok)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain historic states _minimal_scan_result_sequence_length_to_update not achieved", domain.fqdn);
+            log()->error("WILL NOT UPDATE domain {}: not yet, domain historic states _minimal_scan_result_sequence_length_to_update not achieved, update pending", domain.fqdn);
             stats_akm_insecure_candidates.domains_ko_for_update_not_yet++;
             continue;
         }
@@ -602,7 +602,7 @@ void command_update_update_akm_members(
                 }
                 else
                 {
-                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.fqdn);
+                    log()->debug("has_deletekey or update with same keys: not sending any notification/template for domain {}", domain.fqdn);
                     save_domain_status(new_domain_notified_status, _storage, _dry_run);
                 }
             }
