@@ -229,7 +229,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && ((current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain latest state too old", domain.fqdn);
+            log()->error("WILL NOT UPDATE domain {}: domain latest state too old {} - {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
             stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
             continue;
         }
@@ -267,7 +267,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
         if (!domain_history_ok)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain historic states _minimal_scan_result_sequence_length_to_update not achieved", domain.fqdn);
+            log()->error("WILL NOT UPDATE domain {}: not yet, domain historic states _minimal_scan_result_sequence_length_to_update not achieved, update pending", domain.fqdn);
             stats_akm_insecure_candidates.domains_ko_for_update_not_yet++;
             continue;
         }
@@ -289,7 +289,6 @@ void command_update_turn_on_akm_on_insecure_candidates(
             Keyset new_keyset;
             for (const auto& cdnskey : domain_newest_united_state.get_cdnskeys())
             {
-                //log()->debug("cdnskey: {}", to_string(cdnskey.second));
                 new_keyset.dnskeys.push_back(
                         Dnskey(
                                 cdnskey.second.flags,
@@ -569,9 +568,20 @@ void command_update_update_akm_members(
                                     cdnskey.second.public_key));
                 }
 
-                _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
-                log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
-                stats_akm_members.domains_updated_ok++;
+                bool same_keys = false;
+                try
+                {
+                    _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
+                    log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
+                    stats_akm_members.domains_updated_ok++;
+                }
+                catch (const Fred::Akm::KeysetSameAsCurrentKeyset& e)
+                {
+                    log()->debug(e.what());
+                    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                    stats_akm_members.domains_ko_for_update_same_keys++;
+                    same_keys = true;
+                }
 
                 DomainStatus::DomainStatusType domain_newest_united_state_status = DomainStatus::DomainStatusType::akm_status_managed_ok;
                 DomainNotifiedStatus new_domain_notified_status =
@@ -579,7 +589,7 @@ void command_update_update_akm_members(
                                 domain,
                                 domain_newest_united_state,
                                 domain_newest_united_state_status);
-                if (!is_dnssec_turn_off_requested(domain_newest_united_state))
+                if (!is_dnssec_turn_off_requested(domain_newest_united_state) && !same_keys)
                 {
                     // do notification of akm change because automatic keyset update notification goes from backend to automatic keyset sponsoring registrar only
                     notify_and_save_domain_status(
@@ -592,7 +602,7 @@ void command_update_update_akm_members(
                 }
                 else
                 {
-                    log()->debug("has_deletekey: not sending any notification/template for domain {}", domain.fqdn);
+                    log()->debug("has_deletekey or update with same keys: not sending any notification/template for domain {}", domain.fqdn);
                     save_domain_status(new_domain_notified_status, _storage, _dry_run);
                 }
             }
