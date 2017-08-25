@@ -289,7 +289,6 @@ void command_update_turn_on_akm_on_insecure_candidates(
             Keyset new_keyset;
             for (const auto& cdnskey : domain_newest_united_state.get_cdnskeys())
             {
-                //log()->debug("cdnskey: {}", to_string(cdnskey.second));
                 new_keyset.dnskeys.push_back(
                         Dnskey(
                                 cdnskey.second.flags,
@@ -569,9 +568,20 @@ void command_update_update_akm_members(
                                     cdnskey.second.public_key));
                 }
 
-                _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
-                log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
-                stats_akm_members.domains_updated_ok++;
+                bool same_keys = false;
+                try
+                {
+                    _akm_backend.update_automatically_managed_keyset_of_domain(domain.id, new_keyset);
+                    log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
+                    stats_akm_members.domains_updated_ok++;
+                }
+                catch (const Fred::Akm::KeysetSameAsCurrentKeyset& e)
+                {
+                    log()->debug(e.what());
+                    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                    stats_akm_members.domains_ko_for_update_same_keys++;
+                    same_keys = true;
+                }
 
                 DomainStatus::DomainStatusType domain_newest_united_state_status = DomainStatus::DomainStatusType::akm_status_managed_ok;
                 DomainNotifiedStatus new_domain_notified_status =
@@ -579,7 +589,7 @@ void command_update_update_akm_members(
                                 domain,
                                 domain_newest_united_state,
                                 domain_newest_united_state_status);
-                if (!is_dnssec_turn_off_requested(domain_newest_united_state))
+                if (!is_dnssec_turn_off_requested(domain_newest_united_state) && !same_keys)
                 {
                     // do notification of akm change because automatic keyset update notification goes from backend to automatic keyset sponsoring registrar only
                     notify_and_save_domain_status(

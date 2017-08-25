@@ -63,6 +63,11 @@ struct DomainAlreadyHasAutomaticallyManagedKeyset : AkmException
 };
 
 
+struct KeysetSameAsCurrentKeyset : AkmException
+{
+};
+
+
 struct DomainStatePolicyError : AkmException
 {
 };
