@@ -176,7 +176,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
     auto scan_result_rows =
             _storage.get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
-                    _minimal_scan_result_sequence_length_to_update,
+                    _minimal_scan_result_sequence_length_to_update + _maximal_time_between_scan_results,
                     _align_to_start_of_day);
 
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
@@ -363,7 +363,7 @@ void command_update_turn_on_akm_on_secure_candidates(
 
     auto scan_result_rows =
             _storage.get_scan_result_rows_of_akm_secure_candidates_for_akm_turn_on(
-                    _maximal_time_between_scan_results,
+                    _maximal_time_between_scan_results + _maximal_time_between_scan_results,
                     _align_to_start_of_day);
 
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
