@@ -300,11 +300,9 @@ ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
            "AND enum_scan_type.handle = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type "
                "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
-           "AND domain_status_notification.last_at < datetime('now', '%2% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "') "
          "ORDER BY scan_result.id DESC";
 
     query.prepare(boost::str(boost::format(sql)
-                   % (_seconds_back * -1)
                    % (_seconds_back * -1)).c_str());
 
     query.bind(":scan_type", to_db_handle(scan_type), sqlite3pp::nocopy);
