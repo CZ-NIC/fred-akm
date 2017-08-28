@@ -105,12 +105,10 @@ void create_schema_domain_status_notification(sqlite3pp::database& _db)
 
 void create_schema(sqlite3pp::database& _db)
 {
-    sqlite3pp::transaction xct(_db);
     create_schema_scan_iteration(_db);
     create_schema_scan_queue(_db);
     create_schema_scan_result(_db);
     create_schema_domain_status_notification(_db);
-    xct.commit();
 }
 
 
@@ -584,7 +582,6 @@ sqlite3pp::database SqliteStorage::get_db() const
     sqlite3pp::database db(filename_.c_str());
     db.enable_foreign_keys(true);
     db.enable_triggers(true);
-    create_schema(db);
     return db;
 }
 
@@ -592,6 +589,12 @@ sqlite3pp::database SqliteStorage::get_db() const
 SqliteStorage::SqliteStorage(const std::string& _filename)
     : filename_(_filename)
 {
+    /* TODO: Try create schema if not already exists. This should be removed from
+     * here and done separately. Rethink with schema migrations. */
+    auto db = get_db();
+    sqlite3pp::transaction xct(db);
+    create_schema(db);
+    xct.commit();
 }
 
 
