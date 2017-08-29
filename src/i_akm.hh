@@ -13,78 +13,176 @@ namespace Fred {
 namespace Akm {
 
 
-struct AkmException : virtual std::exception
+struct AkmException
+    : virtual std::exception
 {
+    virtual const char* what() const noexcept = 0;
 };
 
 
-struct ObjectNotFound : AkmException
+/**
+ * Requested object was not found.
+ * Requested object could have been deleted or set into inappropriate state.
+ */
+struct ObjectNotFound
+    : AkmException
 {
+    /**
+     * Returns failure description.
+     * @return string with the general cause of the current error.
+     */
+    virtual const char* what() const noexcept
+    {
+        return "registry object with specified ID does not exist";
+    }
 };
 
 
-struct NssetIsEmpty : AkmException
+struct NssetIsEmpty
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "current_nsset is empty";
+    }
 };
 
 
-struct DomainNssetIsEmpty : AkmException
+struct DomainNssetIsEmpty
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain nsset is empty";
+    }
 };
 
 
-struct KeysetIsInvalid : AkmException
+struct KeysetIsInvalid
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "current_keyset is invalid";
+    }
 };
 
 
-struct NssetIsDifferent : AkmException
+struct NssetIsDifferent
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "current_nsset differs";
+    }
 };
 
 
-struct DomainHasKeyset : AkmException
+struct DomainHasKeyset
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain has keyset (domain is not insecure)";
+    }
 };
 
 
-struct DomainDoesNotHaveKeyset : AkmException
+struct DomainDoesNotHaveKeyset
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain does not have a keyset (domain is not secure)";
+    }
 };
 
 
-struct DomainDoesNotHaveAutomaticallyManagedKeyset : AkmException
+struct DomainAlreadyDoesNotHaveKeyset
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain already does not have a keyset";
+    }
 };
 
 
-struct DomainAlreadyHasAutomaticallyManagedKeyset : AkmException
+struct DomainDoesNotHaveAutomaticallyManagedKeyset
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain does not have an automatically managed keyset";
+    }
 };
 
 
-struct KeysetSameAsCurrentKeyset : AkmException
+struct DomainAlreadyHasAutomaticallyManagedKeyset
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain already has an automatically managed keyset";
+    }
 };
 
 
-struct DomainStatePolicyError : AkmException
+struct KeysetSameAsDomainKeyset
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "the keyset is the same as the current keyset of the domain";
+    }
 };
 
 
-struct KeysetStatePolicyError : AkmException
+struct DomainStatePolicyError
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "domain state prevents action";
+    }
 };
 
 
-struct ConfigurationError : AkmException
+struct KeysetStatePolicyError
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "keyset state prevents action";
+    }
 };
 
 
-struct InternalServerError : AkmException
+struct ConfigurationError
+    : AkmException
 {
+    virtual const char* what() const noexcept
+    {
+        return "configuration error";
+    }
+};
+
+
+/**
+ * Internal server error.
+ * Unexpected failure, requires maintenance.
+ */
+struct InternalServerError
+    : AkmException
+{
+    /**
+     * Returns failure description.
+     * @return string with the general cause of the current error.
+     */
+    virtual const char* what() const noexcept
+    {
+        return "internal server error";
+    }
 };
 
 

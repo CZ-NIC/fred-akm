@@ -400,7 +400,7 @@ void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_sc
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
+        log()->error("SKIPPED DOMAIN with not insecure with data scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
     }
     _scan_result_rows.erase(
             std::remove_if(
