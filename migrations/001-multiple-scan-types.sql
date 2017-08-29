@@ -1,6 +1,15 @@
 BEGIN;
 
 ---
+--- Clean old records to make migration faster
+---
+DELETE FROM scan_result WHERE scan_iteration_id IN (
+    SELECT id FROM scan_iteration WHERE end_at < datetime('now', '-9 days')
+);
+
+
+---
+---
 --- Table backup - rename
 ---
 ALTER TABLE scan_queue RENAME TO scan_queue_backup;
@@ -111,3 +120,5 @@ SELECT l.count = r.count
           FROM domain_status_notification_backup) AS l,
        (SELECT count(*) AS count
           FROM domain_status_notification) AS r;
+
+COMMIT;
