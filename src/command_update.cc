@@ -267,7 +267,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
         if (!domain_history_ok)
         {
-            log()->error("WILL NOT UPDATE domain {}: not yet, domain historic states _minimal_scan_result_sequence_length_to_update not achieved, update pending", domain.fqdn);
+            log()->info("WILL NOT UPDATE domain {}: not yet, domain historic states _minimal_scan_result_sequence_length_to_update not achieved, update pending", domain.fqdn);
             stats_akm_insecure_candidates.domains_ko_for_update_not_yet++;
             continue;
         }
