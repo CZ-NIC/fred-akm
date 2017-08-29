@@ -393,14 +393,14 @@ void remove_all_scan_result_rows_for_domains_with_some_not_insecure_with_data_sc
     {
         if (!is_insecure_with_data(r))
         {
-            log()->error("SKIPPED NOT INSECURE WITH DATA scan_result_row: {}", to_string(r));
+            log()->debug("SKIPPED NOT INSECURE WITH DATA scan_result_row: {}", to_string(r));
             domains_with_invalid_scan_result_rows.insert(DomainIdWithIterationId(r.domain_id, r.scan_iteration_id));
             continue;
         }
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->error("SKIPPED DOMAIN with not insecure with data scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
+        log()->debug("SKIPPED DOMAIN with not insecure with data scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
     }
     _scan_result_rows.erase(
             std::remove_if(
@@ -426,14 +426,14 @@ void remove_all_scan_result_rows_for_domains_with_some_invalid_scan_result_rows(
     {
         if (!is_valid(r))
         {
-            log()->error("SKIPPED INVALID scan_result_row:       {}", to_string(r));
+            log()->debug("SKIPPED INVALID scan_result_row:       {}", to_string(r));
             domains_with_invalid_scan_result_rows.insert(DomainIdWithIterationId(r.domain_id, r.scan_iteration_id));
             continue;
         }
     }
     for (const auto& domain_with_invalid_scan_result_rows : domains_with_invalid_scan_result_rows)
     {
-        log()->error("SKIPPED DOMAIN with invalid scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
+        log()->debug("SKIPPED DOMAIN with invalid scan_result_row(s): {} in iteration {}", domain_with_invalid_scan_result_rows.domain_id, domain_with_invalid_scan_result_rows.scan_iteration_id);
     }
     _scan_result_rows.erase(
             std::remove_if(
