@@ -53,12 +53,6 @@ struct DomainStateStack {
     ScanIterations scan_iterations;
 };
 
-boost::optional<DomainState> get_domain_state_if_domain_nameservers_are_coherent(
-        const Domain& _domain,
-        const DomainStateStack::Nameservers& _nameservers,
-        int _scan_result_row_timediff_max,
-        boost::optional<int> _current_unix_time);
-
 void print(const DomainStateStack& _domain_state_stack);
 
 bool operator<(const Domain& lhs, const Domain& rhs);
