@@ -3,25 +3,36 @@ BEGIN;
 ---
 --- Clean old records to make migration faster
 ---
+.print "Cleanup old scan result records..."
+CREATE INDEX scan_result_scan_iteration_idx ON scan_result(scan_iteration_id);
 DELETE FROM scan_result WHERE scan_iteration_id IN (
     SELECT id FROM scan_iteration WHERE end_at < datetime('now', '-9 days')
 );
 
+COMMIT;
+
+.print "Vacuum..."
+VACUUM;
+
+BEGIN;
 
 ---
 ---
 --- Table backup - rename
 ---
+.print "Table backup..."
 ALTER TABLE scan_queue RENAME TO scan_queue_backup;
 ALTER TABLE scan_result RENAME TO scan_result_backup;
 ALTER TABLE domain_status_notification RENAME TO domain_status_notification_backup;
 
 DROP INDEX scan_queue_ns_domain_idx;
 DROP INDEX scan_queue_domain_name_idx;
+DROP INDEX scan_result_scan_iteration_idx;
 
 ---
 --- Create new schema
 ---
+.print "Create new schema..."
 CREATE TABLE IF NOT EXISTS enum_scan_type (
     id INTEGER PRIMARY KEY NOT NULL,
     handle TEXT NOT NULL
@@ -79,6 +90,7 @@ CREATE INDEX domain_status_notification_scan_type_id_idx ON domain_status_notifi
 --- Data migration
 --- No need to migrade data scan_queue (will be loaded in next run)
 ---
+.print "Migrate scan_result table..."
 INSERT INTO scan_result
     SELECT id,
            scan_iteration_id,
@@ -95,6 +107,7 @@ INSERT INTO scan_result
            cdnskey_public_key
       FROM scan_result_backup;
 
+.print "Migrate domain_status_notification table..."
 INSERT INTO domain_status_notification
     SELECT domain_id,
            domain_name,
@@ -109,13 +122,14 @@ INSERT INTO domain_status_notification
 ---
 --- Basic checks
 ---
-SELECT l.count = r.count
+.print "Check number of records in backup and migrated tables..."
+SELECT CASE WHEN l.count = r.count THEN 'ok' ELSE 'failed (' || l.count || ' != ' || r.count || ')' END AS check_scan_result
   FROM (SELECT count(*) AS count
           FROM scan_result_backup) AS l,
        (SELECT count(*) AS count
           FROM scan_result) AS r;
 
-SELECT l.count = r.count
+SELECT CASE WHEN l.count = r.count THEN 'ok' ELSE 'failed (' || l.count || ' != ' || r.count || ')' END AS check_domain_status_notification
   FROM (SELECT count(*) AS count
           FROM domain_status_notification_backup) AS l,
        (SELECT count(*) AS count
