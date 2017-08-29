@@ -120,3 +120,5 @@ SELECT l.count = r.count
           FROM domain_status_notification_backup) AS l,
        (SELECT count(*) AS count
           FROM domain_status_notification) AS r;
+
+COMMIT;
