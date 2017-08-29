@@ -9,6 +9,13 @@ DELETE FROM scan_result WHERE scan_iteration_id IN (
     SELECT id FROM scan_iteration WHERE end_at < datetime('now', '-9 days')
 );
 
+COMMIT;
+
+.print "Vacuum..."
+VACUUM;
+
+BEGIN;
+
 ---
 ---
 --- Table backup - rename
