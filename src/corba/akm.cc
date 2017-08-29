@@ -3,123 +3,12 @@
 #include "src/scan_task.hh"
 
 #include <algorithm>
+#include <exception>
+
 
 namespace Fred {
 namespace Akm {
 namespace Corba {
-
-
-struct ObjectNotFound : AkmException
-{
-    const char* what() const throw () {
-        return "object not found";
-    }
-};
-
-
-struct NssetIsEmpty : AkmException
-{
-    const char* what() const throw () {
-        return "nsset is empty";
-    }
-};
-
-
-struct DomainNssetIsEmpty : AkmException
-{
-    const char* what() const throw () {
-        return "domain nsset is empty";
-    }
-};
-
-
-struct KeysetInvalid : AkmException
-{
-    const char* what() const throw () {
-        return "keyset invalid";
-    }
-};
-
-
-struct NssetIsDifferent : AkmException
-{
-    const char* what() const throw () {
-        return "nsset is different";
-    }
-};
-
-
-struct DomainHasKeyset : AkmException
-{
-    const char* what() const throw () {
-        return "domain has keyset";
-    }
-};
-
-
-struct DomainDoesNotHaveKeyset : AkmException
-{
-    const char* what() const throw () {
-        return "domain does not have keyset";
-    }
-};
-
-
-struct DomainDoesNotHaveAutomaticallyManagedKeyset : AkmException
-{
-    const char* what() const throw () {
-        return "domain does not have automatically managed keyset";
-    }
-};
-
-
-struct DomainAlreadyDoesNotHaveKeyset : AkmException
-{
-    const char* what() const throw () {
-        return "domain already does not have a keyset";
-    }
-};
-
-
-struct DomainAlreadyHasAutomaticallyManagedKeyset : AkmException
-{
-    const char* what() const throw () {
-        return "domain already has automatically managed keyset";
-    }
-};
-
-
-struct DomainStatePolicyError : AkmException
-{
-    const char* what() const throw () {
-        return "domain state policy error";
-    }
-};
-
-
-struct KeysetStatePolicyError : AkmException
-{
-    const char* what() const throw () {
-        return "keyset state policy error";
-    }
-};
-
-
-struct ConfigurationError : AkmException
-{
-    const char* what() const throw () {
-        return "configuration error";
-    }
-};
-
-
-struct InternalServerError : AkmException
-{
-    const char* what() const throw () {
-        return "internal server error";
-    }
-};
-
 
 Akm::Akm(const Nameservice& _ns, const std::string& _ns_path_akm)
     : ns_(_ns), ns_path_akm_(_ns_path_akm)
@@ -456,6 +345,10 @@ void Akm::update_automatically_managed_keyset_of_domain(
     catch (const Registry::AutomaticKeysetManagement::DOMAIN_DOES_NOT_HAVE_AUTOMATICALLY_MANAGED_KEYSET&)
     {
         throw DomainDoesNotHaveAutomaticallyManagedKeyset();
+    }
+    catch (const Registry::AutomaticKeysetManagement::KEYSET_SAME_AS_DOMAIN_KEYSET&)
+    {
+        throw KeysetSameAsDomainKeyset();
     }
     catch (const Registry::AutomaticKeysetManagement::DOMAIN_STATE_POLICY_ERROR&)
     {

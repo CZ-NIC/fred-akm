@@ -326,21 +326,21 @@ void command_update_turn_on_akm_on_insecure_candidates(
             //}
             catch (const Fred::Akm::AkmException& e)
             {
-                log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                log()->error("UPDATE FAILED (AkmException) for domain {}", domain.fqdn);
                 stats_akm_insecure_candidates.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch (const std::runtime_error& e)
             {
-                log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                log()->error("UPDATE FAILED (runtime error) for domain {}", domain.fqdn);
                 stats_akm_insecure_candidates.domains_updated_ko++;
                 log()->debug(e.what());
                 continue;
             }
             catch (...)
             {
-                log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
                 stats_akm_insecure_candidates.domains_updated_ko++;
                 throw;
             }
@@ -403,19 +403,6 @@ void command_update_turn_on_akm_on_secure_candidates(
             continue;
         }
 
-        /*
-        boost::optional<DomainNotifiedStatus> domain_notified_status =
-                _storage.get_domain_last_notified_status(domain.id);
-
-        log()->debug("last notified status: {}",
-                domain_notified_status ? to_string(*domain_notified_status) : "NOT FOUND");
-
-        if (domain_notified_status)
-        {
-            stats_akm_secure_candidates.fallen_angel++;
-        }
-        */
-
         const std::string serialized_new_keys = serialize(domain_newest_united_state.get_cdnskeys());
         log()->info("UPDATE domain {} with {} as seen at DNSSEC VALIDATING RESOLVER", domain.fqdn, serialized_new_keys);
         stats_akm_secure_candidates.domains_ok_for_update++;
@@ -458,21 +445,21 @@ void command_update_turn_on_akm_on_secure_candidates(
         //}
         catch (const Fred::Akm::AkmException& e)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            log()->error("UPDATE FAILED (AkmException) for domain {}", domain.fqdn);
             stats_akm_secure_candidates.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (const std::runtime_error& e)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            log()->error("UPDATE FAILED (runtime error) for domain {}", domain.fqdn);
             stats_akm_secure_candidates.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (...)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
             stats_akm_secure_candidates.domains_updated_ko++;
             throw;
         }
@@ -575,10 +562,9 @@ void command_update_update_akm_members(
                     log()->debug("UPDATE OK for secure domain {}", domain.fqdn);
                     stats_akm_members.domains_updated_ok++;
                 }
-                catch (const Fred::Akm::KeysetSameAsCurrentKeyset& e)
+                catch (const Fred::Akm::KeysetSameAsDomainKeyset& e)
                 {
-                    log()->debug(e.what());
-                    log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+                    log()->warn("UPDATE FAILED (domain keyset is the same) for domain {}", domain.fqdn);
                     stats_akm_members.domains_ko_for_update_same_keys++;
                     same_keys = true;
                 }
@@ -617,21 +603,21 @@ void command_update_update_akm_members(
         //}
         catch (const Fred::Akm::AkmException& e)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            log()->error("UPDATE FAILED (AkmException) for domain {}", domain.fqdn);
             stats_akm_members.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (const std::runtime_error& e)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            log()->error("UPDATE FAILED (runtime error) for domain {}", domain.fqdn);
             stats_akm_members.domains_updated_ko++;
             log()->debug(e.what());
             continue;
         }
         catch (...)
         {
-            log()->error("UPDATE FAILED for domain {}", domain.fqdn);
+            log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
             stats_akm_members.domains_updated_ko++;
             throw;
         }
