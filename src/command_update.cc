@@ -229,7 +229,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && ((current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain latest state too old {} - {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
+            log()->error("WILL NOT UPDATE domain {}: domain latest state too old {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
             stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
             continue;
         }
@@ -254,7 +254,8 @@ void command_update_turn_on_akm_on_insecure_candidates(
                 lookup_domain_intermediate_united_state(
                         domain,
                         domain_united_states,
-                        _maximal_time_between_scan_results);
+                        _maximal_time_between_scan_results,
+                        std::max<int>(current_unix_time - _maximal_time_between_scan_results - _maximal_time_between_scan_results, domain_notified_status ? domain_notified_status->last_at.scan_seconds : 0));
 
         const bool domain_history_ok =
                 (domain_intermediate_united_state_to_not_turn_on &&

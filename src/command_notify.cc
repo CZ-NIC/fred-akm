@@ -192,7 +192,9 @@ DomainStatus::DomainStatusType to_new_domain_status_type(const DomainStatusChang
 
 DomainStatusChange get_domain_status_change(
         boost::optional<DomainNotifiedStatus> _domain_notified_status,
-        const DomainUnitedState& _domain_newest_united_state)
+        const DomainUnitedState& _domain_newest_united_state,
+        const int _maximal_time_between_scan_results,
+        const int _current_unix_time)
 {
     const auto domain_newest_united_state_status =
             (!_domain_newest_united_state.is_coherent() ||
@@ -259,7 +261,7 @@ void command_notify_insecure_akm_candidates(
 {
     auto scan_result_rows =
             _storage.get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
-                    _minimal_scan_result_sequence_length_to_notify,
+                    _minimal_scan_result_sequence_length_to_notify + _maximal_time_between_scan_results,
                     _notify_from_last_scan_iteration_only);
 
     log()->debug("got from database {} scan result(s)", scan_result_rows.size());
@@ -317,7 +319,9 @@ void command_notify_insecure_akm_candidates(
                 DomainStatusChange domain_status_change =
                         get_domain_status_change(
                                 domain_notified_status,
-                                domain_newest_united_state);
+                                domain_newest_united_state,
+                                _maximal_time_between_scan_results,
+                                current_unix_time);
 
                 log()->debug(to_string(domain_status_change));
 
@@ -327,7 +331,8 @@ void command_notify_insecure_akm_candidates(
                             lookup_domain_intermediate_united_state(
                                     domain,
                                     domain_united_states,
-                                    _maximal_time_between_scan_results);
+                                    _maximal_time_between_scan_results,
+                                    std::max<int>(current_unix_time - _maximal_time_between_scan_results - _maximal_time_between_scan_results, domain_notified_status ? domain_notified_status->last_at.scan_seconds : 0));
                     if (domain_intermediate_united_state_to_notify)
                     {
                         domain_united_state_to_notify = *domain_intermediate_united_state_to_notify;

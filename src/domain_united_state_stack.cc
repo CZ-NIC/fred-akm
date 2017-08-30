@@ -105,9 +105,10 @@ void print(const DomainUnitedStateStack& _domain_united_state_stack)
 }
 
 boost::optional<DomainUnitedState> lookup_domain_intermediate_united_state(
-        const Domain domain,
+        const Domain& domain,
         const DomainUnitedStateStack::DomainUnitedStates& _domain_united_states,
-        const unsigned long long _maximal_time_between_scan_results)
+        const unsigned long long _maximal_time_between_scan_results,
+        const int _seconds_back)
 {
     auto domain_checked_united_state = _domain_united_states.rbegin();
     auto* domain_last_checked_united_state = &*domain_checked_united_state;
@@ -126,6 +127,23 @@ boost::optional<DomainUnitedState> lookup_domain_intermediate_united_state(
             return *domain_last_checked_united_state;
         }
         domain_last_checked_united_state = &*domain_checked_united_state;
+        if (domain_checked_united_state + 1 == _domain_united_states.rend())
+        {
+            if (!domain_last_checked_united_state->is_empty() &&
+                (domain_checked_united_state->get_scan_to().scan_seconds > _seconds_back) &&
+                ((domain_checked_united_state->get_scan_to().scan_seconds -
+                         _seconds_back) >
+                 _maximal_time_between_scan_results))
+            {
+            log()->error("domain {} oldest state not continuous {} - {} = {} > {}",
+                    domain.fqdn,
+                    domain_checked_united_state->get_scan_to().scan_seconds,
+                    _seconds_back,
+                    (domain_checked_united_state->get_scan_to().scan_seconds - _seconds_back),
+                    _maximal_time_between_scan_results);
+                return *domain_last_checked_united_state;
+            };
+        }
     }
     return boost::optional<DomainUnitedState>();
 }
