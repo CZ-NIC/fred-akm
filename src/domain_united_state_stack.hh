@@ -37,9 +37,10 @@ struct DomainUnitedStateStack {
 void print(const DomainUnitedStateStack& _domain_united_state_stack);
 
 boost::optional<DomainUnitedState> lookup_domain_intermediate_united_state(
-        const Domain domain,
+        const Domain& domain,
         const DomainUnitedStateStack::DomainUnitedStates& _domain_united_states,
-        const unsigned long long _maximal_time_between_scan_results);
+        unsigned long long _maximal_time_between_scan_results,
+        int _current_unix_time);
 
 } //namespace Fred::Akm
 } //namespace Fred
