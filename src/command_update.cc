@@ -59,6 +59,8 @@ struct StatsInsecureCandidates {
     int domains_updated_ko;
     int domains_ko_for_update_run_notify_first;
     int domains_ko_for_update_no_recent_scan;
+    int domains_ko_for_update_no_notification;
+    int domains_ko_for_update_notification_not_old_enough;
     int domains_ko_for_update_not_yet;
     int domains_unknown_no_data;
 
@@ -67,6 +69,9 @@ struct StatsInsecureCandidates {
           domains_checked(),
           domains_ok_for_update(),
           domains_ko_for_update_run_notify_first(),
+          domains_ko_for_update_no_recent_scan(),
+          domains_ko_for_update_no_notification(),
+          domains_ko_for_update_notification_not_old_enough(),
           domains_ko_for_update_not_yet(),
           domains_unknown_no_data()
     {
@@ -82,10 +87,14 @@ struct StatsInsecureCandidates {
         log()->info(" │   └─ failed:                          {:>8}", domains_updated_ko);
         log()->info(" └─ ko_for_update:                       {:>8}", domains_ko_for_update_run_notify_first +
                                                                       domains_ko_for_update_no_recent_scan +
+                                                                      domains_ko_for_update_no_notification +
+                                                                      domains_ko_for_update_notification_not_old_enough +
                                                                       domains_ko_for_update_not_yet +
                                                                       domains_unknown_no_data);
         log()->info("     ├─ run notify first:                {:>8}", domains_ko_for_update_run_notify_first);
         log()->info("     ├─ no recent scan:                  {:>8}", domains_ko_for_update_no_recent_scan);
+        log()->info("     ├─ no notification:                 {:>8}", domains_ko_for_update_no_notification);
+        log()->info("     ├─ notification not old enough:     {:>8}", domains_ko_for_update_notification_not_old_enough);
         log()->info("     ├─ not yet                          {:>8}", domains_ko_for_update_not_yet);
         log()->info("     └─ no data:                         {:>8}", domains_unknown_no_data);
         log()->info("=================================================");
@@ -230,7 +239,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         if (!domain_newest_state_is_recent)
         {
             log()->error("WILL NOT UPDATE domain {}: domain latest state too old {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
-            stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
+            stats_akm_insecure_candidates.domains_ko_for_update_no_recent_scan++;
             continue;
         }
 
@@ -238,7 +247,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         if (!domain_notified_state_is_ok)
         {
             log()->error("WILL NOT UPDATE domain {}: domain notified state != OK", domain.fqdn);
-            stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
+            stats_akm_insecure_candidates.domains_ko_for_update_no_notification++;
             continue;
         }
 
@@ -247,6 +256,14 @@ void command_update_turn_on_akm_on_insecure_candidates(
         {
             log()->error("WILL NOT UPDATE domain {}: domain newest state != domain notified state; run notify first???", domain.fqdn);
             stats_akm_insecure_candidates.domains_ko_for_update_run_notify_first++;
+            continue;
+        }
+
+        const bool domain_notified_state_is_old_enough = domain_notified_status && ((current_unix_time - domain_notified_status->last_at.scan_seconds) >= (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
+        if (!domain_notified_state_is_old_enough)
+        {
+            log()->error("WILL NOT UPDATE domain {}: domain notified state not old enough {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_notified_status->last_at.scan_seconds, current_unix_time - domain_notified_status->last_at.scan_seconds, (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
+            stats_akm_insecure_candidates.domains_ko_for_update_notification_not_old_enough++;
             continue;
         }
 
