@@ -59,7 +59,7 @@ AC_CHECK_HEADERS([spdlog/spdlog.h], [], [AC_MSG_ERROR([Missing spdlog header or 
     ]
 )
 
-if test ! -f 3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h
+if test ! -f $(dirname "$0")/3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h
 then
     AC_MSG_ERROR([3rd_party/sqlite3pp is empty, did you forget to clone recursively?])
 fi
