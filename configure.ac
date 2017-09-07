@@ -38,6 +38,9 @@ AX_BOOST_BASE
 AX_BOOST_PROGRAM_OPTIONS
 AX_BOOST_REGEX
 AX_LIB_SQLITE3
+if test x"$SQLITE3_VERSION" == x"" ; then
+    AC_MSG_ERROR([require sqlite3 devel files])
+fi
 
 PKG_CHECK_MODULES(OMNIORB4, [omniORB4 > 4.1.1, omniDynamic4, omnithread3])
 
