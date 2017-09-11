@@ -968,6 +968,7 @@ void SqliteStorage::clean_scan_results(
             % (_keep_seconds_back * -1));
     db.execute(command.c_str());
     xct.commit();
+    db.execute("VACUUM");
 }
 
 
