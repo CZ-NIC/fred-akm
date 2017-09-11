@@ -955,16 +955,20 @@ void SqliteStorage::clean_scan_results(
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
-    sqlite3pp::query query(db);
     create_schema_scan_iteration(db);
     create_schema_scan_result(db);
-    query.prepare(boost::str(boost::format(
-        "DELETE FROM scan_result "
-         "WHERE scan_iteration_id IN ("
-            "SELECT id FROM scan_iteration "
-             "WHERE end_at < datetime('now', '%1% seconds', '" + std::string(_align_to_start_of_day ? "start of day" : "0 seconds") + "')")
-                   % (_keep_seconds_back * -1)).c_str());
+    const std::string command = boost::str(boost::format(
+                "DELETE FROM scan_result "
+                 "WHERE scan_iteration_id IN ("
+                    "SELECT id FROM scan_iteration "
+                     "WHERE end_at < datetime('now', '%1% seconds', '" +
+                         std::string(_align_to_start_of_day
+                                 ? "start of day"
+                                 : "0 seconds") + "'))")
+            % (_keep_seconds_back * -1));
+    db.execute(command.c_str());
     xct.commit();
+    db.execute("VACUUM");
 }
 
 
