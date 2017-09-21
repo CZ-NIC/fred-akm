@@ -38,6 +38,15 @@ struct NotificationFailed
     }
 };
 
+struct NotificationNotPossible
+    : virtual std::exception
+{
+    virtual const char* what() const throw ()
+    {
+        return "notification not possible";
+    }
+};
+
 void save_domain_status(
         const DomainNotifiedStatus& _domain_notified_status,
         const IStorage& _storage,

@@ -96,6 +96,16 @@ void notify_and_save_domain_status(
             save_domain_status(_domain_notified_status, _storage, _dry_run);
         }
     }
+    catch (const ObjectNotFound& e)
+    {
+        log()->error(e.what());
+        throw NotificationNotPossible();
+    }
+    catch (const AkmException& e)
+    {
+        log()->error(e.what());
+        throw NotificationFailed();
+    }
     catch (std::runtime_error& e)
     {
         log()->error(e.what());
