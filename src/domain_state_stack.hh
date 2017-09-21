@@ -45,7 +45,7 @@ struct DomainStateStack {
     typedef std::vector<DomainState> DomainStates; // TODO: there will be just one state per iteration now, vector not needed
     typedef std::map<NameserverIp, DomainStates> NameserverIps;
     typedef std::map<Nameserver, NameserverIps> Nameservers;
-    typedef std::map<Domain, Nameservers> Domains;
+    typedef std::map<Domain, Nameservers, DomainLexicographicalComparator> Domains;
     typedef std::map<ScanIteration, Domains> ScanIterations;
 
     DomainStateStack(const ScanResultRows& _scan_result_rows);
