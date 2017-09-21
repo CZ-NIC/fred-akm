@@ -65,7 +65,15 @@ bool operator!=(const Domain& _lhs, const Domain& _rhs)
 
 bool operator<(const Domain& _lhs, const Domain& _rhs)
 {
-    return _lhs.fqdn < _rhs.fqdn;
+    if (_lhs.id != _rhs.id)
+    {
+        return _lhs.id < _rhs.id;
+    }
+    if (_lhs.fqdn != _rhs.fqdn)
+    {
+        return _lhs.fqdn < _rhs.fqdn;
+    }
+    return _lhs.scan_type < _rhs.scan_type;
 }
 
 } // namespace Fred::Akm
