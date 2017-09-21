@@ -48,6 +48,11 @@ bool operator==(const Domain& _lhs, const Domain& _rhs);
 bool operator!=(const Domain& _lhs, const Domain& _rhs);
 bool operator<(const Domain& _lhs, const Domain& _rhs);
 
+struct DomainLexicographicalComparator
+{
+    bool operator()(const Domain& _lhs, const Domain& _rhs) const;
+};
+
 std::string to_string(const Domain& _domain);
 
 
