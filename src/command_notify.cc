@@ -66,6 +66,7 @@ struct StatsInsecureAkmCandidates {
     int not_sent_still_ok_notifications;
     int not_sent_still_ko_notifications;
     int sending_notification_failures;
+    int sending_notification_not_possible;
 
     void print()
     {
@@ -88,6 +89,7 @@ struct StatsInsecureAkmCandidates {
         log()->info(" ├─ still ok:                        {:>8}", not_sent_still_ok_notifications);
         log()->info(" ├─ first ko:                        {:>8}", not_sent_first_ko_notifications);
         log()->info(" └─ still ko:                        {:>8}", not_sent_still_ko_notifications);
+        log()->info("sending notification not possible:   {:>8}", sending_notification_not_possible);
         log()->info("sending notification failures:       {:>8}", sending_notification_failures);
         log()->info("=============================================");
     }
@@ -389,6 +391,11 @@ void command_notify_insecure_akm_candidates(
         catch (const UnknownDomainStatusChange&)
         {
             log()->error("unknow domain status chage for domain: {} ", domain.fqdn);
+        }
+        catch (const NotificationNotPossible&)
+        {
+            log()->error("notification not possible for domain domain: {} ", domain.fqdn);
+            stats_insecure_akm_candidates.sending_notification_not_possible++;
         }
         catch (const NotificationFailed&)
         {
