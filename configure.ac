@@ -19,7 +19,7 @@ AM_INIT_AUTOMAKE([subdir-objects foreign -Wall])
 AM_PROG_AR
 
 # These are the files to be generated.
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile contrib/fedora/fred-akm.spec])
 
 # Safety check - list a source file that wouldn't be in other directories.
 AC_CONFIG_SRCDIR([src/main.cc])
