@@ -11,7 +11,13 @@ BuildRequires:  gcc-c++, spdlog-devel >= 0.13, fred-idl >= 2.27, omniORB-devel, 
 %if 0%{?centos}
 BuildRequires:  centos-release-scl, devtoolset-7, devtoolset-7-build
 %endif
-Requires:       glibc, libstdc++, boost-regex, boost-program-options, omniORB, sqlite-libs, cdnskey-scanner
+Requires:       glibc, libstdc++, boost-regex, boost-program-options, omniORB, cdnskey-scanner
+%if 0%{?centos}
+Requires:       sqlite
+%endif
+%if 0%{?fedora}
+Requires:       sqlite-libs
+%endif
 
 %define idldir --with-idldir=/usr/share/idl/fred/
 
