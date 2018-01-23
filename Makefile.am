@@ -152,7 +152,7 @@ nodist_src_corba_generated_libakm_a_SOURCES = \
 	src/corba/akm.cc \
 	src/corba/akm.hh
 
-
+EXTRA_DIST = contrib/fedora/fred-akm.spec contrib/fedora/fred-akm.conf
 
 src/corba/generated/_dataTypesSK.cc: $(IDLDIR)/_dataTypes.idl
 	omniidl -bcxx -Wbuse_quotes -Wba -C$(top_builddir)/src/corba/generated/ $<
