@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 
+macro(assert_binary_in_path name binary)
+    find_program(${name} ${binary})
+    if(NOT ${name})
+        message(FATAL_ERROR "${binary} not found!")
+    endif()
+endmacro()
+
+assert_binary_in_path(GIT_PROGRAM git)
+
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
@@ -14,6 +23,12 @@ if(NOT VERSION)
                     OUTPUT_VARIABLE RAWVERSION)
     string(REGEX REPLACE "-.*\n" "" VERSION ${RAWVERSION})
 endif()
+
+macro(set_default variable_name variable_value)
+    if(NOT ${variable_name})
+        set(${variable_name} ${variable_value})
+    endif()
+endmacro()
 
 find_package(Boost 1.53.0
     COMPONENTS
@@ -42,12 +57,11 @@ create_link_function(omniorb4 OMNIORB4_LIBRARIES)
 create_link_function(omnidynamic4 OMNIDYNAMIC4_LIBRARIES)
 create_link_function(sqlite3 SQLITE3_LIBRARIES)
 
-if(NOT IDL_DIR)
-    set(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
-endif()
-if(NOT SPDLOG_ENABLE_SYSLOG)
-    set(SPDLOG_ENABLE_SYSLOG "")
-endif()
+set_default(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set_default(TARBALL_FILE_NAME fred-akm)
+set_default(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
+set_default(SPDLOG_ENABLE_SYSLOG "")
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
 
 function(compile_idl_files)
@@ -233,11 +247,59 @@ if(NOT FOUND_spdlog)
 endif()
 
 install(TARGETS ${program_name} DESTINATION bin)
+add_custom_target(uninstall COMMAND rm ${CMAKE_INSTALL_PREFIX}/bin/${program_name})
 
-SET(CPACK_SOURCE_GENERATOR "TGZ")
-set(CPACK_PACKAGE_VERSION ${VERSION})
-set(CPACK_SOURCE_IGNORE_FILES "_CPack_Packages;CMakeCache;CPack*;cmake_install.cmake;CMakeFiles;CTestTestfile*;.git*")
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${program_name}-${VERSION}")
-include(CPack)
-add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
+    if(NOT TARGET dist)
+        add_custom_target(dist_sqlite
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/3rd_party/sqlite3pp/ HEAD > ../../.sqlite3pp.tar
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/sqlite3pp)
+        add_custom_target(dist
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/ HEAD > .${TARBALL_FILE_NAME}.tar
+            COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .sqlite3pp.tar
+            COMMAND cat .${TARBALL_FILE_NAME}.tar | gzip > ${CMAKE_BINARY_DIR}/${TARBALL_FILE_NAME}.tar.gz
+            COMMAND rm .${TARBALL_FILE_NAME}.tar .sqlite3pp.tar
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+        add_dependencies(dist dist_sqlite)
+    endif()
 
+    if(NOT TARGET distcheck)
+        set(DISTCHECK_BUILD_DIR "_build")
+        set(DISTCHECK_INSTALL_DIR "_inst")
+        if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+            set(DISTCHECK_BUILD_CMD "ninja")
+            set(DISTCHECK_MAKEFLAGS "")
+        else()
+            set(DISTCHECK_BUILD_CMD "make")
+            execute_process(COMMAND "grep" "-c" "model name" "/proc/cpuinfo"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                OUTPUT_VARIABLE NOCPUS)
+            string(REGEX REPLACE "\n" "" NOCPUS ${NOCPUS})
+            set(DISTCHECK_MAKEFLAGS "MAKEFLAGS=-j${NOCPUS}")
+        endif()
+        add_custom_target(distcheck
+            COMMAND
+            rm -rf ${DISTCHECK_BUILD_DIR} ${DISTCHECK_INSTALL_DIR} ${TARBALL_FILE_NAME}
+            && mkdir ${DISTCHECK_BUILD_DIR} ${DISTCHECK_INSTALL_DIR}
+            && (tar xzf ${TARBALL_FILE_NAME}.tar.gz
+                || (echo 'Error: failed to unpack the archive' 2>&1\; false))
+            && (cd ${DISTCHECK_BUILD_DIR}
+                && (cmake -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=../${DISTCHECK_INSTALL_DIR} -DIDL_DIR=${IDL_DIR} ../${TARBALL_FILE_NAME}
+                    || (echo 'Error: failed to configure the archive' 2>&1\; false))
+                && (${DISTCHECK_MAKEFLAGS} ${DISTCHECK_BUILD_CMD}
+                    || (echo 'Error: the build target failed ' 2>&1\; false))
+                && (${DISTCHECK_BUILD_CMD} install
+                    || (echo 'Error: the install target failed' 2>&1\; false))
+                && (${DISTCHECK_BUILD_CMD} uninstall
+                    || (echo 'Error: the uninstall target failed' 2>&1\; false))
+                && (${DISTCHECK_BUILD_CMD} clean
+                    || (echo 'Error: the clean target failed' 2>&1\; false)))
+            && rm -rf ${DISTCHECK_BUILD_DIR} ${DISTCHECK_INSTALL_DIR} ${TARBALL_FILE_NAME}
+            && echo 'PASS: ' ${TARBALL_FILE_NAME}.tar.gz 'is ready for distribution.'
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Checking the distribution archive...")
+        add_dependencies(distcheck dist)
+    endif()
+else()
+    message(STATUS "no git -- not including dist and distcheck targets")
+endif()
