@@ -29,7 +29,7 @@ Automated Keyset Management feature
 %if 0%{?centos}
 %{?scl:scl enable devtoolset-7 llvm-toolset-7 - << \EOF}
 %endif
-%cmake -DVERSION=%{version} .
+%cmake -DVERSION=%{version} -DIDL_DIR=%{path_to_idl} .
 %make_build
 %if 0%{?centos}
 %{?scl:EOF}
