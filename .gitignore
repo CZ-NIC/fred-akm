@@ -28,7 +28,7 @@ src/corba/generated
 
 # Autotools
 # http://www.gnu.org/software/automake
-Makefile
+/Makefile
 Makefile.in
 /ar-lib
 /mdate-sh
@@ -58,6 +58,18 @@ Makefile.in
 # https://www.gnu.org/software/libtool/
 /ltmain.sh
 .libs
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+bin/
 
 # Vim
 # swap
