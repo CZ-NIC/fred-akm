@@ -1,3 +1,6 @@
 [submodule "3rd_party/sqlite3pp"]
 	path = 3rd_party/sqlite3pp
 	url = https://github.com/iwongu/sqlite3pp.git
+[submodule "3rd_party/spdlog"]
+	path = 3rd_party/spdlog
+	url = https://github.com/gabime/spdlog.git
