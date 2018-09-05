@@ -43,25 +43,14 @@ if test x"$SQLITE3_VERSION" == x"" ; then
     AC_MSG_ERROR([require sqlite3 devel files])
 fi
 
-# TODO: try to find a better approach :)
-AC_CHECK_HEADERS([spdlog/spdlog.h], [], [AC_MSG_ERROR([Missing spdlog header or is not 0.13.0 version])],
-    [
-        #include <spdlog/spdlog.h>
-        constexpr bool isequal(char const *one, char const *two)
-        {
-           return (*one && *two) ? (*one == *two && isequal(one + 1, two + 1))
-                                 : (!*one && !*two);
-        }
-        int main()
-        {
-           static_assert(isequal(SPDLOG_VERSION, "0.13.0"), "spdlog should be 0.13.0");
-        }
-    ]
-)
-
 if test ! -f $(dirname "$0")/3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h
 then
     AC_MSG_ERROR([3rd_party/sqlite3pp is empty, did you forget to clone recursively?])
+fi
+
+if test ! -f $(dirname "$0")/3rd_party/spdlog/include/spdlog/spdlog.h
+then
+    AC_MSG_ERROR([3rd_party/spdlog is empty, did you forget to clone recursively?])
 fi
 
 PKG_CHECK_MODULES(OMNIORB4, [omniORB4 > 4.1.1, omniDynamic4, omnithread3])

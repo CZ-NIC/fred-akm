@@ -1,6 +1,6 @@
 # Always set this so that we can just '#include "foo.hpp"' from anywhere,
 # including our tests directory.
-AM_CPPFLAGS = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/3rd_party/spdlog/include/
 
 # This is the top-level Makefile.am for a non-recursive Autotools setup. In
 # fact, in non-recursive structures, this is the only Makefile.am that is
@@ -11,6 +11,33 @@ bin_PROGRAMS = fred-akm
 fred_akm_SOURCES = \
 	3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h \
 	3rd_party/sqlite3pp/headeronly_src/sqlite3pp.ipp \
+	3rd_party/spdlog/include/spdlog/async_logger.h \
+	3rd_party/spdlog/include/spdlog/common.h \
+	3rd_party/spdlog/include/spdlog/details/async_logger_impl.h \
+	3rd_party/spdlog/include/spdlog/details/async_log_helper.h \
+	3rd_party/spdlog/include/spdlog/details/file_helper.h \
+	3rd_party/spdlog/include/spdlog/details/logger_impl.h \
+	3rd_party/spdlog/include/spdlog/details/log_msg.h \
+	3rd_party/spdlog/include/spdlog/details/mpmc_bounded_q.h \
+	3rd_party/spdlog/include/spdlog/details/null_mutex.h \
+	3rd_party/spdlog/include/spdlog/details/os.h \
+	3rd_party/spdlog/include/spdlog/details/pattern_formatter_impl.h \
+	3rd_party/spdlog/include/spdlog/details/registry.h \
+	3rd_party/spdlog/include/spdlog/details/spdlog_impl.h \
+	3rd_party/spdlog/include/spdlog/fmt/bundled/format.cc \
+	3rd_party/spdlog/include/spdlog/fmt/bundled/format.h \
+	3rd_party/spdlog/include/spdlog/fmt/fmt.h \
+	3rd_party/spdlog/include/spdlog/formatter.h \
+	3rd_party/spdlog/include/spdlog/logger.h \
+	3rd_party/spdlog/include/spdlog/sinks/ansicolor_sink.h \
+	3rd_party/spdlog/include/spdlog/sinks/base_sink.h \
+	3rd_party/spdlog/include/spdlog/sinks/file_sinks.h \
+	3rd_party/spdlog/include/spdlog/sinks/null_sink.h \
+	3rd_party/spdlog/include/spdlog/sinks/sink.h \
+	3rd_party/spdlog/include/spdlog/sinks/stdout_sinks.h \
+	3rd_party/spdlog/include/spdlog/sinks/syslog_sink.h \
+	3rd_party/spdlog/include/spdlog/spdlog.h \
+	3rd_party/spdlog/include/spdlog/tweakme.h \
 	src/i_mailer.hh \
 	src/i_storage.hh \
 	src/i_scanner.hh \

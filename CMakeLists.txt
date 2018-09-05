@@ -97,6 +97,7 @@ function(set_common_properties_on_targets)
             PUBLIC "-Wno-unused-parameter"
             PUBLIC "-fdiagnostics-color=auto")
         target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+        target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include)
         target_include_directories(${target_name} PUBLIC ${CMAKE_BINARY_DIR})
     endforeach()
 endfunction()
@@ -128,6 +129,33 @@ set_common_properties_on_targets(${program_name} mailer akm)
 target_sources(${program_name}
     PRIVATE 3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h
     PRIVATE 3rd_party/sqlite3pp/headeronly_src/sqlite3pp.ipp
+    PRIVATE 3rd_party/spdlog/include/spdlog/async_logger.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/common.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/async_logger_impl.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/async_log_helper.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/file_helper.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/logger_impl.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/log_msg.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/mpmc_bounded_q.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/null_mutex.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/os.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/pattern_formatter_impl.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/registry.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/details/spdlog_impl.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/fmt/bundled/format.cc
+    PRIVATE 3rd_party/spdlog/include/spdlog/fmt/bundled/format.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/fmt/fmt.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/formatter.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/logger.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/ansicolor_sink.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/base_sink.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/file_sinks.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/null_sink.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/sink.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/stdout_sinks.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/spdlog.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/syslog_sink.h
+    PRIVATE 3rd_party/spdlog/include/spdlog/tweakme.h
     PRIVATE src/i_mailer.hh
     PRIVATE src/i_storage.hh
     PRIVATE src/i_scanner.hh
@@ -228,13 +256,13 @@ link_targets_against_sqlite3(${program_name})
 include_directories("${CMAKE_SOURCE_DIR}" PUBLIC)
 
 include(CheckIncludeFileCXX)
-set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include)
 set(CMAKE_REQUIRED_FLAGS "-std=c++14")
 check_include_file_cxx(3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h FOUND_sqlite3pp)
 if(NOT FOUND_sqlite3pp)
     message(FATAL_ERROR "Header sqlite3pp.h not found!")
 endif()
-check_include_file_cxx(spdlog/spdlog.h FOUND_spdlog)
+check_include_file_cxx(3rd_party/spdlog/include/spdlog/spdlog.h FOUND_spdlog)
 if(NOT FOUND_spdlog)
     message(FATAL_ERROR "Header spdlog.h not found!")
 endif()
@@ -247,13 +275,17 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
         add_custom_target(dist_sqlite
             COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/3rd_party/sqlite3pp/ HEAD > ../../.sqlite3pp.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/sqlite3pp)
+        add_custom_target(dist_spdlog
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/3rd_party/spdlog/ HEAD > ../../.spdlog.tar
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/spdlog)
         add_custom_target(dist
             COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/ HEAD > .${TARBALL_FILE_NAME}.tar
             COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .sqlite3pp.tar
+            COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .spdlog.tar
             COMMAND cat .${TARBALL_FILE_NAME}.tar | gzip > ${CMAKE_BINARY_DIR}/${TARBALL_FILE_NAME}.tar.gz
-            COMMAND rm .${TARBALL_FILE_NAME}.tar .sqlite3pp.tar
+            COMMAND rm .${TARBALL_FILE_NAME}.tar .sqlite3pp.tar .spdlog.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-        add_dependencies(dist dist_sqlite)
+        add_dependencies(dist dist_sqlite dist_spdlog)
     endif()
 
     if(NOT TARGET distcheck)
