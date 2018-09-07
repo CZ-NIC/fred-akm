@@ -8,7 +8,7 @@ URL:		http://fred.nic.cz
 Source0:	%{name}-%{version}.tar.gz
 Source1:    idl-%{idl_branch}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  git, gcc-c++, spdlog-devel >= 0.13, omniORB-devel, boost-devel, sqlite-devel
+BuildRequires:  git, gcc-c++, omniORB-devel, boost-devel, sqlite-devel
 %if 0%{?centos}
 BuildRequires:  centos-release-scl, devtoolset-7, devtoolset-7-build, llvm-toolset-7-cmake, llvm-toolset-7-build
 Requires:       sqlite
