@@ -51,7 +51,7 @@ create_link_function(omnidynamic4 OMNIDYNAMIC4_LIBRARIES)
 create_link_function(sqlite3 SQLITE3_LIBRARIES)
 
 set_default(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set_default(TARBALL_FILE_NAME fred-akm)
+set_default(TARBALL_FILE_NAME "${program_name}-${VERSION}")
 set_default(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
 set_default(SPDLOG_ENABLE_SYSLOG "")
 
@@ -267,19 +267,19 @@ if(NOT FOUND_spdlog)
     message(FATAL_ERROR "Header spdlog.h not found!")
 endif()
 
-install(TARGETS ${program_name} DESTINATION bin)
-add_custom_target(uninstall COMMAND rm ${CMAKE_INSTALL_PREFIX}/bin/${program_name})
+install(TARGETS ${program_name} DESTINATION ${DISTRO_PREFIX}bin)
+add_custom_target(uninstall COMMAND rm ${CMAKE_INSTALL_PREFIX}/${DISTRO_PREFIX}bin/${program_name})
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
     if(NOT TARGET dist)
         add_custom_target(dist_sqlite
-            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/3rd_party/sqlite3pp/ HEAD > ../../.sqlite3pp.tar
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/sqlite3pp/ HEAD > ../../.sqlite3pp.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/sqlite3pp)
         add_custom_target(dist_spdlog
             COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/3rd_party/spdlog/ HEAD > ../../.spdlog.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/spdlog)
         add_custom_target(dist
-            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/ HEAD > .${TARBALL_FILE_NAME}.tar
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/ HEAD > .${TARBALL_FILE_NAME}.tar
             COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .sqlite3pp.tar
             COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .spdlog.tar
             COMMAND cat .${TARBALL_FILE_NAME}.tar | gzip > ${CMAKE_BINARY_DIR}/${TARBALL_FILE_NAME}.tar.gz
