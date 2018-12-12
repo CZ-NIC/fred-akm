@@ -53,7 +53,7 @@ then
     AC_MSG_ERROR([3rd_party/spdlog is empty, did you forget to clone recursively?])
 fi
 
-PKG_CHECK_MODULES(OMNIORB4, [omniORB4 > 4.1.1, omniDynamic4, omnithread3])
+PKG_CHECK_MODULES(OMNIORB4, [omniORB4 >= 4.2.2, omniDynamic4, omnithread4])
 
 CPPFLAGS_SAVED=$CPPFLAGS
 CPPFLAGS="-std=c++11 $CPPFLAGS"
