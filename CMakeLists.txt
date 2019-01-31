@@ -55,7 +55,7 @@ set_default(TARBALL_FILE_NAME "${program_name}-${VERSION}")
 set_default(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
 set_default(SPDLOG_ENABLE_SYSLOG "")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_BINARY_DIR}/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
 function(compile_idl_files)
     message(STATUS "Compiling idl...")
