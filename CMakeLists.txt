@@ -276,7 +276,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
             COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/sqlite3pp/ HEAD > ../../.sqlite3pp.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/sqlite3pp)
         add_custom_target(dist_spdlog
-            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=fred-akm/3rd_party/spdlog/ HEAD > ../../.spdlog.tar
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/spdlog/ HEAD > ../../.spdlog.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/spdlog)
         add_custom_target(dist
             COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/ HEAD > .${TARBALL_FILE_NAME}.tar
