@@ -1,5 +1,5 @@
 #AC_INIT([FULL-PACKAGE-NAME], [VERSION], [BUG-REPORT-ADDRESS], [TAR-NAME], [URL])
-AC_INIT([fred-akm], [1.0.3], [jiri.sadek@nic.cz], [fred-akm], [http://fred.nic.cz])
+AC_INIT([fred-akm], [1.1.0], [jiri.sadek@nic.cz], [fred-akm], [http://fred.nic.cz])
 
 # Force autoconf to be at least this version number.
 AC_PREREQ([2.68])
