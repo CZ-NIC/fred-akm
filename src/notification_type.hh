@@ -26,9 +26,9 @@ namespace Akm {
 
 enum struct NotificationType
 {
-    akm_notification_candidate_ko, ///< domain state prevents switching to AKM
-    akm_notification_candidate_ok, ///< domain state seems ok to switch to AKM
-    akm_notification_managed_ok, ///< domain state prevents switching to AKM
+    akm_notification_candidate_ko, ///< domain state not ok, domain is not a candidate for AKM
+    akm_notification_candidate_ok, ///< domain state seems ok, domain is still a candidate for AKM
+    akm_notification_managed_ok, ///< domain switched to AKM
 };
 
 std::string to_string(const NotificationType& _notification_type_enum);
