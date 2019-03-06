@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2017  CZ.NIC, z.s.p.o.
+ * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
  * FRED is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 2 of the License.
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
  * FRED is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,9 +14,8 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with FRED.  If not, see <http://www.gnu.org/licenses/>.
+ * along with FRED.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 #ifndef ENUM_CONVERSIONS_HH_B9B0AF5BD3B9445C863F18AE3084992E
 #define ENUM_CONVERSIONS_HH_B9B0AF5BD3B9445C863F18AE3084992E
 
