@@ -23,6 +23,32 @@ macro(set_default variable_name variable_value)
     endif()
 endmacro()
 
+macro(normalize_path variable_name variable_value)
+    string(REGEX REPLACE "//*" "/" "${variable_name}" "${variable_value}")
+    if(NOT "x${${variable_name}}" STREQUAL "x/")
+        string(REGEX REPLACE "/$" "" "${variable_name}" "${${variable_name}}")
+    endif()
+endmacro()
+
+macro(set_default_path variable_name variable_value)
+    if(NOT ${variable_name})
+        normalize_path(${variable_name} ${variable_value})
+    endif()
+endmacro()
+
+normalize_path(NORMALIZED_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+if("x${NORMALIZED_INSTALL_PREFIX}" STREQUAL "x/usr/local")
+    set(USR_PREFIX "")
+    set(USR_SHARE_PREFIX "")
+else()
+    set(USR_SHARE_PREFIX "/usr")
+    if(USE_USR_PREFIX)
+        set(USR_PREFIX "/usr")
+    else()
+        set(USR_PREFIX "")
+    endif()
+endif()
+
 find_package(Boost 1.53.0
     COMPONENTS
     program_options
@@ -52,8 +78,9 @@ create_link_function(sqlite3 SQLITE3_LIBRARIES)
 
 set_default(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set_default(TARBALL_FILE_NAME "${program_name}-${VERSION}")
-set_default(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
 set_default(SPDLOG_ENABLE_SYSLOG "")
+set_default_path(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
+set_default_path(BINDIR ${CMAKE_INSTALL_PREFIX}/${USR_PREFIX}/bin)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
@@ -267,8 +294,8 @@ if(NOT FOUND_spdlog)
     message(FATAL_ERROR "Header spdlog.h not found!")
 endif()
 
-install(TARGETS ${program_name} DESTINATION ${DISTRO_PREFIX}bin)
-add_custom_target(uninstall COMMAND rm ${CMAKE_INSTALL_PREFIX}/${DISTRO_PREFIX}bin/${program_name})
+install(TARGETS ${program_name} DESTINATION ${BINDIR})
+add_custom_target(uninstall COMMAND rm ${BINDIR}/${program_name})
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
     if(NOT TARGET dist)
