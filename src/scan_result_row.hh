@@ -47,10 +47,10 @@ struct ScanResultRow
     }
 
     ScanResultRow(
-            int _id,
-            int _scan_iteration_id,
+            long long _id,
+            long long _scan_iteration_id,
             const ScanDateTime& _scan_at,
-            int _domain_id,
+            long long _domain_id,
             const std::string& _domain_name,
             ScanType _scan_type,
             const std::string& _nameserver,
@@ -81,8 +81,8 @@ struct ScanResultRow
     {
     }
 
-    int id;
-    int scan_iteration_id;
+    long long id;
+    long long scan_iteration_id;
     ScanDateTime scan_at;
     long long domain_id;
     std::string domain_name;
