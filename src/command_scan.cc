@@ -43,7 +43,7 @@ void command_scan(const IStorage& _storage, IScanner& _scanner, bool batch_mode)
 
     auto run_batch_scan = [&_storage, &_scanner](const DomainScanTaskCollection& _scan_batch)
     {
-        long iteration_id = _storage.start_new_scan_iteration();
+        const auto iteration_id = _storage.start_new_scan_iteration();
         log()->info("started new scan iteration (id={})", iteration_id);
         _scanner.scan(_scan_batch, [&_storage, &_scan_batch, &iteration_id](const std::vector<ScanResult>& _results)
             { _storage.save_scan_results(_results, _scan_batch, iteration_id); }

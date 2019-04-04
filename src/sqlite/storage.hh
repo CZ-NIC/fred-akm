@@ -74,7 +74,7 @@ public:
     void set_domain_notified_status(const DomainNotifiedStatus& _domain_notified_status) const;
 
     boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(
-            unsigned long long _domain_id) const;
+            long long _domain_id) const;
 
     void clean_scan_results(
             int _keep_seconds_back,

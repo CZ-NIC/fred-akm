@@ -535,7 +535,7 @@ void set_domain_notified_status(sqlite3pp::database& _db, const DomainNotifiedSt
     insert.execute();
 }
 
-boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(sqlite3pp::database& _db, const unsigned long long _domain_id)
+boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(sqlite3pp::database& _db, const long long _domain_id)
 {
     sqlite3pp::query query(_db);
     query.prepare(
@@ -559,12 +559,11 @@ boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(sqlite3pp:
     for (auto row : query)
     {
         DomainNotifiedStatus domain_notified_status;
-        long long domain_id;
         int domain_status;
         int notification_type;
         std::string scan_type_handle;
         row.getter()
-            >> domain_id
+            >> domain_notified_status.domain.id
             >> domain_notified_status.domain.fqdn
             >> scan_type_handle
             >> domain_notified_status.serialized_cdnskeys
@@ -572,7 +571,6 @@ boost::optional<DomainNotifiedStatus> get_domain_last_notified_status(sqlite3pp:
             >> notification_type
             >> domain_notified_status.last_at.scan_date_time
             >> domain_notified_status.last_at.scan_seconds;
-        domain_notified_status.domain.id = static_cast<unsigned long long>(domain_id);
         domain_notified_status.domain.scan_type = from_db_handle<ScanType>(scan_type_handle);
         domain_notified_status.domain_status = Conversion::Enums::from_db_handle<DomainStatus::DomainStatusType>(domain_status);
         domain_notified_status.notification_type = Conversion::Enums::from_db_handle<NotificationType>(notification_type);
@@ -692,7 +690,7 @@ void SqliteStorage::set_domain_notified_status(const DomainNotifiedStatus& _doma
 }
 
 boost::optional<DomainNotifiedStatus> SqliteStorage::get_domain_last_notified_status(
-        const unsigned long long _domain_id) const
+        const long long _domain_id) const
 {
     auto db = get_db();
     sqlite3pp::transaction xct(db);
@@ -745,8 +743,7 @@ DomainScanTaskCollection SqliteStorage::get_scan_queue_tasks() const
         Domain domain;
         long long domain_id;
         std::string scan_type_handle;
-        row.getter() >> nameserver >> domain_id >> domain.fqdn >> scan_type_handle;
-        domain.id = static_cast<unsigned long long>(domain_id);
+        row.getter() >> nameserver >> domain.id >> domain.fqdn >> scan_type_handle;
         domain.scan_type = from_db_handle<ScanType>(scan_type_handle);
 
         scan_tasks.insert_or_update(domain, nameserver);

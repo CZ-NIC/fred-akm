@@ -52,16 +52,16 @@ struct DomainIdWithIterationId
 
 
     DomainIdWithIterationId(
-            const unsigned long long _domain_id,
-            const unsigned long long _scan_iteration_id)
+            const long long _domain_id,
+            const long long _scan_iteration_id)
         : domain_id(_domain_id),
           scan_iteration_id(_scan_iteration_id)
     {
     }
 
 
-    unsigned long long domain_id;
-    unsigned long long scan_iteration_id;
+    long long domain_id;
+    long long scan_iteration_id;
 
 };
 
@@ -153,7 +153,7 @@ void print(const DomainStateStack& _domain_state_stack)
 
 void remove_scan_result_rows_from_older_scan_iterations_per_domain(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),
@@ -173,7 +173,7 @@ void remove_scan_result_rows_from_older_scan_iterations_per_domain(ScanResultRow
 
 void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),
@@ -192,7 +192,7 @@ void remove_scan_result_rows_other_than_insecure(ScanResultRows& _scan_result_ro
 
 void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),
@@ -211,7 +211,7 @@ void remove_scan_result_rows_other_than_insecure_with_data(ScanResultRows& _scan
 
 void remove_scan_result_rows_other_than_secure_auto(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),
@@ -230,7 +230,7 @@ void remove_scan_result_rows_other_than_secure_auto(ScanResultRows& _scan_result
 
 void remove_scan_result_rows_other_than_secure_auto_with_data(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),
@@ -249,7 +249,7 @@ void remove_scan_result_rows_other_than_secure_auto_with_data(ScanResultRows& _s
 
 void remove_scan_result_rows_other_than_secure_noauto(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),
@@ -268,7 +268,7 @@ void remove_scan_result_rows_other_than_secure_noauto(ScanResultRows& _scan_resu
 
 void remove_scan_result_rows_other_than_secure_noauto_with_data(ScanResultRows& _scan_result_rows)
 {
-    std::map<unsigned long long, int> domains;
+    std::map<long long, int> domains;
     _scan_result_rows.erase(
             std::remove_if(
                     _scan_result_rows.begin(),

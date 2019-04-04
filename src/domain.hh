@@ -34,12 +34,12 @@ struct Domain
     {
     }
 
-    Domain(unsigned long long _id, const std::string& _fqdn, ScanType _scan_type)
+    Domain(long long _id, const std::string& _fqdn, ScanType _scan_type)
         : id(_id), fqdn(_fqdn), scan_type(_scan_type)
     {
     }
 
-    unsigned long long id;
+    long long id;
     std::string fqdn;
     ScanType scan_type;
 };
@@ -61,7 +61,7 @@ struct DomainHash
     size_t operator()(const Domain& _domain) const
     {
         return std::hash<std::string>()(_domain.fqdn)
-            ^ std::hash<unsigned long long>()(_domain.id)
+            ^ std::hash<long long>()(_domain.id)
             ^ std::hash<std::string>()(to_string(_domain.scan_type));
     }
 };
