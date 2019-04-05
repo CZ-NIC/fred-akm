@@ -26,12 +26,16 @@ namespace Akm {
 
 namespace {
 
-std::string quote(const std::string& str) {
-    return "\"" + str + "\"";
+template <typename T>
+std::string quote(const T& value)
+{
+    return std::to_string(value);
 }
 
-std::string quote(int value) {
-    return std::to_string(value);
+template <>
+std::string quote(const std::string& str)
+{
+    return "\"" + str + "\"";
 }
 
 } // namespace Fred::Akim::{anonymous}
