@@ -87,12 +87,12 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/confi
 function(compile_idl_files)
     message(STATUS "Compiling idl...")
     execute_process(
-        COMMAND mkdir -p generated
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/corba/)
+        COMMAND mkdir -p src/corba/generated
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
     foreach(idl_name ${ARGN})
         execute_process(
-            COMMAND omniidl -bcxx -Wbuse_quotes -Wba -C . ${IDL_DIR}/${idl_name}.idl
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/corba/generated/
+            COMMAND omniidl -bcxx -Wbuse_quotes -Wba -C ./src/corba/generated/ ${IDL_DIR}/${idl_name}.idl
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             OUTPUT_VARIABLE OMNIIDL_MESSAGE${idl_name})
         message(STATUS ${OMNIIDL_MESSAGE}${idl_name})
     endforeach()
