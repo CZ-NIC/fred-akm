@@ -262,7 +262,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         const bool domain_notified_state_is_old_enough = domain_notified_status && ((current_unix_time - domain_notified_status->last_at.scan_seconds) >= (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
         if (!domain_notified_state_is_old_enough)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain notified state not old enough {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_notified_status->last_at.scan_seconds, current_unix_time - domain_notified_status->last_at.scan_seconds, (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
+            log()->info("WILL NOT UPDATE domain {}: not yet, domain notified state not yet old enough {} - {} = {} < {}, update pending", domain.fqdn, current_unix_time, domain_notified_status->last_at.scan_seconds, current_unix_time - domain_notified_status->last_at.scan_seconds, (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
             stats_akm_insecure_candidates.domains_ko_for_update_notification_not_old_enough++;
             continue;
         }
