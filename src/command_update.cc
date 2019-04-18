@@ -238,7 +238,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && ((current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain latest state too old {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
+            log()->info("WILL NOT UPDATE domain {}: domain latest state too old {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
             stats_akm_insecure_candidates.domains_ko_for_update_no_recent_scan++;
             continue;
         }
@@ -246,7 +246,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         const bool domain_notified_state_is_ok = domain_notified_status && (domain_notified_status->notification_type == Conversion::Enums::to_notification_type(DomainStatus::DomainStatusType::akm_status_candidate_ok));
         if (!domain_notified_state_is_ok)
         {
-            log()->error("WILL NOT UPDATE domain {}: domain notified state != OK", domain.fqdn);
+            log()->info("WILL NOT UPDATE domain {}: domain notified state != OK", domain.fqdn);
             stats_akm_insecure_candidates.domains_ko_for_update_no_notification++;
             continue;
         }
@@ -342,23 +342,27 @@ void command_update_turn_on_akm_on_insecure_candidates(
             //    log()->debug(e.what());
             //    continue;
             //}
+            catch (const Fred::Akm::DomainStatePolicyError& e)
+            {
+                stats_akm_insecure_candidates.domains_updated_ko++;
+                log()->info("UPDATE FAILED for domain {}: DomainStatePolicyError: {}", domain.fqdn, e.what());
+                continue;
+            }
             catch (const Fred::Akm::AkmException& e)
             {
-                log()->error("UPDATE FAILED (AkmException) for domain {}", domain.fqdn);
                 stats_akm_insecure_candidates.domains_updated_ko++;
-                log()->debug(e.what());
+                log()->error("UPDATE FAILED for domain {}: AkmException: {}", domain.fqdn, e.what());
                 continue;
             }
             catch (const std::runtime_error& e)
             {
-                log()->error("UPDATE FAILED (runtime error) for domain {}", domain.fqdn);
                 stats_akm_insecure_candidates.domains_updated_ko++;
-                log()->debug(e.what());
+                log()->error("UPDATE FAILED for domain {}: runtime error: {}", e.what());
                 continue;
             }
             catch (...)
             {
-                log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
+                log()->error("UPDATE FAILED for domain {}", domain.fqdn);
                 stats_akm_insecure_candidates.domains_updated_ko++;
                 throw;
             }
@@ -461,24 +465,28 @@ void command_update_turn_on_akm_on_secure_candidates(
         //    log()->debug(e.what());
         //    continue;
         //}
+        catch (const Fred::Akm::DomainStatePolicyError& e)
+        {
+            stats_akm_secure_candidates.domains_updated_ko++;
+            log()->info("UPDATE FAILED for domain {}: DomainStatePolicyError: {}", domain.fqdn, e.what());
+            continue;
+        }
         catch (const Fred::Akm::AkmException& e)
         {
-            log()->error("UPDATE FAILED (AkmException) for domain {}", domain.fqdn);
             stats_akm_secure_candidates.domains_updated_ko++;
-            log()->debug(e.what());
+            log()->error("UPDATE FAILED for domain {}: AkmException: {}", domain.fqdn, e.what());
             continue;
         }
         catch (const std::runtime_error& e)
         {
-            log()->error("UPDATE FAILED (runtime error) for domain {}", domain.fqdn);
             stats_akm_secure_candidates.domains_updated_ko++;
-            log()->debug(e.what());
+            log()->error("UPDATE FAILED for domain {}: runtime error: {}", domain.fqdn, e.what());
             continue;
         }
         catch (...)
         {
-            log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
             stats_akm_secure_candidates.domains_updated_ko++;
+            log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
             throw;
         }
 
@@ -619,24 +627,28 @@ void command_update_update_akm_members(
         //    log()->debug(e.what());
         //    continue;
         //}
+        catch (const Fred::Akm::DomainStatePolicyError& e)
+        {
+            stats_akm_members.domains_updated_ko++;
+            log()->info("UPDATE FAILED for domain {}: DomainStatePolicyError: {}", domain.fqdn, e.what());
+            continue;
+        }
         catch (const Fred::Akm::AkmException& e)
         {
-            log()->error("UPDATE FAILED (AkmException) for domain {}", domain.fqdn);
             stats_akm_members.domains_updated_ko++;
-            log()->debug(e.what());
+            log()->error("UPDATE FAILED for domain {}: AkmException: {}", domain.fqdn, e.what());
             continue;
         }
         catch (const std::runtime_error& e)
         {
-            log()->error("UPDATE FAILED (runtime error) for domain {}", domain.fqdn);
             stats_akm_members.domains_updated_ko++;
-            log()->debug(e.what());
+            log()->error("UPDATE FAILED for domain {}: runtime error: {}", domain.fqdn, e.what());
             continue;
         }
         catch (...)
         {
-            log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
             stats_akm_members.domains_updated_ko++;
+            log()->error("UPDATE FAILED (other error) for domain {}", domain.fqdn);
             throw;
         }
 
