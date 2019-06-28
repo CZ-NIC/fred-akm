@@ -79,7 +79,7 @@ create_link_function(sqlite3 SQLITE3_LIBRARIES)
 set_default(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set_default(TARBALL_FILE_NAME "${program_name}-${VERSION}")
 set_default(SPDLOG_ENABLE_SYSLOG "")
-set_default_path(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../idl/idl)
+set_default_path(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/idl/idl)
 set_default_path(BINDIR ${CMAKE_INSTALL_PREFIX}/${USR_PREFIX}/bin)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
