@@ -121,11 +121,19 @@ function(set_common_properties_on_targets)
             PUBLIC "-grecord-gcc-switches"
             PUBLIC "-Wall"
             PUBLIC "-Wextra"
-            PUBLIC "-Wno-unused-parameter"
-            PUBLIC "-fdiagnostics-color=auto")
+            #PUBLIC "-Wno-unused-parameter"
+            PUBLIC "-fdiagnostics-color=always")
         target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
         target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include)
         target_include_directories(${target_name} PUBLIC ${CMAKE_BINARY_DIR})
+    endforeach()
+endfunction()
+
+function(set_corba_properties_on_targets)
+    foreach(target_name ${ARGN})
+       message(STATUS "setting -Wno-unused-variable flag on: " ${target_name})
+       target_compile_options(${target_name}
+            PUBLIC "-Wno-unused-variable")
     endforeach()
 endfunction()
 
@@ -152,6 +160,7 @@ add_library(akm STATIC
 add_executable(${program_name} src/main.cc)
 
 set_common_properties_on_targets(${program_name} mailer akm)
+set_corba_properties_on_targets(mailer akm)
 
 target_sources(${program_name}
     PRIVATE 3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h
