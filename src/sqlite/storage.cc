@@ -976,19 +976,19 @@ void SqliteStorage::clean_scan_results(
 }
 
 
-unsigned int SqliteStorage::get_current_unix_time() const
+long long SqliteStorage::get_current_unix_time() const
 {
     auto db = get_db();
     sqlite3pp::query query(db);
     query.prepare(
         "SELECT strftime('%s', datetime('now')) AS current_unix_time"
     );
-    int current_unix_time;
+    long long current_unix_time;
     for (auto row : query)
     {
         try {
             row.getter() >> current_unix_time;
-            return boost::numeric_cast<unsigned int>(current_unix_time);
+            return current_unix_time;
         }
         catch (...)
         {

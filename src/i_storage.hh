@@ -83,7 +83,7 @@ public:
             const int _keep_seconds_back,
             bool _align_to_start_of_day = false) const = 0;
 
-    virtual unsigned int get_current_unix_time() const = 0;
+    virtual long long get_current_unix_time() const = 0;
 };
 
 

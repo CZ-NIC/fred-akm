@@ -150,7 +150,7 @@ public:
             {
                 throw std::runtime_error("write to pipe failed");
             }
-            else if (ret != _buffer.size())
+            else if (static_cast<size_t>(ret) != _buffer.size())
             {
                 throw std::runtime_error("write to pipe incomplete?");
             }

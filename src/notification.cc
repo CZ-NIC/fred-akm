@@ -78,7 +78,7 @@ void notify_and_save_domain_status(
         template_parameters["days_to_left"] = "7"; // TODO hardwired, get from config (notify_update_within_x_days)
         std::vector<std::string> keys;
         boost::split(keys, _domain_notified_status.serialized_cdnskeys, boost::is_any_of("|"));
-        for (int i = 0; i < keys.size(); ++i)
+        for (size_t i = 0; i < keys.size(); ++i)
         {
             template_parameters["keys." + std::to_string(i)] = keys[i];
         }

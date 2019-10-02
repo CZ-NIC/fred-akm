@@ -33,8 +33,8 @@ void command_update(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
-        unsigned long _maximal_time_between_scan_results,
-        unsigned long _minimal_scan_result_sequence_length_to_update,
+        unsigned long long _maximal_time_between_scan_results,
+        unsigned long long _minimal_scan_result_sequence_length_to_update,
         bool _align_to_start_of_day,
         bool _dry_run,
         bool _fake_contact_emails);

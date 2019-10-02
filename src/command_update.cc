@@ -175,8 +175,8 @@ StatsInsecureCandidates stats_akm_insecure_candidates;
 void command_update_turn_on_akm_on_insecure_candidates(
         const IStorage& _storage,
         const IAkm& _akm_backend,
-        unsigned long _maximal_time_between_scan_results,
-        unsigned long _minimal_scan_result_sequence_length_to_update,
+        unsigned long long _maximal_time_between_scan_results,
+        unsigned long long _minimal_scan_result_sequence_length_to_update,
         const bool _align_to_start_of_day,
         const bool _dry_run)
 {
@@ -204,7 +204,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
     stats_akm_insecure_candidates.domains_loaded = domain_united_state_stack.domains_with_united_states.size();
 
-    const unsigned int current_unix_time = _storage.get_current_unix_time();
+    const long long current_unix_time = _storage.get_current_unix_time();
     log()->debug("current unix time taken from db: {}", current_unix_time);
 
     for (const auto& domain_with_united_states : domain_united_state_stack.domains_with_united_states)
@@ -234,7 +234,8 @@ void command_update_turn_on_akm_on_insecure_candidates(
         log()->debug("newest domain_status: {}", to_string(domain_newest_united_state));
 
 
-        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && ((current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
+        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && 
+           (static_cast<unsigned long long>(current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
             log()->info("WILL NOT UPDATE domain {}: domain latest state too old {} - {} = {} > {}", domain.fqdn, current_unix_time, domain_newest_united_state.get_scan_to().scan_seconds, current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds, _maximal_time_between_scan_results);
@@ -258,7 +259,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
             continue;
         }
 
-        const bool domain_notified_state_is_old_enough = domain_notified_status && ((current_unix_time - domain_notified_status->last_at.scan_seconds) >= (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
+        const bool domain_notified_state_is_old_enough = domain_notified_status && (static_cast<unsigned long long>(current_unix_time - domain_notified_status->last_at.scan_seconds) >= (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
         if (!domain_notified_state_is_old_enough)
         {
             log()->info("WILL NOT UPDATE domain {}: not yet, domain notified state not yet old enough {} - {} = {} < {}, update pending", domain.fqdn, current_unix_time, domain_notified_status->last_at.scan_seconds, current_unix_time - domain_notified_status->last_at.scan_seconds, (_minimal_scan_result_sequence_length_to_update - _maximal_time_between_scan_results));
@@ -275,12 +276,11 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
         const bool domain_history_ok =
                 (domain_intermediate_united_state_to_not_turn_on &&
-                 current_unix_time >= domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds && // TODO fix poor unsigned handling someday
-                 (current_unix_time - domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds >= _minimal_scan_result_sequence_length_to_update))
+                 current_unix_time >= domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds && 
+                 (static_cast<unsigned long long>(current_unix_time - domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds) >= _minimal_scan_result_sequence_length_to_update))
                 ||
                 (!domain_intermediate_united_state_to_not_turn_on &&
-                 current_unix_time >= domain_united_states.front().get_scan_from().scan_seconds && // TODO fix poor unsigned handling someday
-                 (current_unix_time - domain_united_states.front().get_scan_from().scan_seconds >= _minimal_scan_result_sequence_length_to_update));
+                 current_unix_time >= domain_united_states.front().get_scan_from().scan_seconds &&                  (static_cast<unsigned long long>(current_unix_time - domain_united_states.front().get_scan_from().scan_seconds) >= _minimal_scan_result_sequence_length_to_update));
 
         if (!domain_history_ok)
         {
@@ -375,7 +375,7 @@ StatsSecureCandidates stats_akm_secure_candidates;
 void command_update_turn_on_akm_on_secure_candidates(
         const IStorage& _storage,
         const IAkm& _akm_backend,
-        unsigned long _maximal_time_between_scan_results,
+        unsigned long long _maximal_time_between_scan_results,
         const bool _align_to_start_of_day,
         const bool _dry_run)
 {
@@ -497,8 +497,8 @@ void command_update_update_akm_members(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
-        unsigned long _maximal_time_between_scan_results,
-        unsigned long _minimal_scan_result_sequence_length_to_update,
+        unsigned long long _maximal_time_between_scan_results,
+        unsigned long long _minimal_scan_result_sequence_length_to_update,
         const bool _align_to_start_of_day,
         const bool _dry_run,
         const bool _fake_contact_emails)
@@ -659,8 +659,8 @@ void command_update(
         const IStorage& _storage,
         const IAkm& _akm_backend,
         const IMailer& _mailer_backend,
-        const unsigned long _maximal_time_between_scan_results,
-        const unsigned long _minimal_scan_result_sequence_length_to_update,
+        const unsigned long long _maximal_time_between_scan_results,
+        const unsigned long long _minimal_scan_result_sequence_length_to_update,
         const bool _align_to_start_of_day,
         const bool _dry_run,
         const bool _fake_contact_emails)

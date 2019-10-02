@@ -80,7 +80,7 @@ public:
             int _keep_seconds_back,
             bool _align_to_start_of_day = false) const;
 
-    unsigned int get_current_unix_time() const;
+    long long get_current_unix_time() const;
 
 private:
     sqlite3pp::database get_db() const;
