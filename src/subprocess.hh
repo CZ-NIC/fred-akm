@@ -57,12 +57,12 @@ public:
         close();
     }
 
-    const int read_fd() const
+    int read_fd() const
     {
         return fd_[Descriptor::READ];
     }
 
-    const int write_fd() const
+    int write_fd() const
     {
         return fd_[Descriptor::WRITE];
     }
@@ -112,12 +112,12 @@ public:
         }
     }
 
-    const pid_t parent_pid() const
+    pid_t parent_pid() const
     {
         return parent_pid_;
     }
 
-    const pid_t child_pid() const
+    pid_t child_pid() const
     {
         return child_pid_;
     }
