@@ -129,16 +129,6 @@ void create_schema(sqlite3pp::database& _db)
     create_schema_domain_status_notification(_db);
 }
 
-
-void drop_schema(sqlite3pp::database& _db)
-{
-    _db.execute("DROP TABLE IF EXISTS scan_queue");
-    _db.execute("DROP TABLE IF EXISTS scan_result");
-    _db.execute("DROP TABLE IF EXISTS scan_iteration");
-    _db.execute("DROP TABLE IF EXISTS domain_status_notification");
-}
-
-
 }
 
 
