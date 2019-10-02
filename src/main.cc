@@ -113,8 +113,8 @@ void dispatch_command_load(
 
 
 void dispatch_command_scan(
-    const Fred::Akm::Corba::CorbaContext& _cctx,
-    const Fred::Akm::Args& _args,
+    const Fred::Akm::Corba::CorbaContext&,
+    const Fred::Akm::Args&,
     const Fred::Akm::Conf& _conf)
 {
     const auto& scanner_tool_path = _conf.get<Fred::Akm::ScannerConf>()->tool_path;
@@ -180,8 +180,8 @@ void dispatch_command_update(
 
 
 void dispatch_command_clean(
-    const Fred::Akm::Corba::CorbaContext& _cctx,
-    const Fred::Akm::Args& _args,
+    const Fred::Akm::Corba::CorbaContext&,
+    const Fred::Akm::Args&,
     const Fred::Akm::Conf& _conf)
 {
     Fred::Akm::Sqlite::SqliteStorage db(_conf.get<Fred::Akm::DatabaseConf>()->filename);

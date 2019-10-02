@@ -178,8 +178,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         unsigned long _maximal_time_between_scan_results,
         unsigned long _minimal_scan_result_sequence_length_to_update,
         const bool _align_to_start_of_day,
-        const bool _dry_run,
-        const bool _fake_contact_emails)
+        const bool _dry_run)
 {
     log()->debug(";== [command_update (akm insecure candidates)] ===========================================================");
 
@@ -378,8 +377,7 @@ void command_update_turn_on_akm_on_secure_candidates(
         const IAkm& _akm_backend,
         unsigned long _maximal_time_between_scan_results,
         const bool _align_to_start_of_day,
-        const bool _dry_run,
-        const bool _fake_contact_emails)
+        const bool _dry_run)
 {
     log()->debug(";== [command_update (akm secure candidates)] ===========================================================");
 
@@ -673,16 +671,14 @@ void command_update(
             _maximal_time_between_scan_results,
             _minimal_scan_result_sequence_length_to_update,
             _align_to_start_of_day,
-            _dry_run,
-            _fake_contact_emails);
+            _dry_run);
 
     command_update_turn_on_akm_on_secure_candidates(
             _storage,
             _akm_backend,
             _maximal_time_between_scan_results,
             _align_to_start_of_day,
-            _dry_run,
-            _fake_contact_emails);
+            _dry_run);
 
     command_update_update_akm_members(
             _storage,

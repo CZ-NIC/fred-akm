@@ -92,7 +92,7 @@ std::string serialize(const std::map<std::string, Cdnskey>& _cdnskeys)
     return result;
 }
 
-bool is_valid(const Cdnskey& _cdnskey)
+bool is_valid(const Cdnskey&)
 {
     // we accept everything
     return true;
