@@ -114,14 +114,6 @@ void ExternalCdnskeyScannerImpl::scan(const DomainScanTaskCollection& _tasks, On
         scanner_subprocess.write(_str);
     };
 
-    auto stdout_writter = [](const std::string& _str)
-    {
-        if (_str.size() > 0)
-        {
-            std::cout << _str;
-        }
-    };
-
     ScanTaskSerializer serializer;
     serializer.serialize(_tasks, scanner_writter);
 
