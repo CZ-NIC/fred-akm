@@ -9,7 +9,7 @@ Source0:	%{name}-%{version}.tar.gz
 Source1:    idl-%{idl_branch}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  git, gcc-c++, omniORB-devel, boost-devel, sqlite-devel
-%if 0%{?centos}
+%if 0%{?el7}
 BuildRequires:  centos-release-scl, devtoolset-7, devtoolset-7-build, llvm-toolset-7-cmake, llvm-toolset-7-build
 Requires:       sqlite
 %else
@@ -27,13 +27,13 @@ Automated Keyset Management feature
 %setup -b 1
 
 %build
-%if 0%{?centos}
+%if 0%{?el7}
 %{?scl:scl enable devtoolset-7 llvm-toolset-7 - << \EOF}
 %global __cmake /opt/rh/llvm-toolset-7/root/usr/bin/cmake
 %endif
 %cmake -DCMAKE_INSTALL_PREFIX=/ -DUSE_USR_PREFIX=1 -DVERSION=%{version} -DIDL_DIR=%{_topdir}/BUILD/idl-%{idl_branch}/idl .
 %make_build
-%if 0%{?centos}
+%if 0%{?el7}
 %{?scl:EOF}
 %endif
 
