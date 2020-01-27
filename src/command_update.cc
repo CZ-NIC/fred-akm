@@ -234,7 +234,7 @@ void command_update_turn_on_akm_on_insecure_candidates(
         log()->debug("newest domain_status: {}", to_string(domain_newest_united_state));
 
 
-        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() && 
+        const bool domain_newest_state_is_recent = !domain_newest_united_state.is_empty() &&
            (static_cast<unsigned long long>(current_unix_time - domain_newest_united_state.get_scan_to().scan_seconds) <= _maximal_time_between_scan_results);
         if (!domain_newest_state_is_recent)
         {
@@ -276,11 +276,12 @@ void command_update_turn_on_akm_on_insecure_candidates(
 
         const bool domain_history_ok =
                 (domain_intermediate_united_state_to_not_turn_on &&
-                 current_unix_time >= domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds && 
+                 current_unix_time >= domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds &&
                  (static_cast<unsigned long long>(current_unix_time - domain_intermediate_united_state_to_not_turn_on->get_scan_from().scan_seconds) >= _minimal_scan_result_sequence_length_to_update))
                 ||
                 (!domain_intermediate_united_state_to_not_turn_on &&
-                 current_unix_time >= domain_united_states.front().get_scan_from().scan_seconds &&                  (static_cast<unsigned long long>(current_unix_time - domain_united_states.front().get_scan_from().scan_seconds) >= _minimal_scan_result_sequence_length_to_update));
+                 current_unix_time >= domain_united_states.front().get_scan_from().scan_seconds &&
+                 (static_cast<unsigned long long>(current_unix_time - domain_united_states.front().get_scan_from().scan_seconds) >= _minimal_scan_result_sequence_length_to_update));
 
         if (!domain_history_ok)
         {
