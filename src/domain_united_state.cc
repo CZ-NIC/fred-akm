@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
