@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -57,12 +57,12 @@ public:
         close();
     }
 
-    const int read_fd() const
+    int read_fd() const
     {
         return fd_[Descriptor::READ];
     }
 
-    const int write_fd() const
+    int write_fd() const
     {
         return fd_[Descriptor::WRITE];
     }
@@ -112,12 +112,12 @@ public:
         }
     }
 
-    const pid_t parent_pid() const
+    pid_t parent_pid() const
     {
         return parent_pid_;
     }
 
-    const pid_t child_pid() const
+    pid_t child_pid() const
     {
         return child_pid_;
     }
@@ -150,7 +150,7 @@ public:
             {
                 throw std::runtime_error("write to pipe failed");
             }
-            else if (ret != _buffer.size())
+            else if (static_cast<size_t>(ret) != _buffer.size())
             {
                 throw std::runtime_error("write to pipe incomplete?");
             }

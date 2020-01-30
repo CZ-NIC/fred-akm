@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -112,14 +112,6 @@ void ExternalCdnskeyScannerImpl::scan(const DomainScanTaskCollection& _tasks, On
     auto scanner_writter = [&scanner_subprocess](const std::string& _str)
     {
         scanner_subprocess.write(_str);
-    };
-
-    auto stdout_writter = [](const std::string& _str)
-    {
-        if (_str.size() > 0)
-        {
-            std::cout << _str;
-        }
     };
 
     ScanTaskSerializer serializer;

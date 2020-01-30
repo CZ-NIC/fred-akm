@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -108,7 +108,7 @@ boost::optional<DomainUnitedState> lookup_domain_intermediate_united_state(
         const Domain& domain,
         const DomainUnitedStateStack::DomainUnitedStates& _domain_united_states,
         const unsigned long long _maximal_time_between_scan_results,
-        const int _seconds_back)
+        const long long _seconds_back)
 {
     auto domain_checked_united_state = _domain_united_states.rbegin();
     auto* domain_last_checked_united_state = &*domain_checked_united_state;
@@ -131,8 +131,7 @@ boost::optional<DomainUnitedState> lookup_domain_intermediate_united_state(
         {
             if (!domain_last_checked_united_state->is_empty() &&
                 (domain_checked_united_state->get_scan_to().scan_seconds > _seconds_back) &&
-                ((domain_checked_united_state->get_scan_to().scan_seconds -
-                         _seconds_back) >
+                (static_cast<unsigned long long>(domain_checked_united_state->get_scan_to().scan_seconds - _seconds_back) >
                  _maximal_time_between_scan_results))
             {
             log()->error("domain {} oldest state not continuous {} - {} = {} > {}",

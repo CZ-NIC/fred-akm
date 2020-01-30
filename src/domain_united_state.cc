@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -35,7 +35,7 @@ std::string quote(const std::string& str)
 } // namespace Fred::Akim::{anonymous}
 
 
-std::string to_string(const DomainUnitedState& _domain_united_state, const bool verbose)
+std::string to_string(const DomainUnitedState& _domain_united_state, const bool /*verbose*/)
 {
     static const std::string delim = ", ";
     std::string retval;

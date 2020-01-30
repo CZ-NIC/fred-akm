@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -92,7 +92,7 @@ std::string serialize(const std::map<std::string, Cdnskey>& _cdnskeys)
     return result;
 }
 
-bool is_valid(const Cdnskey& _cdnskey)
+bool is_valid(const Cdnskey&)
 {
     // we accept everything
     return true;

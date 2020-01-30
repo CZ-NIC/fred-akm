@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -39,8 +39,8 @@ void print(const DomainUnitedStateStack& _domain_united_state_stack);
 boost::optional<DomainUnitedState> lookup_domain_intermediate_united_state(
         const Domain& domain,
         const DomainUnitedStateStack::DomainUnitedStates& _domain_united_states,
-        unsigned long long _maximal_time_between_scan_results,
-        int _current_unix_time);
+        const unsigned long long _maximal_time_between_scan_results,
+        const long long _seconds_back);
 
 } //namespace Fred::Akm
 } //namespace Fred

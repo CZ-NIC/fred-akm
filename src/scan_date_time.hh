@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -58,7 +58,7 @@ struct ScanDateTime
     }
 
     std::string scan_date_time;
-    int scan_seconds;
+    long long scan_seconds;
 };
 
 std::string to_string(const ScanDateTime& scan_date_time);
