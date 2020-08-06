@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -731,7 +731,6 @@ DomainScanTaskCollection SqliteStorage::get_scan_queue_tasks() const
     {
         std::string nameserver;
         Domain domain;
-        long long domain_id;
         std::string scan_type_handle;
         row.getter() >> nameserver >> domain.id >> domain.fqdn >> scan_type_handle;
         domain.scan_type = from_db_handle<ScanType>(scan_type_handle);

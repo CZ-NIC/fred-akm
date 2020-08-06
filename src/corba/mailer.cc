@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2020  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -63,7 +63,7 @@ void Mailer::enqueue(
         }
 
         CORBA::String_var dummy;
-        CORBA::Long mail_id = mailer->mailNotify(
+        mailer->mailNotify(
             CORBA::string_dup(_template_name.c_str()),
             header,
             params,

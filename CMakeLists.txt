@@ -1,21 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-find_program(GIT_PROGRAM git)
-
-find_program(CCACHE_PROGRAM ccache)
-if(CCACHE_PROGRAM)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
-endif()
-
-set(program_name fred-akm)
-project(${program_name} CXX)
-
-if(NOT VERSION)
-    execute_process(COMMAND "git" "describe" "--tags"
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                    OUTPUT_VARIABLE RAWVERSION)
-    string(REGEX REPLACE "(-.*)?\n" "" VERSION "${RAWVERSION}")
-endif()
+set(project_name fred-akm)
+project(${project_name} CXX)
 
 macro(set_default variable_name variable_value)
     if(NOT ${variable_name})
@@ -23,305 +9,274 @@ macro(set_default variable_name variable_value)
     endif()
 endmacro()
 
-macro(normalize_path variable_name variable_value)
-    string(REGEX REPLACE "//*" "/" "${variable_name}" "${variable_value}")
-    if(NOT "x${${variable_name}}" STREQUAL "x/")
-        string(REGEX REPLACE "/$" "" "${variable_name}" "${${variable_name}}")
-    endif()
-endmacro()
+#Use in config.h
+set_default(PACKAGE ${project_name})
 
-macro(set_default_path variable_name variable_value)
-    if(NOT ${variable_name})
-        normalize_path(${variable_name} ${variable_value})
-    endif()
-endmacro()
+#Make sure that custom modules like FindOMNIORB are found
+set_default(IDL_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/idl)
+set(IDL_SOURCE_DIR ${IDL_PROJECT_DIR}/idl)
+set(IDL_DESTINATION_DIR ${CMAKE_CURRENT_BINARY_DIR}/src/corba/generated)
+list(INSERT CMAKE_MODULE_PATH 0 ${IDL_PROJECT_DIR}/cmake)
 
-normalize_path(NORMALIZED_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-if("x${NORMALIZED_INSTALL_PREFIX}" STREQUAL "x/usr/local")
-    set(USR_PREFIX "")
-    set(USR_SHARE_PREFIX "")
-else()
-    set(USR_SHARE_PREFIX "/usr")
-    if(USE_USR_PREFIX)
-        set(USR_PREFIX "/usr")
-    else()
-        set(USR_PREFIX "")
-    endif()
+##############################################
+# Declare dependencies
+find_package(OMNIORB4 REQUIRED)
+find_program(GIT_PROGRAM git)
+find_program(CCACHE_PROGRAM ccache)
+
+if(CCACHE_PROGRAM)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 
-find_package(Boost 1.53.0
-    COMPONENTS
-    program_options
-    regex
-    REQUIRED)
-find_package(PkgConfig REQUIRED)
-
-pkg_search_module(OMNIORB4 REQUIRED omniORB4>=4.1.2)
-pkg_search_module(OMNIDYNAMIC4 REQUIRED omniDynamic4>=4.1.2)
-pkg_search_module(SQLITE3 REQUIRED sqlite3)
-
-macro(create_link_function some_package its_dependencies)
-    function(link_targets_against_${some_package})
-        set(func_ARGN ARGN)
-        foreach(target_name ${${func_ARGN}})
-            message(STATUS "link against " ${some_package} ": " ${target_name})
-            target_link_libraries(${target_name} ${${its_dependencies}})
-        endforeach()
-    endfunction()
+macro(normalize_path variable_name path)
+    string(REGEX REPLACE "//+" "/" ${variable_name} "${path}")
+    if(NOT "${${variable_name}}" STREQUAL "/")
+        string(REGEX REPLACE "/$" "" ${variable_name} "${${variable_name}}")
+    endif()
 endmacro()
 
-create_link_function(boost_regex Boost_REGEX_LIBRARY)
-create_link_function(boost_program_options Boost_PROGRAM_OPTIONS_LIBRARY)
-create_link_function(omniorb4 OMNIORB4_LIBRARIES)
-create_link_function(omnidynamic4 OMNIDYNAMIC4_LIBRARIES)
-create_link_function(sqlite3 SQLITE3_LIBRARIES)
+macro(set_default_path variable_name path)
+    if(NOT ${variable_name})
+        normalize_path(${variable_name} "${path}")
+    endif()
+endmacro()
+
+set_default(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 set_default(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set_default(TARBALL_FILE_NAME "${program_name}-${VERSION}")
-set_default(SPDLOG_ENABLE_SYSLOG "")
-set_default_path(IDL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/idl/idl)
-set_default_path(BINDIR ${CMAKE_INSTALL_PREFIX}/${USR_PREFIX}/bin)
+
+if(NOT VERSION)
+    if(NOT GIT_PROGRAM)
+        message(FATAL_ERROR "git not found; you need to pass -DVERSION=")
+    endif()
+    execute_process(COMMAND ${GIT_PROGRAM} "describe" "--tags"
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                    OUTPUT_VARIABLE RAWVERSION)
+    string(REGEX REPLACE "(-.*)?\n" "" VERSION "${RAWVERSION}")
+endif()
+set(TARBALL_FILE_NAME "${project_name}-${VERSION}")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 
-function(compile_idl_files)
-    message(STATUS "Compiling idl...")
-    execute_process(
-        COMMAND mkdir -p src/corba/generated
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-    foreach(idl_name ${ARGN})
-        execute_process(
-            COMMAND omniidl -bcxx -Wbuse_quotes -Wba -C ./src/corba/generated/ ${IDL_DIR}/${idl_name}.idl
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            OUTPUT_VARIABLE OMNIIDL_MESSAGE${idl_name})
-        message(STATUS ${OMNIIDL_MESSAGE}${idl_name})
-    endforeach()
-    message(STATUS "...done")
-endfunction()
+set(USR_PREFIX "${CMAKE_INSTALL_PREFIX}")
+normalize_path(NORMALIZED_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+if(NOT "${NORMALIZED_INSTALL_PREFIX}" STREQUAL "/usr/local" AND USE_USR_PREFIX)
+    set(USR_PREFIX "${CMAKE_INSTALL_PREFIX}/usr")
+endif()
+set_default_path(BINDIR ${USR_PREFIX}/bin)
 
-compile_idl_files(
-    _dataTypes
-    DateTime
-    Mailer
-    AutomaticKeysetManagement)
+find_package(Boost 1.53.0
+    COMPONENTS
+        program_options
+        regex
+    REQUIRED)
 
-function(set_common_properties_on_targets)
-    foreach(target_name ${ARGN})
-        message(STATUS "setting properties on: " ${target_name})
-        set_target_properties(${target_name} PROPERTIES
-            CXX_STANDARD 14
-            CXX_STANDARD_REQUIRED YES
-            CXX_EXTENSIONS NO
-            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-        target_compile_options(${target_name}
-            PUBLIC "-O2"
-            PUBLIC "-ggdb"
-            PUBLIC "-grecord-gcc-switches"
-            PUBLIC "-Wall"
-            PUBLIC "-Wextra"
-            #PUBLIC "-Wno-unused-parameter"
-            PUBLIC "-fdiagnostics-color=always")
-        target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-        target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include)
-        target_include_directories(${target_name} PUBLIC ${CMAKE_BINARY_DIR})
-    endforeach()
-endfunction()
+find_package(PkgConfig REQUIRED)
 
-function(set_corba_properties_on_targets)
-    foreach(target_name ${ARGN})
-       message(STATUS "setting -Wno-unused-variable flag on: " ${target_name})
-       target_compile_options(${target_name}
-            PUBLIC "-Wno-unused-variable")
-    endforeach()
-endfunction()
-
-add_library(mailer STATIC
-    src/corba/generated/DateTimeSK.cc
-    src/corba/generated/_dataTypesSK.cc
-    src/corba/generated/MailerSK.cc
-    src/corba/generated/DateTimeDynSK.cc
-    src/corba/generated/DateTime.hh
-    src/corba/generated/_dataTypesDynSK.cc
-    src/corba/generated/_dataTypes.hh
-    src/corba/generated/MailerDynSK.cc
-    src/corba/generated/Mailer.hh
-    src/corba/mailer.cc
-    src/corba/mailer.hh)
-
-add_library(akm STATIC
-    src/corba/generated/AutomaticKeysetManagementSK.cc
-    src/corba/generated/AutomaticKeysetManagementDynSK.cc
-    src/corba/generated/AutomaticKeysetManagement.hh
-    src/corba/akm.cc
-    src/corba/akm.hh)
-
-add_executable(${program_name} src/main.cc)
-
-set_common_properties_on_targets(${program_name} mailer akm)
-set_corba_properties_on_targets(mailer akm)
-
-target_sources(${program_name}
-    PRIVATE 3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h
-    PRIVATE 3rd_party/sqlite3pp/headeronly_src/sqlite3pp.ipp
-    PRIVATE 3rd_party/spdlog/include/spdlog/async_logger.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/common.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/async_logger_impl.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/async_log_helper.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/file_helper.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/logger_impl.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/log_msg.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/mpmc_bounded_q.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/null_mutex.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/os.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/pattern_formatter_impl.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/registry.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/details/spdlog_impl.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/fmt/bundled/format.cc
-    PRIVATE 3rd_party/spdlog/include/spdlog/fmt/bundled/format.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/fmt/fmt.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/formatter.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/logger.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/ansicolor_sink.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/base_sink.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/file_sinks.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/null_sink.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/sink.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/stdout_sinks.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/spdlog.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/sinks/syslog_sink.h
-    PRIVATE 3rd_party/spdlog/include/spdlog/tweakme.h
-    PRIVATE src/i_mailer.hh
-    PRIVATE src/i_storage.hh
-    PRIVATE src/i_scanner.hh
-    PRIVATE src/i_loader.hh
-    PRIVATE src/i_loader_filter.hh
-    PRIVATE src/i_akm.hh
-    PRIVATE src/enum_conversions.hh
-    PRIVATE src/type_instance_map.hh
-    PRIVATE src/from_string.hh
-    PRIVATE src/scan_type.hh
-    PRIVATE src/scan_type.cc
-    PRIVATE src/utils.hh
-    PRIVATE src/utils.cc
-    PRIVATE src/args.hh
-    PRIVATE src/args.cc
-    PRIVATE src/conf.hh
-    PRIVATE src/conf.cc
-    PRIVATE src/log.hh
-    PRIVATE src/log.cc
-    PRIVATE src/email_addresses.hh
-    PRIVATE src/subprocess.hh
-    PRIVATE src/corba/corba_context.hh
-    PRIVATE src/corba/corba_context.cc
-    PRIVATE src/corba/nameservice.hh
-    PRIVATE src/corba/nameservice.cc
-    PRIVATE src/corba/akm.cc
-    PRIVATE src/corba/akm.hh
-    PRIVATE src/corba/mailer.cc
-    PRIVATE src/corba/mailer.hh
-    PRIVATE src/sqlite/storage.hh
-    PRIVATE src/sqlite/storage.cc
-    PRIVATE src/sqlite/enum_conversion.hh
-    PRIVATE src/sqlite/scan_type_conversion.hh
-    PRIVATE src/cdnskey_scanner_impl/input_serializer.hh
-    PRIVATE src/cdnskey_scanner_impl/output_parser.hh
-    PRIVATE src/cdnskey_scanner_impl/output_parser.cc
-    PRIVATE src/cdnskey_scanner_impl/cdnskey_scanner_impl.hh
-    PRIVATE src/cdnskey_scanner_impl/cdnskey_scanner_impl.cc
-    PRIVATE src/loader_impl/file.hh
-    PRIVATE src/loader_impl/file.cc
-    PRIVATE src/loader_impl/backend.hh
-    PRIVATE src/loader_impl/backend.cc
-    PRIVATE src/loader_impl/domain_whitelist_filter.hh
-    PRIVATE src/loader_impl/domain_whitelist_filter.cc
-    PRIVATE src/scan_task.hh
-    PRIVATE src/scan_task.cc
-    PRIVATE src/command_load.hh
-    PRIVATE src/command_load.cc
-    PRIVATE src/command_scan.hh
-    PRIVATE src/command_scan.cc
-    PRIVATE src/command_notify.hh
-    PRIVATE src/command_notify.cc
-    PRIVATE src/command_update.hh
-    PRIVATE src/command_update.cc
-    PRIVATE src/domain_notified_status.hh
-    PRIVATE src/domain_notified_status.cc
-    PRIVATE src/notification.hh
-    PRIVATE src/notification.cc
-    PRIVATE src/notification_type.hh
-    PRIVATE src/notification_type.cc
-    PRIVATE src/keyset.hh
-    PRIVATE src/keyset.cc
-    PRIVATE src/nsset.hh
-    PRIVATE src/nsset.cc
-    PRIVATE src/cdnskey.hh
-    PRIVATE src/cdnskey.cc
-    PRIVATE src/dnskey.hh
-    PRIVATE src/dnskey.cc
-    PRIVATE src/domain.cc
-    PRIVATE src/domain.hh
-    PRIVATE src/domain_state.hh
-    PRIVATE src/domain_state.cc
-    PRIVATE src/domain_status.hh
-    PRIVATE src/domain_status.cc
-    PRIVATE src/scan_iteration.hh
-    PRIVATE src/scan_iteration.cc
-    PRIVATE src/scan_result_row.hh
-    PRIVATE src/scan_result_row.cc
-    PRIVATE src/domain_state_stack.hh
-    PRIVATE src/domain_state_stack.cc
-    PRIVATE src/domain_united_state.hh
-    PRIVATE src/domain_united_state.cc
-    PRIVATE src/domain_united_state_stack.hh
-    PRIVATE src/domain_united_state_stack.cc
-    PRIVATE src/command_clean.hh
-    PRIVATE src/command_clean.cc
-    PRIVATE src/scan_date_time.hh
-    PRIVATE src/scan_date_time.cc)
-target_link_libraries(${program_name}
-    akm
-    mailer)
-link_targets_against_boost_regex(${program_name})
-link_targets_against_boost_program_options(${program_name})
-link_targets_against_omniorb4(${program_name})
-link_targets_against_omnidynamic4(${program_name})
-link_targets_against_sqlite3(${program_name})
-
-include_directories("${CMAKE_SOURCE_DIR}" PUBLIC)
+pkg_search_module(SQLITE3 REQUIRED sqlite3)
 
 include(CheckIncludeFileCXX)
 set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include)
 set(CMAKE_REQUIRED_FLAGS "-std=c++14")
-check_include_file_cxx(3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h FOUND_sqlite3pp)
-if(NOT FOUND_sqlite3pp)
+check_include_file_cxx(${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/sqlite3pp/headeronly_src/sqlite3pp.h sqlite3pp_h_FOUND)
+if(NOT sqlite3pp_h_FOUND)
     message(FATAL_ERROR "Header sqlite3pp.h not found!")
 endif()
-check_include_file_cxx(3rd_party/spdlog/include/spdlog/spdlog.h FOUND_spdlog)
-if(NOT FOUND_spdlog)
+check_include_file_cxx(${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include/spdlog/spdlog.h spdlog_h_FOUND)
+if(NOT spdlog_h_FOUND)
     message(FATAL_ERROR "Header spdlog.h not found!")
 endif()
 
-install(TARGETS ${program_name} DESTINATION ${BINDIR})
-add_custom_target(uninstall COMMAND rm ${BINDIR}/${program_name})
+set(CORBA_LIBRARIES ${OMNIDYNAMIC4_LIBRARIES})
+
+set_default(TARBALL_FILE_NAME "${project_name}-${VERSION}")
+set_default(SPDLOG_ENABLE_SYSLOG "")
+
+##############################################
+# How to generate C++ files from IDL
+OMNIORB4_IDL_TO_CPP(${IDL_SOURCE_DIR} ${IDL_DESTINATION_DIR} IDL_CC_FILES IDL_HH_FILES
+    _dataTypes.idl
+    DateTime.idl
+    Mailer.idl
+    AutomaticKeysetManagement.idl)
+
+function(set_common_target_compile_options target_name)
+    target_compile_options(${target_name}
+        PRIVATE
+            "-ggdb"
+            "-grecord-gcc-switches"
+            "-Wall"
+            "-Wextra"
+            "-fdiagnostics-color=always")
+endfunction()
+
+function(set_common_library_target_properties target_name)
+    set_target_properties(${target_name} PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
+    set_common_target_compile_options(${target_name})
+    target_include_directories(${target_name} PUBLIC
+        $<INSTALL_INTERFACE:>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/spdlog/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+endfunction()
+
+function(add_common_library_target target_name)
+    message(STATUS "add library: " ${target_name})
+    add_library(${target_name} STATIC EXCLUDE_FROM_ALL ${ARGN})
+    set_common_library_target_properties(${target_name})
+endfunction()
+
+function(add_corba_library_target target_name)
+    message(STATUS "add corba library: " ${target_name})
+    add_library(${target_name} STATIC EXCLUDE_FROM_ALL ${ARGN})
+    set_target_properties(${target_name} PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
+    target_compile_options(${target_name}
+        PRIVATE
+            "-ggdb"
+            "-grecord-gcc-switches"
+            "-Wall"
+            "-Wextra"
+            "-Wno-unused-variable"
+            "-Wno-unused-parameter"
+            "-fdiagnostics-color=always")
+    target_include_directories(${target_name} PUBLIC
+        $<INSTALL_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>)
+    target_link_libraries(${target_name} PRIVATE ${CORBA_LIBRARIES})
+endfunction()
+
+function(set_common_executable_target_properties target_name)
+    set_target_properties(${target_name} PROPERTIES
+        CXX_STANDARD 14
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+    set_common_target_compile_options(${target_name})
+endfunction()
+
+function(add_common_executable_target target_name)
+    message(STATUS "add executable: " ${target_name})
+    add_executable(${target_name} ${ARGN})
+    target_include_directories(${target_name} PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR})
+    set_common_executable_target_properties(${target_name})
+endfunction()
+
+add_corba_library_target(corba_datetime
+    ${IDL_DESTINATION_DIR}/DateTimeSK.cc
+    ${IDL_DESTINATION_DIR}/DateTimeDynSK.cc)
+
+add_corba_library_target(corba_datatypes
+    ${IDL_DESTINATION_DIR}/_dataTypesSK.cc
+    ${IDL_DESTINATION_DIR}/_dataTypesDynSK.cc)
+target_link_libraries(corba_datatypes PRIVATE corba_datetime)
+
+add_corba_library_target(corba_mailer
+    ${IDL_DESTINATION_DIR}/MailerSK.cc
+    ${IDL_DESTINATION_DIR}/MailerDynSK.cc)
+target_link_libraries(corba_mailer PRIVATE corba_datatypes)
+
+add_corba_library_target(corba_akm
+    ${IDL_DESTINATION_DIR}/AutomaticKeysetManagementSK.cc
+    ${IDL_DESTINATION_DIR}/AutomaticKeysetManagementDynSK.cc)
+
+add_common_library_target(akm
+    src/corba/akm.cc
+    src/corba/akm.hh)
+target_link_libraries(akm PRIVATE corba_akm)
+
+add_common_library_target(storage
+    src/sqlite/storage.cc)
+target_link_libraries(storage PRIVATE ${SQLITE3_LIBRARIES})
+target_compile_options(storage PUBLIC ${SQLITE3_CFLAGS})
+
+add_common_library_target(fred_akm_impl
+    3rd_party/spdlog/include/spdlog/fmt/bundled/format.cc
+    src/scan_type.cc
+    src/utils.cc
+    src/args.cc
+    src/conf.cc
+    src/log.cc
+    src/corba/corba_context.cc
+    src/corba/nameservice.cc
+    src/corba/akm.cc
+    src/corba/mailer.cc
+    src/cdnskey_scanner_impl/output_parser.cc
+    src/cdnskey_scanner_impl/cdnskey_scanner_impl.cc
+    src/loader_impl/file.cc
+    src/loader_impl/backend.cc
+    src/loader_impl/domain_whitelist_filter.cc
+    src/scan_task.cc
+    src/command_load.cc
+    src/command_scan.cc
+    src/command_notify.cc
+    src/command_update.cc
+    src/domain_notified_status.cc
+    src/notification.cc
+    src/notification_type.cc
+    src/keyset.cc
+    src/nsset.cc
+    src/cdnskey.cc
+    src/dnskey.cc
+    src/domain.cc
+    src/domain_state.cc
+    src/domain_status.cc
+    src/scan_iteration.cc
+    src/scan_result_row.cc
+    src/domain_state_stack.cc
+    src/domain_united_state.cc
+    src/domain_united_state_stack.cc
+    src/command_clean.cc
+    src/scan_date_time.cc)
+target_link_libraries(fred_akm_impl corba_mailer)
+
+add_common_executable_target(fred-akm src/main.cc)
+target_link_libraries(fred-akm
+    akm
+    fred_akm_impl
+    storage
+    Boost::regex
+    Boost::program_options)
+
+install(TARGETS fred-akm DESTINATION ${BINDIR})
+add_custom_target(uninstall COMMAND rm ${BINDIR}/fred-akm)
 
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
     if(NOT TARGET dist)
+        add_custom_target(dist_idl
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/external/idl/ HEAD > ${CMAKE_CURRENT_SOURCE_DIR}/.idl.tar
+            WORKING_DIRECTORY ${IDL_PROJECT_DIR})
         add_custom_target(dist_sqlite
-            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/sqlite3pp/ HEAD > ../../.sqlite3pp.tar
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/sqlite3pp/ HEAD > ${CMAKE_CURRENT_SOURCE_DIR}/.sqlite3pp.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/sqlite3pp)
         add_custom_target(dist_spdlog
-            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/spdlog/ HEAD > ../../.spdlog.tar
+            COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/3rd_party/spdlog/ HEAD > ${CMAKE_CURRENT_SOURCE_DIR}/.spdlog.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/3rd_party/spdlog)
         add_custom_target(dist
             COMMAND ${GIT_PROGRAM} archive --format=tar --prefix=${TARBALL_FILE_NAME}/ HEAD > .${TARBALL_FILE_NAME}.tar
+            COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .idl.tar
             COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .sqlite3pp.tar
             COMMAND tar --concatenate --file=.${TARBALL_FILE_NAME}.tar .spdlog.tar
             COMMAND cat .${TARBALL_FILE_NAME}.tar | gzip > ${CMAKE_BINARY_DIR}/${TARBALL_FILE_NAME}.tar.gz
-            COMMAND rm .${TARBALL_FILE_NAME}.tar .sqlite3pp.tar .spdlog.tar
+            COMMAND rm .${TARBALL_FILE_NAME}.tar .idl.tar .sqlite3pp.tar .spdlog.tar
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-        add_dependencies(dist dist_sqlite dist_spdlog)
+        add_dependencies(dist dist_idl dist_sqlite dist_spdlog)
+    endif()
+
+    if(DEFINED ENV{DISTCHECK_CMAKE_FLAGS})
+        set(distcheck_flags $ENV{DISTCHECK_CMAKE_FLAGS})
     endif()
 
     if(NOT TARGET distcheck)
@@ -345,7 +300,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_PROGRAM)
             && (tar xzf ${TARBALL_FILE_NAME}.tar.gz
                 || (echo 'Error: failed to unpack the archive' 2>&1\; false))
             && (cd ${DISTCHECK_BUILD_DIR}
-                && (${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=../${DISTCHECK_INSTALL_DIR} -DIDL_DIR=${IDL_DIR} ../${TARBALL_FILE_NAME}
+                && (${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${distcheck_flags} -DCMAKE_INSTALL_PREFIX=../${DISTCHECK_INSTALL_DIR} ../${TARBALL_FILE_NAME}
                     || (echo 'Error: failed to configure the archive' 2>&1\; false))
                 && (${DISTCHECK_MAKEFLAGS} ${DISTCHECK_BUILD_CMD}
                     || (echo 'Error: the build target failed ' 2>&1\; false))
