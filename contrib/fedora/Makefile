@@ -16,11 +16,11 @@ spec_file := $(project_name).spec
 
 srpm:
 	rpm -q git > /dev/null 2>&1 || dnf -y install git
+	mkdir -p "$(source_dir)"
+	mkdir -p "$(spec_dir)"
 	git submodule update --init
 	git clone --depth $(clone_limit) --no-single-branch -b $(idl_branch) https://github.com/CZ-NIC/fred-idl.git .fred-idl
 	cd .fred-idl && git archive --prefix=idl-$(idl_branch)/ --format=tar.gz HEAD -o "$(source_dir)/idl-$(idl_branch).tar.gz"
-	mkdir -p "$(source_dir)" && \
-	mkdir -p "$(spec_dir)" && \
 	our_version=$(our_version); \
 	cd 3rd_party/sqlite3pp && \
 	git archive --prefix=$(project_name)-$$our_version/3rd_party/sqlite3pp/ --format=tar HEAD -o "$(source_dir)/.sqlite3pp.tar"
