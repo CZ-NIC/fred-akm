@@ -35,6 +35,7 @@ stages:
                 git clone "$git_upstream"/"$repo" "$clone_path" --depth 1 --branch "$clone_branch" ;
             fi ;
         done < dependencies.txt
+    - git submodule update --init --recursive
   script:
     - cmake .
     - job_count=$(($(grep -c processor /proc/cpuinfo) / 2 + 1))
