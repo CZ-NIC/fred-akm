@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019  CZ.NIC, z. s. p. o.
+ * Copyright (C) 2017-2021  CZ.NIC, z. s. p. o.
  *
  * This file is part of FRED.
  *
@@ -236,7 +236,7 @@ ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_notify(
            "AND enum_scan_type.handle = :scan_type "
            "AND (scan_result.scan_at > domain_status_notification.last_at OR domain_status_notification.last_at IS NULL) "
            "%2%"
-         "ORDER BY scan_result.id DESC")
+         "ORDER BY scan_result.scan_iteration_id, scan_result.domain_id, scan_result.nameserver, scan_result.nameserver_ip")
                    % (_seconds_back * -1)
                    % (_notify_from_last_iteration_only ? "AND scan_iteration_id = (SELECT MAX(scan_iteration_id) FROM scan_result) " : "")).c_str());
 
@@ -316,7 +316,7 @@ ScanResultRows get_scan_result_rows_of_akm_insecure_candidates_for_akm_turn_on(
            "AND enum_scan_type.handle = :scan_type "
            "AND (domain_status_notification.notification_type = :notification_type "
                "OR domain_status_notification.notification_type = :notification_type_fallen_angel) "
-         "ORDER BY scan_result.id DESC";
+         "ORDER BY scan_result.scan_iteration_id, scan_result.domain_id, scan_result.nameserver, scan_result.nameserver_ip";
 
     query.prepare(boost::str(boost::format(sql)
                    % (_seconds_back * -1)).c_str());
