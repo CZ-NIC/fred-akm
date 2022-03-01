@@ -16,7 +16,7 @@ Requires:       sqlite
 BuildRequires:  cmake
 Requires:       sqlite-libs
 %endif
-Requires:       glibc, libstdc++, boost-regex, boost-program-options, omniORB, cdnskey-scanner
+Requires:       glibc, libstdc++, boost-regex, boost-program-options, omniORB, fred-cdnskey-scanner
 
 %description
 FRED (Free Registry for Enum and Domain) is free registry system for 
